@@ -1,0 +1,16 @@
+# Node
+node_modules/
+
+# Expo
+.expo/
+
+# Android / iOS builds
+android/build/
+ios/build/
+
+# IDEs
+.idea/
+.vscode/
+
+# Logs
+*.log
