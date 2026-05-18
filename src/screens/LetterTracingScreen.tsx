@@ -10,7 +10,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import Svg, { Text as SvgText } from 'react-native-svg';
+import Svg, { Line as SvgLine, Text as SvgText } from 'react-native-svg';
 import { AppContext, Lang } from '../store/AppContext';
 import { useSpeech } from '../hooks/useSpeech';
 import TopBar from '../components/TopBar';
@@ -236,6 +236,16 @@ function TracePad({ letter, lang, onDone }: { letter: Letter; lang: Lang; onDone
       >
         <View style={styles.ghostWrap} pointerEvents="none">
           <Svg width={size} height={size}>
+            <SvgLine
+              x1={size / 2}
+              y1={size * 0.16}
+              x2={size / 2}
+              y2={size * 0.84}
+              stroke="rgba(149, 128, 214, 0.62)"
+              strokeWidth={Math.max(6, size * 0.022)}
+              strokeDasharray={`${Math.max(16, size * 0.038)} ${Math.max(10, size * 0.024)}`}
+              strokeLinecap="round"
+            />
             <SvgText
               x={size / 2}
               y={size / 2}
@@ -243,11 +253,11 @@ function TracePad({ letter, lang, onDone }: { letter: Letter; lang: Lang; onDone
               textAnchor="middle"
               fill="none"
               stroke="rgba(149, 128, 214, 0.68)"
-              strokeWidth={Math.max(6, size * 0.03)}
+              strokeWidth={Math.max(8, size * 0.04)}
               strokeDasharray={`${Math.max(18, size * 0.042)} ${Math.max(10, size * 0.026)}`}
               strokeLinecap="round"
               strokeLinejoin="round"
-              fontSize={size * 0.96}
+              fontSize={size * 1.06}
               fontFamily={ff(lang, 'black')}
             >
               {letter.char}
@@ -412,13 +422,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   letterPill: {
-    minWidth: 88,
-    height: 56,
-    borderRadius: 20,
+    minWidth: 108,
+    height: 68,
+    borderRadius: 24,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 18,
+    paddingHorizontal: 22,
     shadowColor: '#1D1850',
     shadowOpacity: 0.16,
     shadowRadius: 10,
@@ -427,8 +437,8 @@ const styles = StyleSheet.create({
   },
   letterPillText: {
     color: '#19A9C0',
-    fontSize: 32,
-    lineHeight: 36,
+    fontSize: 42,
+    lineHeight: 46,
     fontFamily: ff('fa', 'black'),
   },
   centerTraceCard: { alignItems: 'center' },
