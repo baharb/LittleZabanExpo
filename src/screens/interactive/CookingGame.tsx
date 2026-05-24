@@ -1,27 +1,27 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
   Image,
   ImageBackground,
   PanResponder,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import Svg, { Circle, Ellipse, Rect as SvgRect } from 'react-native-svg';
 import { AppContext } from '../../store/AppContext';
-import { useNav } from '../../store/NavContext';
 import { useSpeech } from '../../hooks/useSpeech';
 import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
 import TopBar from '../../components/TopBar';
+import { characterAssets } from '../../assets/characterAssets';
 import { dir, ff } from '../../theme/fonts';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
 import BlinkingNeliImage from '../../components/BlinkingNeliImage';
 
-type IngredientKind = 'rice' | 'herb' | 'egg' | 'tomato' | 'pasta' | 'cheese' | 'water' | 'salt' | 'cucumber' | 'yogurt' | 'driedMint' | 'lemon' | 'lentils' | 'beans' | 'fish' | 'oil' | 'onion';
+type IngredientKind = 'rice' | 'herb' | 'egg' | 'tomato' | 'pasta' | 'cheese' | 'water' | 'salt' | 'cucumber' | 'yogurt' | 'driedMint' | 'lemon' | 'lentils' | 'beans' | 'fish' | 'oil' | 'onion' | 'filletChickenRaw' | 'groundBeefRaw' | 'cutRawBeefForStew' | 'grapeLeaves' | 'reshtehAshRaw' | 'zereshk' | 'pizzaBread' | 'pizzaCheese' | 'lappeh' | 'mushroom' | 'bellPepper' | 'olive' | 'kalam' | 'saffron' | 'chickpea';
 type Rect = { x: number; y: number; w: number; h: number };
 type Point = { x: number; y: number };
 type Slot = { x: number; y: number; w: number; h: number };
@@ -34,38 +34,62 @@ type Recipe = {
   color: string;
   vessel: 'pot' | 'pan' | 'plate';
   steps: Ingredient[];
+  menuSource: any;
   resultSource: any;
 };
 
 const ALL: Record<IngredientKind, Ingredient> = {
   rice: { id: 'rice', fa: 'برنج', en: 'Rice', source: neliWorldAssets.foods.rice, color: '#F8E39A' },
   herb: { id: 'herb', fa: 'سبزی', en: 'Herbs', source: neliWorldAssets.foods.herbs, color: '#22C55E' },
-  egg: { id: 'egg', fa: 'تخم مرغ', en: 'Egg', source: neliWorldAssets.foods.egg, color: '#FDE68A' },
+  egg: { id: 'egg', fa: 'تخم مرغ', en: 'Egg', source: neliWorldAssets.foods.eggWhole, color: '#FDE68A' },
   tomato: { id: 'tomato', fa: 'گوجه', en: 'Tomato', source: neliWorldAssets.foods.tomato, color: '#EF4444' },
-  pasta: { id: 'pasta', fa: 'پاستا', en: 'Pasta', source: neliWorldAssets.foods.pasta, color: '#FBBF24' },
+  pasta: { id: 'pasta', fa: 'پاستا', en: 'Pasta', source: neliWorldAssets.foods.rawPasta, color: '#FBBF24' },
   cheese: { id: 'cheese', fa: 'پنیر', en: 'Cheese', source: neliWorldAssets.foods.cheese, color: '#F59E0B' },
+  pizzaBread: { id: 'pizzaBread', fa: 'خمیر پیتزا', en: 'Pizza Bread', source: neliWorldAssets.foods.pizzaBread, color: '#FDBA74' },
+  pizzaCheese: { id: 'pizzaCheese', fa: 'پنیر پیتزا', en: 'Pizza Cheese', source: neliWorldAssets.foods.pizzaCheese, color: '#FDE68A' },
+  mushroom: { id: 'mushroom', fa: 'قارچ', en: 'Mushroom', source: neliWorldAssets.foods.mushroom, color: '#A78BFA' },
+  bellPepper: { id: 'bellPepper', fa: 'فلفل دلمه', en: 'Bell Pepper', source: neliWorldAssets.foods.bellPepper, color: '#FB7185' },
+  olive: { id: 'olive', fa: 'زیتون', en: 'Olive', source: neliWorldAssets.foods.olive, color: '#166534' },
+  kalam: { id: 'kalam', fa: 'کلم', en: 'Cabbage', source: neliWorldAssets.foods.kalam, color: '#65A30D' },
   water: { id: 'water', fa: 'آب', en: 'Water', source: neliWorldAssets.foods.water, color: '#38BDF8' },
   salt: { id: 'salt', fa: 'نمک', en: 'Salt', source: neliWorldAssets.foods.salt, color: '#94A3B8' },
   cucumber: { id: 'cucumber', fa: 'خیار', en: 'Cucumber', source: neliWorldAssets.foods.cucumber, color: '#4ADE80' },
   yogurt: { id: 'yogurt', fa: 'ماست', en: 'Yogurt', source: neliWorldAssets.foods.yogurt, color: '#F8FAFC' },
   driedMint: { id: 'driedMint', fa: 'نعنا خشک', en: 'Dried Mint', source: neliWorldAssets.foods.driedMint, color: '#22C55E' },
-  lemon: { id: 'lemon', fa: 'لیمو', en: 'Lemon', source: neliWorldAssets.foods.lemon, color: '#FDE047' },
+  lemon: { id: 'lemon', fa: 'لیمو', en: 'Lemon', source: neliWorldAssets.foods.lemonSlice, color: '#FDE047' },
   lentils: { id: 'lentils', fa: 'عدس', en: 'Lentils', source: neliWorldAssets.foods.lentils, color: '#A16207' },
+  chickpea: { id: 'chickpea', fa: 'نخود', en: 'Chickpea', source: neliWorldAssets.foods.chickpea, color: '#D4A657' },
+  lappeh: { id: 'lappeh', fa: 'لپه', en: 'Split Peas', source: neliWorldAssets.foods.lappeh, color: '#C0842A' },
   beans: { id: 'beans', fa: 'لوبیا', en: 'Beans', source: neliWorldAssets.foods.beans, color: '#7C3AED' },
   fish: { id: 'fish', fa: 'ماهی', en: 'Fish', source: neliWorldAssets.foods.fish, color: '#38BDF8' },
   oil: { id: 'oil', fa: 'روغن', en: 'Oil', source: neliWorldAssets.kitchen.oil, color: '#F59E0B' },
   onion: { id: 'onion', fa: 'پیاز', en: 'Onion', source: neliWorldAssets.foods.onion, color: '#C084FC' },
+  filletChickenRaw: { id: 'filletChickenRaw', fa: 'فیله', en: 'Chicken Fillet', source: neliWorldAssets.foods.filletChickenRaw, color: '#FBC4AB' },
+  groundBeefRaw: { id: 'groundBeefRaw', fa: 'گوشت چرخ کرده', en: 'Ground Beef', source: neliWorldAssets.foods.groundBeefRaw, color: '#D97706' },
+  cutRawBeefForStew: { id: 'cutRawBeefForStew', fa: 'گوشت خورشتی', en: 'Beef Chunks', source: neliWorldAssets.foods.cutRawBeefForStew, color: '#B45309' },
+  grapeLeaves: { id: 'grapeLeaves', fa: 'برگ مو', en: 'Grape Leaves', source: neliWorldAssets.foods.grapeLeaves, color: '#65A30D' },
+  reshtehAshRaw: { id: 'reshtehAshRaw', fa: 'رشته', en: 'Reshteh', source: neliWorldAssets.foods.reshtehAshRaw, color: '#B08968' },
+  zereshk: { id: 'zereshk', fa: 'زرشک', en: 'Barberries', source: neliWorldAssets.foods.zereshk, color: '#B91C1C' },
+  saffron: { id: 'saffron', fa: 'زعفران', en: 'Saffron', source: neliWorldAssets.foods.saffron, color: '#FACC15' },
 };
 
 const RECIPES: Recipe[] = [
-  { id: 'sabzi-polo', fa: 'سبزی پلو با ماهی', en: 'Herb Rice with Fish', color: '#24C878', vessel: 'pot', steps: [ALL.rice, ALL.water, ALL.salt, ALL.herb, ALL.fish, ALL.oil], resultSource: neliWorldAssets.persianFoods.sabziPolo },
-  { id: 'omelette', fa: 'املت', en: 'Omelette', color: '#FF7B24', vessel: 'pan', steps: [ALL.egg, ALL.oil, ALL.tomato, ALL.salt], resultSource: neliWorldAssets.persianFoods.kukuSabzi },
-  { id: 'pasta', fa: 'پاستا', en: 'Pasta', color: '#FFD53E', vessel: 'plate', steps: [ALL.water, ALL.oil, ALL.pasta, ALL.cheese], resultSource: neliWorldAssets.foods.pasta },
-  { id: 'mast-khiar', fa: 'ماست و خیار', en: 'Yogurt Cucumber', color: '#8B5CF6', vessel: 'plate', steps: [ALL.yogurt, ALL.cucumber, ALL.driedMint, ALL.salt], resultSource: neliWorldAssets.persianFoods.mastKhiar },
-  { id: 'shirazi-salad', fa: 'سالاد شیرازی', en: 'Shirazi Salad', color: '#F43F5E', vessel: 'plate', steps: [ALL.tomato, ALL.cucumber, ALL.onion, ALL.lemon, ALL.salt], resultSource: neliWorldAssets.persianFoods.shiraziSalad },
-  { id: 'kuku-sabzi', fa: 'کوکو سبزی', en: 'Herb Frittata', color: '#16A34A', vessel: 'pan', steps: [ALL.egg, ALL.herb, ALL.salt], resultSource: neliWorldAssets.persianFoods.kukuSabzi },
-  { id: 'tahchin', fa: 'ته چین', en: 'Tahchin', color: '#EAB308', vessel: 'pot', steps: [ALL.rice, ALL.egg, ALL.yogurt, ALL.salt], resultSource: neliWorldAssets.persianFoods.tahchin },
-  { id: 'ash-reshteh', fa: 'آش رشته', en: 'Aash Reshteh', color: '#CA8A04', vessel: 'pot', steps: [ALL.water, ALL.lentils, ALL.beans, ALL.herb, ALL.salt], resultSource: neliWorldAssets.persianFoods.ashReshteh },
+  { id: 'sabzi-polo', fa: 'سبزی پلو با ماهی', en: 'Herb Rice with Fish', color: '#24C878', vessel: 'pot', steps: [ALL.rice, ALL.water, ALL.salt, ALL.herb, ALL.fish, ALL.oil], menuSource: neliWorldAssets.persianFoods.sabziPolo, resultSource: neliWorldAssets.persianFoods.sabziPolo },
+  { id: 'omelette', fa: 'املت', en: 'Omelette', color: '#FF7B24', vessel: 'pan', steps: [ALL.egg, ALL.oil, ALL.tomato, ALL.salt], menuSource: neliWorldAssets.persianFoods.omelette, resultSource: neliWorldAssets.persianFoods.omelette },
+  { id: 'pasta', fa: 'پاستا', en: 'Pasta', color: '#FFD53E', vessel: 'plate', steps: [ALL.water, ALL.oil, ALL.pasta, ALL.cheese, ALL.tomato], menuSource: neliWorldAssets.persianFoods.pasta, resultSource: neliWorldAssets.persianFoods.pasta },
+  { id: 'mast-khiar', fa: 'ماست و خیار', en: 'Yogurt Cucumber', color: '#8B5CF6', vessel: 'plate', steps: [ALL.yogurt, ALL.cucumber, ALL.driedMint, ALL.salt], menuSource: neliWorldAssets.persianFoods.mastKhiar, resultSource: neliWorldAssets.persianFoods.mastKhiar },
+  { id: 'shirazi-salad', fa: 'سالاد شیرازی', en: 'Shirazi Salad', color: '#F43F5E', vessel: 'plate', steps: [ALL.tomato, ALL.cucumber, ALL.onion, ALL.driedMint, ALL.lemon, ALL.salt], menuSource: neliWorldAssets.persianFoods.shiraziSalad, resultSource: neliWorldAssets.persianFoods.shiraziSalad },
+  { id: 'kuku-sabzi', fa: 'کوکو سبزی', en: 'Herb Frittata', color: '#16A34A', vessel: 'pan', steps: [ALL.egg, ALL.herb, ALL.oil, ALL.salt], menuSource: neliWorldAssets.persianFoods.kukuSabzi, resultSource: neliWorldAssets.persianFoods.kukuSabzi },
+  { id: 'tahchin', fa: 'ته چین', en: 'Tahchin', color: '#EAB308', vessel: 'pot', steps: [ALL.rice, ALL.egg, ALL.yogurt, ALL.filletChickenRaw, ALL.saffron, ALL.oil, ALL.salt], menuSource: neliWorldAssets.persianFoods.tahchin, resultSource: neliWorldAssets.persianFoods.tahchin },
+  { id: 'ash-reshteh', fa: 'آش رشته', en: 'Aash Reshteh', color: '#CA8A04', vessel: 'pot', steps: [ALL.lentils, ALL.chickpea, ALL.beans, ALL.reshtehAshRaw, ALL.herb, ALL.salt], menuSource: neliWorldAssets.persianFoods.ashReshteh, resultSource: neliWorldAssets.persianFoods.ashReshteh },
+  { id: 'kebab', fa: 'چلو کباب', en: 'Chelo Kebab', color: '#B45309', vessel: 'plate', steps: [ALL.rice, ALL.groundBeefRaw, ALL.onion, ALL.salt, ALL.oil, ALL.lemon], menuSource: neliWorldAssets.persianFoods.kebab, resultSource: neliWorldAssets.persianFoods.kebab },
+  { id: 'jooje-kebab', fa: 'جوجه کباب', en: 'Jooje Kebab', color: '#F97316', vessel: 'plate', steps: [ALL.rice, ALL.filletChickenRaw, ALL.onion, ALL.lemon, ALL.salt, ALL.oil], menuSource: neliWorldAssets.persianFoods.jooje, resultSource: neliWorldAssets.persianFoods.jooje },
+  { id: 'dolmeh', fa: 'دلمه', en: 'Dolmeh', color: '#10B981', vessel: 'plate', steps: [ALL.rice, ALL.grapeLeaves, ALL.herb, ALL.onion, ALL.lemon, ALL.salt], menuSource: neliWorldAssets.persianFoods.dolme, resultSource: neliWorldAssets.persianFoods.dolme },
+  { id: 'ghormeh-sabzi', fa: 'قورمه سبزی', en: 'Ghormeh Sabzi', color: '#16A34A', vessel: 'pot', steps: [ALL.cutRawBeefForStew, ALL.herb, ALL.beans, ALL.onion, ALL.lemon, ALL.salt, ALL.oil], menuSource: neliWorldAssets.persianFoods.ghormeSabzi, resultSource: neliWorldAssets.persianFoods.ghormeSabzi },
+  { id: 'kalam-polo', fa: 'کلم پلو', en: 'Kalam Polo', color: '#14B8A6', vessel: 'pot', steps: [ALL.rice, ALL.groundBeefRaw, ALL.kalam, ALL.onion, ALL.herb, ALL.salt, ALL.oil], menuSource: neliWorldAssets.persianFoods.kalamPolo, resultSource: neliWorldAssets.persianFoods.kalamPolo },
+  { id: 'gheimeh', fa: 'قیمه', en: 'Gheimeh', color: '#EF4444', vessel: 'pot', steps: [ALL.cutRawBeefForStew, ALL.lappeh, ALL.onion, ALL.tomato, ALL.lemon, ALL.salt], menuSource: neliWorldAssets.persianFoods.gheimeh, resultSource: neliWorldAssets.persianFoods.gheimeh },
+  { id: 'pizza', fa: 'پیتزا', en: 'Pizza', color: '#FB923C', vessel: 'plate', steps: [ALL.pizzaBread, ALL.tomato, ALL.pizzaCheese, ALL.mushroom, ALL.bellPepper, ALL.olive], menuSource: neliWorldAssets.persianFoods.pizza, resultSource: neliWorldAssets.persianFoods.pizza },
+  { id: 'zereshk-polo', fa: 'زرشک پلو', en: 'Zereshk Polo', color: '#C026D3', vessel: 'pot', steps: [ALL.rice, ALL.zereshk, ALL.saffron, ALL.oil, ALL.salt], menuSource: neliWorldAssets.persianFoods.zereshkPolo, resultSource: neliWorldAssets.persianFoods.zereshkPolo },
 ];
 
 function hit(rect: Rect, x: number, y: number) {
@@ -81,7 +105,7 @@ function getCounterSlots(width: number, height: number, target: Rect, count: num
   const cardW = Math.min(isLandscape ? 104 : 88, Math.max(68, Math.floor(width * 0.11)));
   const cardH = Math.min(isLandscape ? 92 : 80, Math.max(64, Math.floor(height * 0.09)));
   const lineYBase = clamp(target.y - cardH * 0.20, height * 0.09, height * 0.36 - cardH);
-  const lineY = target.y !== 0 && target.h > 1 ? lineYBase + height * 0.05 : lineYBase;
+  const lineY = target.y !== 0 && target.h > 1 ? lineYBase + height * 0.18 : lineYBase;
   const gap = Math.max(4, Math.round(cardW * 0.06));
   const leftCount = Math.ceil(count / 2);
   const rightCount = count - leftCount;
@@ -106,7 +130,7 @@ function getCounterSlots(width: number, height: number, target: Rect, count: num
 function getTargetRect(width: number, height: number, recipe: Recipe): Rect {
   const isLandscape = width > height;
   const centerX = isLandscape ? width * 0.58 : width * 0.56;
-  const centerY = isLandscape ? height * 0.43 : height * 0.45;
+  const centerY = isLandscape ? height * 0.62 : height * 0.64;
   const w = isLandscape ? width * 0.20 : width * 0.26;
   const h = isLandscape ? height * 0.16 : height * 0.14;
   const rect = { x: centerX - w / 2, y: centerY - h / 2, w, h };
@@ -131,29 +155,15 @@ function renderIngredientArt(ingredient: Ingredient, size: number) {
   const boxH = size + 14;
 
   if (ingredient.id === 'oil') {
-    return (
-      <Svg width={boxW} height={boxH} viewBox="0 0 120 140">
-        <SvgRect x="38" y="18" width="44" height="14" rx="7" fill="#FF4D8D" />
-        <SvgRect x="28" y="30" width="64" height="88" rx="18" fill="#38BDF8" />
-        <SvgRect x="31" y="34" width="58" height="10" rx="5" fill="rgba(255,255,255,0.22)" />
-        <SvgRect x="36" y="56" width="48" height="48" rx="14" fill="#FACC15" opacity="0.94" />
-        <SvgRect x="41" y="40" width="12" height="7" rx="3.5" fill="rgba(255,255,255,0.65)" />
-        <Circle cx="62" cy="22" r="6" fill="#FF6AA5" />
-      </Svg>
-    );
+    return <Image source={neliWorldAssets.foods.cookingOil} style={{ width: boxW, height: boxH, transform: [{ translateY: -4 }, { scale: 1.4 }] }} resizeMode="contain" />;
+  }
+
+  if (ingredient.id === 'pizzaBread') {
+    return <Image source={neliWorldAssets.foods.pizzaBread} style={{ width: boxW, height: boxH, transform: [{ translateY: -6 }, { scale: 1.7 }] }} resizeMode="contain" />;
   }
 
   if (ingredient.id === 'egg') {
-    return (
-      <Svg width={boxW} height={boxH} viewBox="0 0 120 140">
-        <Ellipse cx="60" cy="84" rx="36" ry="45" fill="rgba(90,54,23,0.14)" />
-        <Ellipse cx="60" cy="78" rx="34" ry="42" fill="#FFF7EA" />
-        <Ellipse cx="60" cy="76" rx="28" ry="36" fill="#FFFFFF" />
-        <Ellipse cx="61" cy="68" rx="11" ry="13" fill="#FFE27A" />
-        <Ellipse cx="54" cy="61" rx="4.5" ry="6" fill="rgba(255,255,255,0.8)" />
-        <SvgRect x="42" y="40" width="10" height="8" rx="4" fill="rgba(255,255,255,0.9)" transform="rotate(-14 42 40)" />
-      </Svg>
-    );
+    return <Image source={neliWorldAssets.foods.eggWhole} style={{ width: boxW, height: boxH }} resizeMode="contain" />;
   }
 
   if (ingredient.id === 'cucumber') {
@@ -165,57 +175,36 @@ function renderIngredientArt(ingredient: Ingredient, size: number) {
   }
 
   if (ingredient.id === 'lentils') {
-    return (
-      <Svg width={boxW} height={boxH} viewBox="0 0 120 140">
-        <Ellipse cx="60" cy="96" rx="42" ry="16" fill="#A16207" opacity="0.24" />
-        <Circle cx="35" cy="80" r="11" fill="#8B5A2B" />
-        <Circle cx="51" cy="66" r="12" fill="#9A6328" />
-        <Circle cx="69" cy="78" r="11" fill="#7C4A1F" />
-        <Circle cx="85" cy="65" r="12" fill="#A65E2C" />
-        <Circle cx="57" cy="92" r="10" fill="#8B5A2B" />
-        <Circle cx="79" cy="92" r="10" fill="#A16207" />
-      </Svg>
-    );
+    return <Image source={neliWorldAssets.foods.lentils} style={{ width: boxW, height: boxH }} resizeMode="contain" />;
   }
 
   if (ingredient.id === 'beans') {
-    return (
-      <Svg width={boxW} height={boxH} viewBox="0 0 120 140">
-        <Ellipse cx="60" cy="94" rx="38" ry="16" fill="#166534" opacity="0.18" />
-        <Ellipse cx="39" cy="76" rx="11" ry="16" fill="#22C55E" transform="rotate(-18 39 76)" />
-        <Ellipse cx="57" cy="64" rx="11" ry="16" fill="#16A34A" transform="rotate(10 57 64)" />
-        <Ellipse cx="76" cy="75" rx="11" ry="16" fill="#22C55E" transform="rotate(26 76 75)" />
-        <Ellipse cx="55" cy="91" rx="11" ry="16" fill="#4ADE80" transform="rotate(0 55 91)" />
-        <Ellipse cx="78" cy="92" rx="11" ry="16" fill="#16A34A" transform="rotate(-14 78 92)" />
-      </Svg>
-    );
+    return <Image source={neliWorldAssets.foods.beans} style={{ width: boxW, height: boxH }} resizeMode="contain" />;
+  }
+
+  if (ingredient.id === 'reshtehAshRaw') {
+    return <Image source={neliWorldAssets.foods.reshtehAshRaw} style={{ width: boxW, height: boxH, transform: [{ scale: 1.5 }] }} resizeMode="contain" />;
   }
 
   return <Image source={ingredient.source} style={{ width: boxW, height: boxH }} resizeMode="contain" />;
 }
 
 function renderReadyDish(recipe: Recipe, width: number, height: number) {
-  if (recipe.id === 'omelette') {
-    return (
-      <Svg width={width} height={height} viewBox="0 0 260 220">
-        <Ellipse cx="130" cy="134" rx="92" ry="28" fill="rgba(82,44,17,0.18)" />
-        <Ellipse cx="130" cy="118" rx="88" ry="62" fill="#FFF3B0" />
-        <Ellipse cx="130" cy="116" rx="78" ry="52" fill="#FFD95A" />
-        <Ellipse cx="106" cy="104" rx="34" ry="24" fill="#FFE58A" opacity="0.9" />
-        <Ellipse cx="156" cy="98" rx="28" ry="20" fill="#FFF1A8" opacity="0.85" />
-        <SvgRect x="76" y="104" width="34" height="12" rx="6" fill="#FF7A59" transform="rotate(-12 76 104)" />
-        <SvgRect x="172" y="112" width="24" height="10" rx="5" fill="#FF7A59" transform="rotate(16 172 112)" />
-        <Circle cx="94" cy="86" r="4.6" fill="#22C55E" />
-        <Circle cx="112" cy="79" r="4.6" fill="#22C55E" />
-        <Circle cx="151" cy="82" r="4.6" fill="#22C55E" />
-        <Circle cx="171" cy="91" r="4.6" fill="#22C55E" />
-        <Circle cx="125" cy="122" r="9" fill="#FFF6D5" opacity="0.95" />
-        <Ellipse cx="129" cy="117" rx="54" ry="10" fill="rgba(255,255,255,0.26)" />
-      </Svg>
-    );
-  }
-
   return <Image source={recipe.resultSource} style={{ width: '100%', height: '100%' }} resizeMode="contain" />;
+}
+
+const READY_DISH_SCALE = 2.15622 * 1.61051;
+const READY_DISH_TOP_RATIO = 0.78;
+
+function getReadyDishFrame(target: Rect) {
+  const width = target.w * READY_DISH_SCALE;
+  const height = target.h * READY_DISH_SCALE;
+  return {
+    left: target.x + target.w * 0.5 - width * 0.5,
+    top: target.y - target.h * READY_DISH_TOP_RATIO,
+    width,
+    height,
+  };
 }
 
 function FoodTile({
@@ -236,6 +225,8 @@ function FoodTile({
   const drag = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const scale = useRef(new Animated.Value(1)).current;
   const [pressed, setPressed] = useState(false);
+  const touchWidth = Math.max(slot.w, size + 24);
+  const touchHeight = Math.max(slot.h, size + 42);
 
   useEffect(() => {
     drag.setValue({ x: 0, y: 0 });
@@ -246,9 +237,15 @@ function FoodTile({
   const pan = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => false,
+        onStartShouldSetPanResponder: () => !disabled,
+        onStartShouldSetPanResponderCapture: () => !disabled,
         onMoveShouldSetPanResponder: (_evt, gestureState) => !disabled && (Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3),
+        onMoveShouldSetPanResponderCapture: (_evt, gestureState) => !disabled && (Math.abs(gestureState.dx) > 2 || Math.abs(gestureState.dy) > 2),
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
         onPanResponderGrant: () => {
+          drag.stopAnimation();
+          scale.stopAnimation();
           setPressed(true);
           Animated.spring(scale, { toValue: 1.08, useNativeDriver: true }).start();
         },
@@ -280,11 +277,13 @@ function FoodTile({
       style={[
         styles.ingredientTile,
         {
-          left: slot.x,
-          top: slot.y,
-          width: slot.w,
-          height: slot.h,
+          left: slot.x + slot.w / 2 - touchWidth / 2,
+          top: slot.y + slot.h / 2 - touchHeight / 2,
+          width: touchWidth,
+          height: touchHeight,
           opacity: disabled ? 0.28 : pressed ? 0.95 : 1,
+          zIndex: pressed ? 36 : 20,
+          elevation: pressed ? 36 : 20,
           transform: [{ translateX: drag.x }, { translateY: drag.y }, { scale }],
         },
       ]}
@@ -356,9 +355,99 @@ function FlyingIngredient({
   );
 }
 
+function BowlAddEffect({
+  target,
+  color,
+  size,
+  onDone,
+}: {
+  target: Rect;
+  color: string;
+  size: number;
+  onDone: () => void;
+}) {
+  const progress = useRef(new Animated.Value(0)).current;
+  const offsets = useMemo(
+    () => [
+      { x: -0.26, y: -0.36 },
+      { x: -0.1, y: -0.46 },
+      { x: 0.08, y: -0.4 },
+      { x: 0.23, y: -0.3 },
+      { x: 0.0, y: -0.56 },
+    ],
+    [],
+  );
+
+  useEffect(() => {
+    progress.setValue(0);
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: 520,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) onDone();
+    });
+  }, [onDone, progress]);
+
+  const ringScale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1.28] });
+  const ringOpacity = progress.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0.7, 0.45, 0] });
+  const sparkleOpacity = progress.interpolate({ inputRange: [0, 0.68, 1], outputRange: [1, 0.85, 0] });
+  const popScale = progress.interpolate({ inputRange: [0, 0.28, 1], outputRange: [0.7, 1.08, 0.9] });
+  const center = {
+    x: target.x + target.w * 0.5,
+    y: target.y + target.h * 0.38,
+  };
+  const effectSize = Math.max(size * 1.05, Math.min(target.w, target.h) * 0.72);
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.bowlAddEffect,
+        {
+          left: center.x - effectSize / 2,
+          top: center.y - effectSize / 2,
+          width: effectSize,
+          height: effectSize,
+          opacity: sparkleOpacity,
+          transform: [{ scale: popScale }],
+        },
+      ]}
+    >
+      <Animated.View
+        style={[
+          styles.bowlAddRing,
+          {
+            borderColor: color,
+            transform: [{ scale: ringScale }],
+            opacity: ringOpacity,
+          },
+        ]}
+      />
+      {offsets.map((offset, index) => (
+        <Animated.View
+          key={`${offset.x}-${offset.y}-${index}`}
+          style={[
+            styles.bowlAddDot,
+            {
+              backgroundColor: index % 2 === 0 ? color : '#FFFFFF',
+              transform: [
+                { translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [0, effectSize * offset.x] }) },
+                { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [0, effectSize * offset.y] }) },
+                { scale: progress.interpolate({ inputRange: [0, 0.35, 1], outputRange: [0.7, 1.18, 0.42] }) },
+              ],
+              opacity: sparkleOpacity,
+            },
+          ]}
+        />
+      ))}
+    </Animated.View>
+  );
+}
+
 export default function CookingGame() {
   const { lang, addStars } = useContext(AppContext);
-  const { reset } = useNav();
   const { width, height } = useLandscapeDimensions();
   const { speakFarsiOnly, speakInLang, stop } = useSpeech();
   const stageRef = useRef<View>(null);
@@ -370,16 +459,19 @@ export default function CookingGame() {
   const [resetToken, setResetToken] = useState(0);
   const [targetRect, setTargetRect] = useState<Rect>({ x: 0, y: 0, w: 1, h: 1 });
   const [fly, setFly] = useState<{ ingredient: Ingredient; from: Point; to: Point } | null>(null);
+  const [bowlAdd, setBowlAdd] = useState<{ id: number; color: string } | null>(null);
   const [stageOrigin, setStageOrigin] = useState({ x: 0, y: 0 });
+  const [recipeRowBottom, setRecipeRowBottom] = useState(0);
 
   const recipe = RECIPES[recipeIdx];
   const current = recipe.steps[step];
   const isFa = lang === 'fa' || lang === 'ar';
   const sceneSource = getCookingSceneSource(width, height);
   const textFont = (weight: 'regular' | 'bold' | 'black') => (isFa ? ff('fa', weight) : ff(lang, weight));
-  const faFont = (weight: 'regular' | 'bold' | 'black') => ff('fa', weight);
   const menuFont = (weight: 'regular' | 'bold' | 'black' = 'bold') => ff('fa', weight);
-  const ingredientSize = Math.max(52, Math.min(92, Math.round(Math.min(width, height) * 0.088)));
+  const showRecipeThumb = Math.min(width, height) >= 600;
+  const recipeRowHeight = showRecipeThumb ? 60 : 38;
+  const ingredientSize = Math.max(52, Math.min(108, Math.round(Math.min(width, height) * 0.102)));
   const target = useMemo(() => getTargetRect(width, height, recipe), [height, recipe, width]);
   const slots = useMemo(() => getCounterSlots(width, height, target, recipe.steps.length, recipe.vessel), [height, recipe.steps.length, recipe.vessel, target, width]);
   const chefWidth = Math.min(width * 0.308, height * 0.462);
@@ -399,6 +491,7 @@ export default function CookingGame() {
     setDone(false);
     setWrong(false);
     setFly(null);
+    setBowlAdd(null);
     setResetToken(prev => prev + 1);
   }, [recipeIdx]);
 
@@ -432,8 +525,8 @@ export default function CookingGame() {
     setFly({
       ingredient,
       from: {
-        x: Math.max(0, point.x - ingredientSize / 2),
-        y: Math.max(0, point.y - ingredientSize / 2),
+        x: Math.max(0, localPoint.x - ingredientSize / 2),
+        y: Math.max(0, localPoint.y - ingredientSize / 2),
       },
       to: {
         x: target.x + target.w * 0.58 - ingredientSize / 2,
@@ -451,6 +544,7 @@ export default function CookingGame() {
   };
 
   const handleFlyDone = () => {
+    if (fly) setBowlAdd({ id: Date.now(), color: fly.ingredient.color });
     setFly(null);
   };
 
@@ -461,6 +555,7 @@ export default function CookingGame() {
     setDone(false);
     setWrong(false);
     setFly(null);
+    setBowlAdd(null);
     setResetToken(prev => prev + 1);
   };
 
@@ -470,37 +565,43 @@ export default function CookingGame() {
         <View style={[styles.sceneWash, done && styles.sceneWashDone]} />
         <TopBar title="Cooking" titleFa="آشپزی" showBack dark topInset={10} />
 
-        <View style={styles.recipeRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={[styles.recipeRow, { height: recipeRowHeight }]}
+          contentContainerStyle={styles.recipeRowContent}
+          onLayout={event => {
+            const { y, height: rowHeight } = event.nativeEvent.layout;
+            setRecipeRowBottom(y + rowHeight);
+          }}
+        >
           {RECIPES.map((item, index) => (
             <TouchableOpacity
               key={item.id}
               style={[styles.recipeTab, index === recipeIdx && { backgroundColor: item.color }]}
               onPress={() => resetRecipe(index)}
             >
-              <Text style={[styles.recipeTabText, index === recipeIdx && styles.recipeTabTextOn, { fontFamily: menuFont('bold') }, dir('fa')]}>
+              {showRecipeThumb ? (
+                <View style={styles.recipeTabImageWrap}>
+                  <Image source={item.menuSource} style={styles.recipeTabImage} resizeMode="contain" />
+                </View>
+              ) : null}
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={[
+                  styles.recipeTabText,
+                  !showRecipeThumb && styles.recipeTabTextCompact,
+                  isFa && styles.recipeTabTextFa,
+                  index === recipeIdx && styles.recipeTabTextOn,
+                  { fontFamily: menuFont('bold') },
+                ]}
+              >
                 {isFa ? item.fa : item.en}
               </Text>
             </TouchableOpacity>
           ))}
-        </View>
-
-        <View style={styles.prompt}>
-          {done ? (
-            <Text style={[styles.subtitle, styles.donePromptText, { fontFamily: textFont('bold') }, dir(isFa ? 'fa' : lang)]}>
-              {isFa ? 'غذا آماده است!' : 'Food is ready!'}
-            </Text>
-          ) : (
-            <View style={styles.nextRow}>
-              <Text style={[styles.subtitle, { fontFamily: textFont('bold') }, dir(isFa ? 'fa' : lang)]}>
-                {isFa ? `بعدی: ${current.fa}` : `Next: ${current.en}`}
-              </Text>
-              <TouchableOpacity activeOpacity={0.85} style={styles.topSpeakerBtn} onPress={() => say(current.fa, current.en)}>
-                <Text style={styles.topSpeakerIcon}>{'🔊'}</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
+        </ScrollView>
         <View ref={stageRef} style={styles.stage} onLayout={refreshStageOrigin}>
           <View
             pointerEvents="none"
@@ -515,7 +616,7 @@ export default function CookingGame() {
             ]}
           >
             <Image
-              source={require('../../../assets/neli-world/characters/Neli/17_cooking_clean.png')}
+              source={characterAssets.neli.poses.cooking}
               style={[styles.chefNeli, { width: chefWidth, height: chefHeight }]}
               resizeMode="contain"
             />
@@ -591,21 +692,31 @@ export default function CookingGame() {
             />
           ) : null}
 
+          {bowlAdd ? (
+            <BowlAddEffect
+              key={bowlAdd.id}
+              target={target}
+              color={bowlAdd.color}
+              size={ingredientSize}
+              onDone={() => setBowlAdd(null)}
+            />
+          ) : null}
+
           {done ? (
+            (() => {
+              const readyDishFrame = getReadyDishFrame(target);
+              return (
             <View
               pointerEvents="none"
               style={[
                 styles.readyDishWrap,
-                {
-                  left: target.x - target.w * 0.48,
-                  top: target.y - target.h * 0.68,
-                  width: target.w * 2.15622,
-                  height: target.h * 2.15622,
-                },
+                readyDishFrame,
               ]}
             >
-              {renderReadyDish(recipe, target.w * 2.15622, target.h * 2.15622)}
+              {renderReadyDish(recipe, readyDishFrame.width, readyDishFrame.height)}
             </View>
+              );
+            })()
           ) : null}
 
           <View style={[styles.progressPill, wrong && styles.progressPillWrong]}>
@@ -615,16 +726,31 @@ export default function CookingGame() {
           </View>
         </View>
 
+        <View style={[styles.prompt, done && styles.promptDone]}>
+          {done ? (
+            <Text style={[styles.subtitle, styles.donePromptText, { fontFamily: textFont('bold') }, dir(isFa ? 'fa' : lang)]}>
+              {isFa ? `${recipe.fa} آماده است!` : `${recipe.en} is ready!`}
+            </Text>
+          ) : (
+            <View style={styles.nextRow}>
+              <Text style={[styles.subtitle, { fontFamily: textFont('bold') }, dir(isFa ? 'fa' : lang)]}>
+                {isFa ? `بعدی: ${current.fa}` : `Next: ${current.en}`}
+              </Text>
+              <TouchableOpacity activeOpacity={0.85} style={styles.topSpeakerBtn} onPress={() => say(current.fa, current.en)}>
+                <Text style={styles.topSpeakerIcon}>{'\u{1F50A}'}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
         {done ? (
-          <View style={styles.doneRow}>
-            <TouchableOpacity style={styles.secondaryBtn} onPress={() => resetRecipe()}>
-              <Text style={[styles.secondaryText, { fontFamily: faFont('bold') }, dir('fa')]}>{isFa ? 'دوباره' : 'Again'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: recipe.color }]} onPress={() => reset({ name: 'Main', tab: 'Games' })}>
-              <Text style={[styles.primaryText, { fontFamily: textFont('bold') }, dir(isFa ? 'fa' : lang)]}>{isFa ? 'بازی‌ها' : 'Games'}</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[styles.restartTapLayer, { top: recipeRowBottom }]}
+            onPress={() => resetRecipe()}
+          />
         ) : null}
+
       </ImageBackground>
     </View>
   );
@@ -636,48 +762,83 @@ const styles = StyleSheet.create({
   sceneWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(54, 31, 14, 0.06)' },
   sceneWashDone: { backgroundColor: 'rgba(255,255,255,0.40)' },
   recipeRow: {
-    flexDirection: 'row',
-    gap: 6,
+    position: 'absolute',
+    top: 90,
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    elevation: 50,
     alignSelf: 'stretch',
     marginHorizontal: 0,
     marginTop: 0,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    overflow: 'hidden',
     borderRadius: 0,
-    backgroundColor: 'rgba(255,255,255,0.74)',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.88)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.70)',
+  },
+  recipeRowContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   recipeTab: {
-    flex: 1,
+    width: 108,
     borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.94)',
-    paddingVertical: 8,
+    paddingVertical: 0,
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: '#FFFFFF',
   },
-  recipeTabText: { color: '#5F2E19', fontSize: 11, lineHeight: 14, textAlign: 'center' },
+  recipeTabImageWrap: {
+    width: 87,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 1,
+  },
+  recipeTabImage: {
+    width: 84,
+    height: 32,
+  },
+  recipeTabText: { color: '#5F2E19', fontSize: 9, lineHeight: 11, textAlign: 'center' },
+  recipeTabTextCompact: { fontSize: 11, lineHeight: 13 },
+  recipeTabTextFa: { writingDirection: 'rtl', textAlign: 'center' },
   recipeTabTextOn: { color: '#FFFFFF' },
   prompt: {
-    alignSelf: 'center',
+    position: 'absolute',
+    left: '50%',
+    bottom: 18,
+    width: 360,
     alignItems: 'center',
-    minWidth: 250,
+    justifyContent: 'center',
     maxWidth: 560,
     minHeight: 44,
-    marginHorizontal: 18,
-    marginTop: 10,
     paddingHorizontal: 18,
     paddingVertical: 2,
-    borderRadius: 26,
+    borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.92)',
     borderWidth: 4,
     borderColor: '#FFFFFF',
+    zIndex: 42,
+    elevation: 42,
+    transform: [{ translateX: -198 }],
+  },
+  promptDone: {
+    bottom: 26,
+  },
+  restartTapLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 60,
+    elevation: 60,
   },
   title: { color: '#5F2E19', fontSize: 25, lineHeight: 32, textAlign: 'center' },
   subtitle: { color: '#8A4D27', fontSize: 14, lineHeight: 20, textAlign: 'center' },
-  donePromptText: { width: '100%' },
-  stage: { flex: 1, position: 'relative', paddingBottom: 12, marginTop: 44 },
+  donePromptText: { width: '100%', textAlignVertical: 'center' },
+  stage: { flex: 1, position: 'relative', paddingBottom: 12, marginTop: 8 },
   chefNeliFrame: {
     position: 'absolute',
     overflow: 'hidden',
@@ -785,6 +946,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 30,
     elevation: 30,
+  },
+  bowlAddEffect: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 32,
+    elevation: 32,
+  },
+  bowlAddRing: {
+    position: 'absolute',
+    width: '70%',
+    height: '42%',
+    borderRadius: 999,
+    borderWidth: 5,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  bowlAddDot: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
   },
   progressPill: {
     position: 'absolute',

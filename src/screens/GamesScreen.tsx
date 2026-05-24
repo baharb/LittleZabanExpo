@@ -3,12 +3,11 @@ import { Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity,
 import TopBar from '../components/TopBar';
 import { AppContext } from '../store/AppContext';
 import { useNav } from '../store/NavContext';
-import { C } from '../theme/colors';
 import { dir, ff } from '../theme/fonts';
 import { useResponsive } from '../theme/responsive';
 import CharacterAvatar from '../components/CharacterAvatar';
 import { characterAssets } from '../assets/characterAssets';
-import { neliWorldAssets, roomBackgroundPickers } from '../assets/neliWorldAssets';
+import { neliWorldAssets, roomBackgroundPickers, roomBackgroundVariants } from '../assets/neliWorldAssets';
 import { BOX_CHARACTER_WIDTH } from '../theme/characterSizes';
 
 type Kind = 'talk' | 'dress' | 'tooth' | 'animal' | 'cook' | 'paint' | 'routine' | 'room' | 'memory' | 'quiz' | 'color' | 'count' | 'culture' | 'tracing';
@@ -51,9 +50,19 @@ const GROUPS = [
 function TileArt({ kind, color, accent, characterId, width, height }: { kind: Kind; color: string; accent: string; characterId: string; width: number; height: number }) {
   if (kind === 'talk') {
     return (
-      <ImageBackground source={roomBackgroundPickers.talkPlay(width, height)} style={styles.sceneArt} imageStyle={styles.sceneArtImage}>
+      <ImageBackground source={roomBackgroundPickers.talkPlay(width, height)} style={styles.sceneArt} imageStyle={styles.sceneArtImageCover}>
         <View style={styles.sceneWash} />
-        <CharacterAvatar characterId={characterId} size={BOX_CHARACTER_WIDTH} talking={false} floating={false} style={styles.tileTalkCharacter} />
+        <CharacterAvatar
+          characterId="neli"
+          size={118}
+          talking
+          talkPattern="home"
+          talkMouthScale={0.86}
+          talkMouthOffsetXPercent={0.46}
+          talkMouthOffsetY={0}
+          floating={false}
+          style={styles.sceneNeliLarge}
+        />
       </ImageBackground>
     );
   }
@@ -67,24 +76,27 @@ function TileArt({ kind, color, accent, characterId, width, height }: { kind: Ki
   if (kind === 'tooth') {
     return (
       <ImageBackground source={neliWorldAssets.rooms.brushTeethBathroom} style={styles.sceneArt} imageStyle={styles.sceneArtImage}>
-        <Image source={characterAssets.lila.poses.bigSmile} style={styles.tileGiraffe} resizeMode="contain" />
+        <Image source={characterAssets.lila.poses.bigSmile} style={styles.sceneGiraffe} resizeMode="contain" />
       </ImageBackground>
     );
   }
   if (kind === 'cook') {
     return (
-      <ImageBackground source={neliWorldAssets.rooms.cookingTable} style={styles.sceneArt} imageStyle={styles.sceneArtImage}>
-        <Image source={neliWorldAssets.kitchen.pan} style={styles.tilePan} resizeMode="contain" />
-        <Image source={neliWorldAssets.foods.pasta} style={styles.tileFoodA} resizeMode="contain" />
-        <Image source={neliWorldAssets.foods.tomato} style={styles.tileFoodB} resizeMode="contain" />
+      <ImageBackground
+        source={roomBackgroundVariants.kitchen.brightAndCheerful.universal}
+        style={styles.sceneArt}
+        imageStyle={styles.sceneArtImage}
+      >
+        <View style={styles.sceneWashSoft} />
+        <Image source={characterAssets.neli.poses.cooking} style={styles.tileCookNeli} resizeMode="contain" />
       </ImageBackground>
     );
   }
   if (kind === 'animal') {
     return (
       <ImageBackground source={neliWorldAssets.rooms.feedAnimalsJungle} style={styles.sceneArt} imageStyle={styles.sceneArtImage}>
-        <Image source={neliWorldAssets.animals.rabbit} style={styles.tileAnimal} resizeMode="contain" />
-        <Image source={neliWorldAssets.foods.carrot} style={styles.tileCarrot} resizeMode="contain" />
+        <Image source={neliWorldAssets.animals.monkey} style={styles.tileMonkey} resizeMode="contain" />
+        <View style={styles.sceneWashSoft} />
       </ImageBackground>
     );
   }
@@ -103,32 +115,27 @@ export default function GamesScreen() {
   const responsive = useResponsive();
   const ui = Math.min(width / 390, height / 844);
   const isFa = lang === 'fa' || lang === 'ar';
-  const minCardWidth = 176;
   const gap = Math.max(10, Math.round(12 * ui));
-  const columns = Math.max(2, Math.min(4, Math.floor((responsive.contentWidth - responsive.horizontalPadding * 2 + gap) / (minCardWidth + gap))));
-  const cardW = (responsive.contentWidth - responsive.horizontalPadding * 2 - gap * (columns - 1)) / columns;
+  const columns = 4;
+  const usableWidth = responsive.contentWidth - responsive.horizontalPadding * 2 - gap * (columns - 1);
+  const cardW = usableWidth / columns - Math.max(2, Math.round(4 * ui));
 
   return (
     <View style={styles.root}>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: '#35217E' }]} />
       <TopBar title="Games" titleFa="بازی‌ها" dark />
       <ScrollView contentContainerStyle={[styles.scroll, { paddingHorizontal: responsive.horizontalPadding }]} showsVerticalScrollIndicator={false}>
-        <View style={[styles.hero, { borderRadius: Math.max(26, Math.round(30 * ui)), padding: Math.max(14, Math.round(18 * ui)), marginBottom: Math.max(12, Math.round(16 * ui)) }]}>
-          <Text style={[styles.kicker, { fontFamily: ff(lang, 'bold'), fontSize: Math.max(12, Math.round(13 * ui)), marginBottom: Math.max(4, Math.round(5 * ui)) }, dir(lang)]}>{isFa ? 'همه بازی‌ها در یک جا' : 'One clean game library'}</Text>
-          <Text style={[styles.pageTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(24, Math.round(28 * ui)), lineHeight: Math.max(30, Math.round(36 * ui)) }, dir(lang)]}>{isFa ? 'انتخاب کن و بازی کن' : 'Choose a game'}</Text>
-          <Text style={[styles.pageSub, { fontFamily: ff(lang, 'regular'), fontSize: Math.max(12, Math.round(14 * ui)), lineHeight: Math.max(18, Math.round(21 * ui)) }, dir(lang)]}>{isFa ? 'لمس، کشیدن، شنیدن و جواب دادن.' : 'Tap, drag, listen, and answer.'}</Text>
-        </View>
         {GROUPS.map(group => (
           <View key={group.id} style={styles.group}>
             <Text style={[styles.groupTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(17, Math.round(19 * ui)), marginBottom: Math.max(8, Math.round(10 * ui)) }, dir(lang)]}>{isFa ? group.fa : group.en}</Text>
-            <View style={styles.grid}>
+            <View style={[styles.grid, { columnGap: gap, rowGap: gap }]}>
               {GAMES.filter(game => game.group === group.id).map(game => (
-                <TouchableOpacity key={game.id} style={[styles.card, { width: cardW, height: Math.max(214, Math.round(226 * ui)), borderRadius: Math.max(24, Math.round(26 * ui)) }]} onPress={() => navigate(game.route)} activeOpacity={0.88}>
-                  <View style={[styles.thumb, { backgroundColor: game.color + '22', borderRadius: Math.max(20, Math.round(22 * ui)) }]}>
+                <TouchableOpacity key={game.id} style={[styles.card, { width: cardW, height: Math.max(196, Math.round(207 * ui)), borderRadius: Math.max(20, Math.round(22 * ui)) }]} onPress={() => navigate(game.route)} activeOpacity={0.88}>
+                  <View style={[styles.thumb, { backgroundColor: '#AEEBFF', borderRadius: Math.max(20, Math.round(22 * ui)) }]}>
                     <TileArt kind={game.kind} color={game.color} accent={game.accent} characterId={selectedCharacterId} width={width} height={height} />
                     <View style={styles.cardShade} />
                     <View style={styles.cardTextBand}>
-                      <Text style={[styles.cardTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(15, Math.round(16 * ui)) }, dir(lang)]} numberOfLines={1}>{isFa ? game.fa : game.en}</Text>
+                      <Text style={[styles.cardTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(12, Math.round(13 * ui)) }, dir(lang)]} numberOfLines={2}>{isFa ? game.fa : game.en}</Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -140,18 +147,13 @@ export default function GamesScreen() {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#35217E' },
   scroll: { paddingHorizontal: 14, paddingBottom: 36 },
-  hero: { borderRadius: 30, padding: 18, marginBottom: 16, backgroundColor: 'rgba(255,255,255,0.94)' },
-  kicker: { color: C.purple, fontSize: 13, marginBottom: 5 },
-  pageTitle: { color: C.textDark, fontSize: 28, lineHeight: 36 },
-  pageSub: { color: C.textMid, fontSize: 14, lineHeight: 21 },
   group: { marginBottom: 18 },
   groupTitle: { color: '#FFFFFF', fontSize: 19, marginBottom: 10 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 26, overflow: 'hidden', borderWidth: 6, borderColor: '#FFFFFF', shadowColor: '#170736', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 14, elevation: 8 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  card: { backgroundColor: '#AEEBFF', borderRadius: 26, overflow: 'hidden', borderWidth: 6, borderColor: '#FFFFFF', shadowColor: '#170736', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 14, elevation: 8 },
   thumb: { flex: 1, overflow: 'hidden' },
   cardShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 48, backgroundColor: 'rgba(37,16,92,0.62)' },
   cardTextBand: { position: 'absolute', left: 10, right: 10, bottom: 9, minHeight: 28, justifyContent: 'center' },
@@ -159,13 +161,16 @@ const styles = StyleSheet.create({
   art: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   sceneArt: { flex: 1, width: '100%', height: '100%', overflow: 'hidden' },
   sceneArtImage: { width: '100%', height: '100%' },
+  sceneArtImageCover: { width: '100%', height: '100%' },
   sceneWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(44, 20, 74, 0.10)' },
-  tileGiraffe: { position: 'absolute', width: 82, height: 104, right: 12, bottom: 2 },
+  sceneWashSoft: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.06)' },
+  sceneNeliLarge: { position: 'absolute', width: 177, height: 231, alignSelf: 'center', bottom: -40.2 },
+  sceneGiraffe: { position: 'absolute', width: 172.2, height: 218.4, alignSelf: 'center', bottom: -14 },
+  tileGiraffe: { position: 'absolute', width: 172.2, height: 218.4, alignSelf: 'center', bottom: -14 },
   tileBrush: { position: 'absolute', width: 54, height: 54, left: 12, bottom: 14, transform: [{ rotate: '-18deg' }] },
   tileWater: { position: 'absolute', width: 58, height: 58, left: 50, bottom: 0 },
-  tilePan: { position: 'absolute', width: 112, height: 86, right: 18, bottom: 12 },
-  tileFoodA: { position: 'absolute', width: 58, height: 58, left: 16, top: 16 },
-  tileFoodB: { position: 'absolute', width: 48, height: 48, left: 66, bottom: 10 },
+  tileCookNeli: { position: 'absolute', width: 158.4, height: 208.8, alignSelf: 'center', bottom: -4 },
+  tileMonkey: { position: 'absolute', left: 0, top: -10, width: 112, height: 112, transform: [{ rotate: '-8deg' }] },
   tileAnimal: { position: 'absolute', width: 94, height: 94, right: 16, bottom: 6 },
   tileCarrot: { position: 'absolute', width: 60, height: 60, left: 18, bottom: 12, transform: [{ rotate: '-10deg' }] },
   face: { width: 72, height: 68, borderRadius: 34 },

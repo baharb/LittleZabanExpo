@@ -1,11 +1,19 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Animated, Image, ImageBackground, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import FrameAnimation from '../components/FrameAnimation';
+import { characterAssets } from '../assets/characterAssets';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
 import { AppContext } from '../store/AppContext';
 import { useNav } from '../store/NavContext';
 import { dir, ff } from '../theme/fonts';
 import { clamp } from '../theme/responsive';
+
+const RUNNING_FRAMES = [
+  characterAssets.neli.poses.walking,
+  characterAssets.neli.poses.running,
+  characterAssets.neli.poses.walking,
+  characterAssets.neli.poses.running,
+];
 
 export default function SplashScreen() {
   const { navigate } = useNav();
@@ -25,7 +33,6 @@ export default function SplashScreen() {
   const neliFloat = useRef(new Animated.Value(0)).current;
   const titleY = useRef(new Animated.Value(18)).current;
   const titleOpacity = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     setArrived(false);
     neliRunX.setValue(-(width * 0.9 + neliSize));
@@ -65,9 +72,9 @@ export default function SplashScreen() {
         <View style={[styles.content, landscape && styles.contentLandscape, tablet && styles.contentTablet]}>
           <Animated.View style={[styles.neliStage, { width: neliSize, height: neliSize * 1.18, transform: [{ translateX: neliRunX }, { translateY: neliFloat }] }]}>
             {arrived ? (
-              <Image source={neliWorldAssets.neliPosesPremium.waving} resizeMode="contain" style={{ width: neliSize, height: neliSize * 1.18 }} />
+              <Image source={characterAssets.neli.poses.waving} resizeMode="contain" style={{ width: neliSize, height: neliSize * 1.18 }} />
             ) : (
-              <FrameAnimation frames={neliWorldAssets.animations.neli.run} fps={8} resizeMode="contain" style={{ width: neliSize, height: neliSize * 1.18 }} />
+              <FrameAnimation frames={RUNNING_FRAMES} fps={7} resizeMode="contain" style={{ width: neliSize, height: neliSize * 1.18 }} />
             )}
         </Animated.View>
 

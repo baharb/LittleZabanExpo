@@ -46,6 +46,7 @@ function GameIllustration({ kind, color, width, height }: { kind: Kind; color: s
   if (kind === 'feed') {
     return (
       <ImageBackground source={neliWorldAssets.rooms.feedAnimalsJungle} style={styles.sceneArt} imageStyle={styles.sceneArtImage}>
+        <Image source={neliWorldAssets.animals.monkey} style={styles.hubMonkey} resizeMode="contain" />
         <Image source={neliWorldAssets.animals.rabbit} style={styles.hubAnimal} resizeMode="contain" />
         <Image source={neliWorldAssets.foods.carrot} style={styles.hubFood} resizeMode="contain" />
       </ImageBackground>
@@ -187,6 +188,7 @@ const styles = StyleSheet.create({
   hubIcon: { position: 'absolute', left: 10, top: 10, width: 48, height: 48 },
   hubWater: { position: 'absolute', left: 10, bottom: 10, width: 76, height: 76 },
   hubTalkNeli: { position: 'absolute', right: 8, bottom: 10, width: 98, height: 126 },
+  hubMonkey: { position: 'absolute', left: 2, top: -6, width: 108, height: 108, transform: [{ rotate: '-8deg' }] },
   hubIconLarge: { position: 'absolute', right: 20, bottom: 14, width: 76, height: 76 },
   hubFood: { position: 'absolute', left: 14, bottom: 10, width: 58, height: 58 },
   hubPan: { position: 'absolute', right: 18, bottom: 12, width: 90, height: 70 },

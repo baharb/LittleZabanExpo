@@ -46,14 +46,13 @@ function ActionScene({
   height: number;
   previewSize: number;
 }) {
-  const tall = BOX_CHARACTER_HEIGHT;
   if (type === 'talk') {
     return (
       <ImageBackground source={roomBackgroundPickers.talkPlay(width, height)} style={styles.sceneFill} imageStyle={styles.sceneImageCover}>
         <View style={styles.sceneWash} />
         <CharacterAvatar
           characterId="neli"
-          size={previewSize}
+          size={118}
           talking
           talkPattern="home"
           talkMouthScale={0.86}
@@ -75,7 +74,7 @@ function ActionScene({
     if (type === 'teeth') {
       return (
         <ImageBackground source={neliWorldAssets.rooms.brushTeethBathroom} style={styles.sceneFill} imageStyle={styles.sceneImage}>
-          <Image source={characterAssets.lila.poses.bigSmile} style={[styles.sceneGiraffe, { width: previewSize, height: tall }]} resizeMode="contain" />
+          <Image source={characterAssets.lila.poses.bigSmile} style={styles.sceneGiraffeCentered} resizeMode="contain" />
         </ImageBackground>
       );
     }
@@ -163,7 +162,7 @@ export default function HomeScreen() {
                 <ActionScene type={item.art} characterId={selectedCharacterId} width={width} height={height} previewSize={Math.max(92, Math.round(BOX_CHARACTER_WIDTH * Math.max(0.92, ui)))} />
                 <View style={styles.cardShade} />
                 <View style={styles.cardTextBand}>
-                  <Text style={[styles.cardTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(16, Math.round(18 * ui)), lineHeight: Math.max(20, Math.round(23 * ui)) }, dir(lang)]} numberOfLines={1}>
+                  <Text style={[styles.cardTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(12, Math.round(13 * ui)) }, dir(lang)]} numberOfLines={2}>
                     {isFa ? item.fa : item.en}
                   </Text>
                 </View>
@@ -194,15 +193,16 @@ const styles = StyleSheet.create({
   cardArt: { flex: 1, overflow: 'hidden' },
   cardShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 48, backgroundColor: 'rgba(37,16,92,0.62)' },
   cardTextBand: { position: 'absolute', left: 10, right: 10, bottom: 9, minHeight: 28, justifyContent: 'center' },
-  cardTitle: { color: '#FFFFFF', fontSize: 18, lineHeight: 23, textAlign: 'left' },
+  cardTitle: { color: '#FFFFFF', fontSize: 16, textAlign: 'left' },
   cardDesc: { color: 'rgba(255,255,255,0.9)', fontSize: 11, lineHeight: 15, textAlign: 'left' },
   sceneFill: { flex: 1, width: '100%', height: '100%', overflow: 'hidden' },
   sceneImage: { width: '100%', height: '100%' },
   sceneImageCover: { width: '100%', height: '100%' },
   sceneWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(44, 20, 74, 0.10)' },
-  sceneNeliLarge: { position: 'absolute', width: 118, height: 154, right: 8, bottom: 18 },
+  sceneNeliLarge: { position: 'absolute', width: 177, height: 231, alignSelf: 'center', bottom: -40.2 },
   sceneNeliSmall: { position: 'absolute', width: 104, height: 136, right: 8, bottom: 10 },
   sceneGiraffe: { position: 'absolute', width: 116, height: 150, right: 8, bottom: 14 },
+  sceneGiraffeCentered: { position: 'absolute', width: 172.2, height: 218.4, alignSelf: 'center', bottom: -14 },
   paintScene: { backgroundColor: '#B88CFF', alignItems: 'center', justifyContent: 'center' },
   paintBrushImage: { position: 'absolute', width: 94, height: 94, right: 14, top: 28, transform: [{ rotate: '-18deg' }] },
   paintPaletteBig: { position: 'absolute', left: 18, bottom: 68, width: 112, height: 82, borderRadius: 42, backgroundColor: '#FFFFFF', flexDirection: 'row', flexWrap: 'wrap', padding: 13, gap: 7 },

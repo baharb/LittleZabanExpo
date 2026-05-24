@@ -20,7 +20,7 @@ import { dir, ff } from '../../theme/fonts';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
 import { FEED_ANIMAL_SVG_MAP } from '../../components/Characters';
 
-type AnimalId = 'rabbit' | 'cat' | 'elephant' | 'panda' | 'bear';
+type AnimalId = 'monkey' | 'rabbit' | 'cat' | 'panda' | 'bear';
 type FoodId = 'carrot' | 'fish' | 'banana' | 'apple' | 'honey';
 type Rect = { x: number; y: number; w: number; h: number };
 type Point = { x: number; y: number };
@@ -44,9 +44,9 @@ type Food = {
 };
 
 const ANIMALS: Animal[] = [
+  { id: 'monkey', fa: 'میمون', en: 'Monkey', foodId: 'banana', foodFa: 'موز', foodEn: 'Banana', color: '#7C3AED' },
   { id: 'rabbit', fa: 'خرگوش', en: 'Rabbit', foodId: 'carrot', foodFa: 'هویج', foodEn: 'Carrot', color: '#FF8E3C' },
   { id: 'cat', fa: 'گربه', en: 'Cat', foodId: 'fish', foodFa: 'ماهی', foodEn: 'Fish', color: '#FDBA74' },
-  { id: 'elephant', fa: 'فیل', en: 'Elephant', foodId: 'banana', foodFa: 'موز', foodEn: 'Banana', color: '#7C3AED' },
   { id: 'panda', fa: 'پاندا', en: 'Panda', foodId: 'apple', foodFa: 'سیب', foodEn: 'Apple', color: '#111827' },
   { id: 'bear', fa: 'خرس', en: 'Bear', foodId: 'honey', foodFa: 'عسل', foodEn: 'Honey', color: '#8B5E3C' },
 ];
@@ -70,9 +70,9 @@ function hit(rect: Rect, x: number, y: number) {
 
 function getFedPlacement(target: Rect, foodSize: number, animalId: AnimalId): Rect {
   const offsets: Record<AnimalId, { x: number; y: number; scale: number }> = {
+    monkey: { x: 1.22, y: 1.15, scale: 0.96 },
     rabbit: { x: 0.54, y: 0.54, scale: 0.98 },
     cat: { x: 0.56, y: 0.56, scale: 0.98 },
-    elephant: { x: 0.58, y: 0.50, scale: 1.04 },
     panda: { x: 0.52, y: 0.48, scale: 0.98 },
     bear: { x: 0.55, y: 0.53, scale: 1.00 },
   };
@@ -88,9 +88,9 @@ function getFedPlacement(target: Rect, foodSize: number, animalId: AnimalId): Re
 
 function getFedAnchor(animalId: AnimalId, foodSize: number) {
   const anchors: Record<AnimalId, { x: number; y: number; scale: number }> = {
+    monkey: { x: 1.20, y: 1.14, scale: 0.96 },
     rabbit: { x: 0.54, y: 0.53, scale: 0.98 },
     cat: { x: 0.56, y: 0.55, scale: 0.98 },
-    elephant: { x: 0.58, y: 0.49, scale: 1.02 },
     panda: { x: 0.52, y: 0.47, scale: 0.98 },
     bear: { x: 0.55, y: 0.52, scale: 1.00 },
   };
@@ -111,7 +111,7 @@ function animalSlots(width: number, height: number) {
   const yShift = Math.round(height * 0.06);
   if (isLandscape) {
     return [
-      { x: Math.max(6, Math.round(width * 0.03)), y: Math.max(18, Math.round(height * 0.15)) + yShift, w, h },
+      { x: Math.max(6, Math.round(width * 0.03)), y: Math.max(8, Math.round(height * 0.04)) + yShift, w, h },
       { x: Math.max(6, Math.round(width * 0.22)), y: Math.max(10, Math.round(height * 0.09)) + yShift, w, h },
       { x: Math.max(6, Math.round(width * 0.42)), y: Math.max(18, Math.round(height * 0.15)) + yShift, w, h },
       { x: Math.max(6, Math.round(width * 0.62)), y: Math.max(10, Math.round(height * 0.09)) + yShift, w, h },
@@ -119,7 +119,7 @@ function animalSlots(width: number, height: number) {
     ];
   }
   return [
-    { x: Math.max(8, Math.round(width * 0.06)), y: Math.max(14, Math.round(height * 0.10)) + yShift, w, h },
+    { x: Math.max(8, Math.round(width * 0.04)), y: Math.max(10, Math.round(height * 0.05)) + yShift, w, h },
     { x: Math.max(8, Math.round(width - width * 0.06 - w)), y: Math.max(14, Math.round(height * 0.10)) + yShift, w, h },
     { x: Math.max(8, Math.round(width * 0.08)), y: Math.max(14, Math.round(height * 0.38)) + yShift, w, h },
     { x: Math.max(8, Math.round(width - width * 0.08 - w)), y: Math.max(14, Math.round(height * 0.38)) + yShift, w, h },
@@ -160,12 +160,31 @@ function AnimalSpot({
   width: number;
 }) {
   const AnimalSvg = FEED_ANIMAL_SVG_MAP[animal.id] ?? FEED_ANIMAL_SVG_MAP.panda;
+  const isMonkey = animal.id === 'monkey';
+  const iconSize = Math.max(88, Math.min(128, width * 0.14));
 
   return (
     <View style={styles.animalSpot}>
-      <View style={[styles.animalCard, active && styles.animalCardActive]}>
-        <AnimalSvg size={Math.max(88, Math.min(128, width * 0.14))} />
-      </View>
+      {isMonkey ? (
+        <Image
+          source={neliWorldAssets.animals.monkey}
+          style={[
+            styles.monkeyImage,
+            {
+              width: Math.max(198, Math.min(280, width * 0.297)),
+              height: Math.max(198, Math.min(280, width * 0.297)),
+              transform: [{ rotate: '-10deg' }],
+              marginLeft: Math.round(width * 0.05),
+              marginTop: -Math.round(width * 0.023),
+            },
+          ]}
+          resizeMode="contain"
+        />
+      ) : (
+        <View style={[styles.animalCard, active && styles.animalCardActive]}>
+          <AnimalSvg size={iconSize} />
+        </View>
+      )}
       <Text style={[styles.animalLabel, { fontFamily: ff('fa', 'bold') }]}>{animal.fa}</Text>
     </View>
   );
@@ -324,17 +343,17 @@ export default function FeedAnimalsGame() {
   const [resetToken, setResetToken] = useState(0);
   const [stageOrigin, setStageOrigin] = useState({ x: 0, y: 0 });
   const [animalRects, setAnimalRects] = useState<Record<AnimalId, Rect>>({
+    monkey: { x: 0, y: 0, w: 1, h: 1 },
     rabbit: { x: 0, y: 0, w: 1, h: 1 },
     cat: { x: 0, y: 0, w: 1, h: 1 },
-    elephant: { x: 0, y: 0, w: 1, h: 1 },
     panda: { x: 0, y: 0, w: 1, h: 1 },
     bear: { x: 0, y: 0, w: 1, h: 1 },
   });
   const [fly, setFly] = useState<{ food: Food; from: Point; to: Point } | null>(null);
   const [fedFoodByAnimal, setFedFoodByAnimal] = useState<Record<AnimalId, FoodId | null>>({
+    monkey: null,
     rabbit: null,
     cat: null,
-    elephant: null,
     panda: null,
     bear: null,
   });
@@ -375,17 +394,28 @@ export default function FeedAnimalsGame() {
     if (done) return;
     const matchedAnimal = ANIMAL_BY_FOOD_ID[food.id];
     const target = animalRects[matchedAnimal.id];
+    const hitRect =
+      matchedAnimal.id === 'monkey'
+        ? {
+            x: target.x - target.w * 0.28,
+            y: target.y - target.h * 0.18,
+            w: target.w * 1.72,
+            h: target.h * 1.95,
+          }
+        : target;
     const localPoint = {
       x: point.x - stageOrigin.x,
       y: point.y - stageOrigin.y,
     };
-    const marginX = Math.max(36, target.w * 0.52);
-    const marginY = Math.max(30, target.h * 0.38);
+    const marginX = matchedAnimal.id === 'monkey' ? 0 : Math.max(36, target.w * 0.52);
+    const marginY = matchedAnimal.id === 'monkey' ? 0 : Math.max(30, target.h * 0.38);
     const nearTarget =
-      localPoint.x >= target.x - marginX &&
-      localPoint.x <= target.x + target.w + marginX &&
-      localPoint.y >= target.y - marginY &&
-      localPoint.y <= target.y + target.h + marginY;
+      matchedAnimal.id === 'monkey'
+        ? hit(hitRect, localPoint.x, localPoint.y)
+        : localPoint.x >= target.x - marginX &&
+          localPoint.x <= target.x + target.w + marginX &&
+          localPoint.y >= target.y - marginY &&
+          localPoint.y <= target.y + target.h + marginY;
 
     if (!nearTarget) {
       setWrong(true);
@@ -424,9 +454,9 @@ export default function FeedAnimalsGame() {
     setWrong(false);
     setFly(null);
     setFedFoodByAnimal({
+      monkey: null,
       rabbit: null,
       cat: null,
-      elephant: null,
       panda: null,
       bear: null,
     });
@@ -563,6 +593,9 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'flex-start',
+  },
+  monkeyImage: {
+    marginTop: -14,
   },
   animalCard: {
     width: 110,

@@ -11,7 +11,7 @@ import { neliWorldAssets, roomBackgroundPickers } from '../../assets/neliWorldAs
 
 const TTS = (l: string) => ({ fa: 'fa-IR', ar: 'fa-IR', zh: 'zh-CN', ko: 'ko-KR', fr: 'fr-FR', es: 'es-ES' } as any)[l] ?? 'en-US';
 const RATE = (l: string) => (l === 'fa' || l === 'ar' ? 0.65 : 0.8);
-const NUM = 8;
+const NUM = 12;
 
 const FOAM_POINTS = [
   { left: 0.16, top: 0.02, size: 15 },
@@ -54,6 +54,10 @@ const BUBBLE_LAYOUTS = [
   { left: 0.56, top: 0.50, size: 46 },
   { left: 0.18, top: 0.46, size: 42 },
   { left: 0.72, top: 0.44, size: 40 },
+  { left: 0.28, top: 0.72, size: 36 },
+  { left: 0.44, top: 0.70, size: 40 },
+  { left: 0.60, top: 0.68, size: 38 },
+  { left: 0.74, top: 0.66, size: 34 },
 ] as const;
 const FOOD_BITS = [
   { left: 0.17, top: 0.28, w: 8, h: 4, kind: 'carrot' },
@@ -145,6 +149,7 @@ export default function ToothBrushGame() {
   const bubbleClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sparkleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const layoutSyncTimerRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [showSparkles, setShowSparkles] = useState(false);
   const brushRadius = 48;
   const [mouthFrame, setMouthFrame] = useState({ x: 0, y: 0, w: 0, h: 0 });
@@ -255,6 +260,8 @@ export default function ToothBrushGame() {
       if (bubbleClearTimerRef.current) clearTimeout(bubbleClearTimerRef.current);
       if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
       if (sparkleTimerRef.current) clearTimeout(sparkleTimerRef.current);
+      layoutSyncTimerRefs.current.forEach(clearTimeout);
+      layoutSyncTimerRefs.current = [];
     };
   }, []);
 
@@ -315,6 +322,20 @@ export default function ToothBrushGame() {
       });
     });
   };
+
+  useEffect(() => {
+    layoutSyncTimerRefs.current.forEach(clearTimeout);
+    layoutSyncTimerRefs.current = [0, 90, 220, 420].map(delay =>
+      setTimeout(() => {
+        syncLayouts();
+      }, delay),
+    );
+
+    return () => {
+      layoutSyncTimerRefs.current.forEach(clearTimeout);
+      layoutSyncTimerRefs.current = [];
+    };
+  }, [faceSize, height, width]);
 
   const markTeeth = (pageX: number, pageY: number) => {
     if (doneRef.current) return false;
@@ -406,7 +427,10 @@ export default function ToothBrushGame() {
     scale.setValue(1);
     scrub.setValue(0);
     sparklePulse.setValue(0);
-    requestAnimationFrame(() => placeBrushNearHead());
+    requestAnimationFrame(() => {
+      syncLayouts();
+      placeBrushNearHead();
+    });
   };
 
   return (
@@ -433,7 +457,7 @@ export default function ToothBrushGame() {
           onLayout={syncLayouts}
           {...pan.panHandlers}
         >
-          <Animated.View ref={lilaRef} style={[styles.lilaWrap, { transform: [{ translateY: bounce }, { scale }, { translateY: 92 }] }]}>
+          <Animated.View ref={lilaRef} onLayout={syncLayouts} style={[styles.lilaWrap, { transform: [{ translateY: bounce }, { scale }, { translateY: 92 }] }]}>
             <LilaBrushCharacter size={faceSize} brushing={brushing} />
           </Animated.View>
 
