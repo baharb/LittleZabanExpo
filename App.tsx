@@ -36,6 +36,8 @@ import DressUpGame         from './src/screens/interactive/DressUpGame';
 import CookingGame         from './src/screens/interactive/CookingGame';
 import ToothBrushGame      from './src/screens/interactive/ToothBrushGame';
 import ConversationGame    from './src/screens/interactive/ConversationGame';
+import IranPuzzleGame      from './src/screens/interactive/IranPuzzleGame';
+import SolarSystemPuzzleGame from './src/screens/interactive/SolarSystemPuzzleGame';
 import GameLandscapeFrame  from './src/components/GameLandscapeFrame';
 
 // Force LTR at the OS level so Persian text is controlled by per-element styles
@@ -68,6 +70,8 @@ function Router() {
     case 'Cooking':          return <GameLandscapeFrame><CookingGame /></GameLandscapeFrame>;
     case 'ToothBrush':       return <GameLandscapeFrame><ToothBrushGame /></GameLandscapeFrame>;
     case 'ConversationGame':  return <GameLandscapeFrame><ConversationGame /></GameLandscapeFrame>;
+    case 'IranPuzzle':       return <GameLandscapeFrame><IranPuzzleGame /></GameLandscapeFrame>;
+    case 'SolarPuzzle':      return <GameLandscapeFrame><SolarSystemPuzzleGame /></GameLandscapeFrame>;
     default:                 return <SplashScreen />;
   }
 }

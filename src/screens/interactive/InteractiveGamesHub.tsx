@@ -10,10 +10,10 @@ import { C } from '../../theme/colors';
 import { dir, ff } from '../../theme/fonts';
 import { useResponsive } from '../../theme/responsive';
 import { BOX_CHARACTER_HEIGHT, BOX_CHARACTER_WIDTH } from '../../theme/characterSizes';
-import { neliWorldAssets, roomBackgroundPickers } from '../../assets/neliWorldAssets';
+import { neliWorldAssets, puzzleBackgroundPickers, roomBackgroundPickers } from '../../assets/neliWorldAssets';
 
-type GameId = 'ConversationGame' | 'DailyRoutine' | 'FeedAnimals' | 'BuildScene' | 'DressUp' | 'Cooking' | 'ToothBrush';
-type Kind = 'talk' | 'routine' | 'feed' | 'home' | 'dress' | 'cook' | 'tooth';
+type GameId = 'ConversationGame' | 'DailyRoutine' | 'FeedAnimals' | 'BuildScene' | 'DressUp' | 'Cooking' | 'ToothBrush' | 'IranPuzzle' | 'SolarPuzzle';
+type Kind = 'talk' | 'routine' | 'feed' | 'home' | 'dress' | 'cook' | 'tooth' | 'puzzle' | 'solar';
 
 const GAMES: {
   id: GameId;
@@ -32,6 +32,8 @@ const GAMES: {
   { id: 'DressUp', kind: 'dress', en: 'Dress Up', fa: 'لباس بپوش', desc: 'Drag clothes onto Neli.', descFa: 'لباس‌ها را روی نلی بکش.', color: '#EC4899', soft: '#FFE9F5' },
   { id: 'Cooking', kind: 'cook', en: 'Cooking', fa: 'آشپزی', desc: 'Make simple Persian and everyday foods.', descFa: 'غذاهای ساده ایرانی و روزمره درست کن.', color: '#FACC15', soft: '#FFF8D8' },
   { id: 'ToothBrush', kind: 'tooth', en: 'Brush Teeth', fa: 'مسواک زدن', desc: 'Move the brush over the teeth.', descFa: 'مسواک را روی دندان‌ها حرکت بده.', color: '#A855F7', soft: '#F3E8FF' },
+  { id: 'IranPuzzle', kind: 'puzzle', en: 'Iran Puzzle', fa: '\u067E\u0627\u0632\u0644 \u0627\u06CC\u0631\u0627\u0646', desc: 'Build the Iran map from province pieces.', descFa: '\u067E\u06CC\u0633\u062A\u0647\u200C\u0647\u0627\u06CC \u0627\u0633\u062A\u0627\u0646\u200C\u0647\u0627 \u0631\u0627 \u067E\u06CC\u0648\u0633\u062A \u06A9\u0646.', color: '#F97316', soft: '#FFF0E2' },
+  { id: 'SolarPuzzle', kind: 'solar', en: 'Solar System', fa: 'منظومه خورشیدی', desc: 'Place each planet on its orbit.', descFa: 'هر سیاره را روی مدار درست بگذار.', color: '#38BDF8', soft: '#EAF7FF' },
 ];
 
 function GameIllustration({ kind, color, width, height }: { kind: Kind; color: string; width: number; height: number }) {
@@ -79,6 +81,47 @@ function GameIllustration({ kind, color, width, height }: { kind: Kind; color: s
       <ImageBackground source={neliWorldAssets.rooms.bathroom} style={styles.sceneArt} imageStyle={styles.sceneArtImage}>
         <Image source={characterAssets.lila.poses.bigSmile} style={[styles.hubAnimal, { width: BOX_CHARACTER_WIDTH, height: BOX_CHARACTER_HEIGHT }]} resizeMode="contain" />
       </ImageBackground>
+    );
+  }
+  if (kind === 'puzzle') {
+    const puzzleMap = puzzleBackgroundPickers.iran(width, height);
+    return (
+      <View style={[styles.sceneArt, styles.puzzleArt]}>
+        <View style={styles.puzzleSky} />
+        <View style={styles.puzzleGlowOne} />
+        <View style={styles.puzzleGlowTwo} />
+        <View style={[styles.puzzleBoard, { backgroundColor: '#FFF8EE' }]}>
+          <Image source={puzzleMap} style={styles.puzzleBoardMap} resizeMode="contain" />
+          <View style={styles.puzzleBoardWash} />
+        </View>
+        <View style={[styles.puzzlePiece, styles.puzzlePieceLeftOne]}>
+          <Image source={puzzleMap} style={[styles.puzzlePieceImage, styles.puzzleCropA]} resizeMode="cover" />
+        </View>
+        <View style={[styles.puzzlePiece, styles.puzzlePieceLeftTwo]}>
+          <Image source={puzzleMap} style={[styles.puzzlePieceImage, styles.puzzleCropB]} resizeMode="cover" />
+        </View>
+        <View style={[styles.puzzlePiece, styles.puzzlePieceRightOne]}>
+          <Image source={puzzleMap} style={[styles.puzzlePieceImage, styles.puzzleCropC]} resizeMode="cover" />
+        </View>
+      </View>
+    );
+  }
+  if (kind === 'solar') {
+    return (
+      <View style={[styles.sceneArt, styles.solarArt]}>
+        <Image source={neliWorldAssets.puzzle.solarSystem} style={styles.solarBg} resizeMode="cover" />
+        <View style={styles.solarGlowOne} />
+        <View style={styles.solarGlowTwo} />
+        <View style={styles.solarSun} />
+        <View style={styles.solarOrbit} />
+        <View style={styles.solarOrbitSmall} />
+        <View style={[styles.solarPlanet, styles.solarMercury]} />
+        <View style={[styles.solarPlanet, styles.solarEarth]} />
+        <View style={[styles.solarPlanet, styles.solarJupiter]} />
+        <View style={styles.solarLabelPill}>
+          <Text style={[styles.solarLabelText, { fontFamily: ff('fa', 'bold') }]}>Ù…Ù†Ø¸ÙˆÙ…Ù‡</Text>
+        </View>
+      </View>
     );
   }
   return (
@@ -192,6 +235,153 @@ const styles = StyleSheet.create({
   hubIconLarge: { position: 'absolute', right: 20, bottom: 14, width: 76, height: 76 },
   hubFood: { position: 'absolute', left: 14, bottom: 10, width: 58, height: 58 },
   hubPan: { position: 'absolute', right: 18, bottom: 12, width: 90, height: 70 },
+  puzzleArt: { backgroundColor: '#F8FBFF', justifyContent: 'center', alignItems: 'center' },
+  puzzleSky: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#DFF7FF',
+  },
+  puzzleGlowOne: {
+    position: 'absolute',
+    left: -8,
+    top: -4,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: 'rgba(255,190,120,0.32)',
+  },
+  puzzleGlowTwo: {
+    position: 'absolute',
+    right: 8,
+    bottom: 12,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(108,78,255,0.18)',
+  },
+  puzzleBoard: {
+    position: 'absolute',
+    left: 46,
+    right: 46,
+    top: 18,
+    bottom: 18,
+    borderRadius: 22,
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
+    overflow: 'hidden',
+    shadowColor: '#1E1B4B',
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 7,
+  },
+  puzzleBoardMap: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.42,
+  },
+  puzzleBoardWash: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,248,238,0.55)',
+  },
+  puzzlePiece: {
+    position: 'absolute',
+    borderRadius: 20,
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
+    overflow: 'hidden',
+    shadowColor: '#1E1B4B',
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+    backgroundColor: '#FFFFFF',
+  },
+  puzzlePieceImage: {
+    position: 'absolute',
+    width: 210,
+    height: 118,
+  },
+  puzzleCropA: { left: -16, top: -8 },
+  puzzleCropB: { left: -58, top: -36 },
+  puzzleCropC: { left: -98, top: -28 },
+  puzzlePieceLeftOne: { left: 6, top: 10, width: 96, height: 78, transform: [{ rotate: '-8deg' }] },
+  puzzlePieceLeftTwo: { left: 48, top: 104, width: 118, height: 92, transform: [{ rotate: '9deg' }] },
+  puzzlePieceRightOne: { right: 16, bottom: 20, width: 112, height: 94, transform: [{ rotate: '-5deg' }] },
+  solarArt: { backgroundColor: '#07112D', justifyContent: 'center', alignItems: 'center' },
+  solarBg: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
+  solarGlowOne: {
+    position: 'absolute',
+    right: -24,
+    top: -22,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255, 193, 92, 0.26)',
+  },
+  solarGlowTwo: {
+    position: 'absolute',
+    left: -22,
+    bottom: -16,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(56, 189, 248, 0.22)',
+  },
+  solarSun: {
+    position: 'absolute',
+    left: 16,
+    top: 34,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#FDBA74',
+    shadowColor: '#FDBA74',
+    shadowOpacity: 0.52,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 7,
+  },
+  solarOrbit: {
+    position: 'absolute',
+    left: 18,
+    right: 18,
+    top: 76,
+    height: 2,
+    backgroundColor: 'rgba(255,255,255,0.24)',
+  },
+  solarOrbitSmall: {
+    position: 'absolute',
+    left: 18,
+    right: 18,
+    top: 116,
+    height: 2,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
+  solarPlanet: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.55)',
+  },
+  solarMercury: { left: 66, top: 66, backgroundColor: '#CBD5E1' },
+  solarEarth: { left: 132, top: 66, backgroundColor: '#38BDF8' },
+  solarJupiter: { left: 220, top: 62, width: 30, height: 30, borderRadius: 15, backgroundColor: '#F59E0B' },
+  solarLabelPill: {
+    position: 'absolute',
+    right: 14,
+    bottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(8, 13, 34, 0.58)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
+  solarLabelText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+  },
   cardShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 48, backgroundColor: 'rgba(37,16,92,0.62)' },
   cardTextBand: { position: 'absolute', left: 10, right: 10, bottom: 9, minHeight: 28, justifyContent: 'center' },
   cardTitle: { color: '#FFFFFF', fontSize: 17, textAlign: 'left', maxWidth: '100%' },

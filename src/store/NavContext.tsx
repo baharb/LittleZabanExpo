@@ -24,7 +24,9 @@ export type Screen =
   | { name: 'InteractiveGames' }
   | { name: 'Cooking' }
   | { name: 'ToothBrush' }
-  | { name: 'ConversationGame' };
+  | { name: 'ConversationGame' }
+  | { name: 'IranPuzzle' }
+  | { name: 'SolarPuzzle' };
 
 interface NavContextType {
   screen: Screen;

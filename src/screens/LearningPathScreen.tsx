@@ -3,6 +3,7 @@ import { Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity,
 import TopBar from '../components/TopBar';
 import CharacterAvatar from '../components/CharacterAvatar';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
+import { IRAN_PUZZLE_OUTLINE } from '../assets/iranPuzzlePieces';
 import { AppContext } from '../store/AppContext';
 import { useNav } from '../store/NavContext';
 import { dir, ff } from '../theme/fonts';
@@ -27,6 +28,7 @@ const PATH: PathStep[] = [
   { id: 'quiz', label: 'Word Quiz', labelFa: 'مسابقه', type: 'game', stars: 20, color: '#6ED7FF', art: 'quiz' },
   { id: 'food', label: 'Food', labelFa: 'غذا', type: 'section', stars: 10, color: '#FF9A3D', art: 'food' },
   { id: 'coloring', label: 'Coloring', labelFa: 'نقاشی', type: 'coloring', stars: 15, color: '#B88CFF', art: 'paint' },
+  { id: 'iran-puzzle', label: 'Iran Puzzle', labelFa: 'پازل ایران', type: 'game', stars: 20, color: '#F97316', art: 'iranPuzzle' },
   { id: 'memory', label: 'Memory', labelFa: 'حافظه', type: 'game', stars: 20, color: '#9B7CFF', art: 'memory' },
   { id: 'nowruz', label: 'Nowruz', labelFa: 'نوروز', type: 'section', stars: 15, color: '#72E0B8', art: 'culture' },
   { id: 'sel', label: 'Feelings', labelFa: 'احساسات', type: 'sel', stars: 15, color: '#FF78A8', art: 'heart' },
@@ -46,6 +48,7 @@ function StepArt({ type }: { type: string }) {
     memory: neliWorldAssets.ui.gamepad,
     culture: neliWorldAssets.persianFoods.sabziPolo,
     heart: neliWorldAssets.ui.heart,
+    iranPuzzle: IRAN_PUZZLE_OUTLINE,
     locked: neliWorldAssets.ui.lock,
   };
   const source = map[type] ?? neliWorldAssets.ui.star;
@@ -62,6 +65,17 @@ function StepArt({ type }: { type: string }) {
     return (
       <ImageBackground source={neliWorldAssets.rooms.kitchen} style={styles.artStage} imageStyle={styles.artBg}>
         <Image source={source} style={styles.stepImageLarge} resizeMode="contain" />
+      </ImageBackground>
+    );
+  }
+
+  if (type === 'iranPuzzle') {
+    return (
+      <ImageBackground source={IRAN_PUZZLE_OUTLINE} style={styles.artStage} imageStyle={styles.artBg}>
+        <View style={styles.iranPuzzleWash} />
+        <View style={styles.iranPuzzleFrame}>
+          <Text style={[styles.iranPuzzleLabel, { fontFamily: ff('en', 'black') }]}>IRAN</Text>
+        </View>
       </ImageBackground>
     );
   }
@@ -161,4 +175,19 @@ const styles = StyleSheet.create({
   stepImage: { width: 74, height: 74 },
   stepImageLarge: { width: 96, height: 96 },
   stepNeli: { width: 82, height: 108, marginBottom: -12 },
+  iranPuzzleWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.68)' },
+  iranPuzzleFrame: {
+    position: 'absolute',
+    left: 10,
+    right: 10,
+    top: 10,
+    bottom: 10,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.76)',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 8,
+  },
+  iranPuzzleLabel: { color: '#F97316', fontSize: 12, letterSpacing: 0.8 },
 });

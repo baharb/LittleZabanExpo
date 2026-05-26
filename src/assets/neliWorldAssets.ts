@@ -9,6 +9,14 @@ type RoomVariantSet = {
   master?: any;
 };
 
+type PuzzleVariantSet = {
+  landscape?: any;
+  tabletLandscape?: any;
+  portrait?: any;
+  tabletPortrait?: any;
+  master?: any;
+};
+
 function pickRoomBackground(variants: RoomVariantSet, width: number, height: number) {
   const isLandscape = width >= height;
   const aspect = width / height;
@@ -25,6 +33,24 @@ function pickRoomBackground(variants: RoomVariantSet, width: number, height: num
 
   if (aspect >= 0.68 && variants.tabletPortrait) return variants.tabletPortrait;
   return variants.phone ?? variants.universal ?? variants.premium ?? variants.tabletPortrait ?? variants.tabletLandscape;
+}
+
+function pickPuzzleBackground(variants: PuzzleVariantSet, width: number, height: number) {
+  const isLandscape = width >= height;
+  const aspect = width / height;
+  const largestSide = Math.max(width, height);
+
+  if (largestSide >= 1500) {
+    return variants.master ?? variants.landscape ?? variants.tabletLandscape ?? variants.portrait ?? variants.tabletPortrait;
+  }
+
+  if (isLandscape) {
+    if (aspect <= 1.48 && variants.tabletLandscape) return variants.tabletLandscape;
+    return variants.landscape ?? variants.tabletLandscape ?? variants.master ?? variants.portrait ?? variants.tabletPortrait;
+  }
+
+  if (aspect >= 0.74 && variants.tabletPortrait) return variants.tabletPortrait;
+  return variants.portrait ?? variants.tabletPortrait ?? variants.landscape ?? variants.tabletLandscape ?? variants.master;
 }
 
 const bathroomSceneBackgrounds = {
@@ -126,6 +152,14 @@ const yardBackgrounds = {
   master: require('../../assets/neli-world/backgrounds/Yard/outside_yard_scene_master_8000x4500.webp'),
 } as const;
 
+const iranPuzzleBackgrounds = {
+  landscape: require('../../assets/neli-world/puzzle/Iran/iran_kids_map_landscape_4k_3840x2160.webp'),
+  tabletLandscape: require('../../assets/neli-world/puzzle/Iran/iran_kids_map_tablet_landscape_2732x2048.webp'),
+  portrait: require('../../assets/neli-world/puzzle/Iran/iran_kids_map_portrait_2160x3840.webp'),
+  tabletPortrait: require('../../assets/neli-world/puzzle/Iran/iran_kids_map_tablet_portrait_2048x2732.webp'),
+  master: require('../../assets/neli-world/puzzle/Iran/iran_kids_map_square_master_3072x3072.webp'),
+} as const;
+
 export const roomBackgroundVariants = {
   bathroom: bathroomSceneBackgrounds,
   brushTeethBathroom: brushTeethRoomBackgrounds,
@@ -139,6 +173,10 @@ export const roomBackgroundPickers = {
   bedroom: (width: number, height: number) => pickRoomBackground(bedroomBackgrounds.dressUp, width, height),
   talkPlay: (width: number, height: number) => pickRoomBackground(livingRoomBackgrounds, width, height),
   kitchen: (width: number, height: number) => pickRoomBackground(kitchenBackgrounds.landscape, width, height),
+} as const;
+
+export const puzzleBackgroundPickers = {
+  iran: (width: number, height: number) => pickPuzzleBackground(iranPuzzleBackgrounds, width, height),
 } as const;
 
 export const neliWorldAssets = {
@@ -424,6 +462,14 @@ export const neliWorldAssets = {
     splashLandscape: yardBackgrounds.universal,
     splashPortrait: yardBackgrounds.phone,
     studyRoom: bedroomBackgrounds.final.universal,
+  },
+  puzzle: {
+    iranLandscape: iranPuzzleBackgrounds.landscape,
+    iranTabletLandscape: iranPuzzleBackgrounds.tabletLandscape,
+    iranPortrait: iranPuzzleBackgrounds.portrait,
+    iranTabletPortrait: iranPuzzleBackgrounds.tabletPortrait,
+    iranMaster: iranPuzzleBackgrounds.master,
+    solarSystem: require('../../assets/neli-world/puzzle/Solarsystem/solarsystem.png'),
   },
   ui: {
     back: require('../../assets/neli-world/ui-icons/ui/back.png'),
