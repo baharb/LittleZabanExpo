@@ -1,6 +1,8 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Image, ImageBackground, LayoutAnimation, PanResponder, Platform, StyleSheet, Text, TouchableOpacity, UIManager, View } from 'react-native';
+import { Animated, Easing, Image, ImageBackground, LayoutAnimation, PanResponder, Platform, StyleSheet, Text, TouchableOpacity, UIManager, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import * as Speech from 'expo-speech';
+import Svg, { Circle, Polygon } from 'react-native-svg';
 import TopBar from '../../components/TopBar';
 import { AppContext } from '../../store/AppContext';
 import { useNav } from '../../store/NavContext';
@@ -10,6 +12,23 @@ import { SOLAR_SYSTEM_BACKGROUND, SOLAR_SYSTEM_PLANETS, SolarSystemPlanet } from
 
 type StageSize = { width: number; height: number };
 type Rect = { x: number; y: number; w: number; h: number };
+const TTS = (l: string) => ({ fa: 'fa-IR', ar: 'fa-IR', zh: 'zh-CN', ko: 'ko-KR', fr: 'fr-FR', es: 'es-ES' } as any)[l] ?? 'en-US';
+const RATE = (l: string) => (l === 'fa' || l === 'ar' ? 0.65 : 0.8);
+const STAR_VISIBLE_MS = 1300;
+const STAR_FADE_MS = 860;
+const SETTLE_MS = 980;
+const PLANET_NAME_EN: Record<string, string> = {
+  mercury: 'Mercury',
+  venus: 'Venus',
+  earth: 'Earth',
+  moon: 'Moon',
+  mars: 'Mars',
+  jupiter: 'Jupiter',
+  saturn: 'Saturn',
+  uranus: 'Uranus',
+  neptune: 'Neptune',
+  pluto: 'Pluto',
+};
 type PlanetLayout = SolarSystemPlanet & {
   start: Rect;
   target: Rect;
@@ -25,21 +44,31 @@ function clamp(n: number, min: number, max: number) {
 }
 
 function animatePlanetSettle() {
-  LayoutAnimation.configureNext({
-    duration: 460,
-    create: {
-      type: LayoutAnimation.Types.easeInEaseOut,
-      property: LayoutAnimation.Properties.opacity,
-    },
-    update: {
-      type: LayoutAnimation.Types.easeInEaseOut,
-      property: LayoutAnimation.Properties.opacity,
-    },
-    delete: {
-      type: LayoutAnimation.Types.easeInEaseOut,
-      property: LayoutAnimation.Properties.opacity,
-    },
-  });
+  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+}
+
+function StarSparkle() {
+  return (
+    <Svg width="100%" height="100%" viewBox="0 0 100 100">
+      <Circle cx="50" cy="50" r="36" fill="#FFF3B0" opacity="0.22" />
+      <Circle cx="50" cy="50" r="28" fill="#FFF0A0" opacity="0.28" />
+      <Polygon
+        points="50,2 61,32 92,35 68,54 76,86 50,68 24,86 32,54 8,35 39,32"
+        fill="#FFE875"
+        opacity="0.95"
+      />
+      <Polygon
+        points="50,10 58,34 86,37 64,53 71,78 50,64 29,78 36,53 14,37 42,34"
+        fill="#FFF8D0"
+      />
+      <Polygon
+        points="50,22 56,42 77,43 60,55 66,75 50,63 34,75 40,55 23,43 44,42"
+        fill="#FFF6BE"
+        opacity="0.98"
+      />
+      <Circle cx="50" cy="50" r="9" fill="#FFFDF2" />
+    </Svg>
+  );
 }
 
 async function safeImpact() {
@@ -65,7 +94,7 @@ function buildLayout(stage: StageSize): PlanetLayout[] {
   const labelH = 18;
   const traySize = 66;
   const pieceH = traySize + 6 + labelH;
-  const trayOrder = [4, 1, 7, 0, 8, 2, 6, 3, 5];
+  const trayOrder = [4, 5, 7, 0, 8, 2, 6, 3, 1];
   const trayIndexById = new Map(trayPlanets.map((planet, index) => [planet.id, index]));
 
   return SOLAR_SYSTEM_PLANETS.map((planet, index) => {
@@ -95,20 +124,24 @@ function PlanetPiece({
   onPlaced,
   onActivate,
   isActive,
+  lang,
 }: {
   planet: PlanetLayout;
   onPlaced: (id: string) => void;
   onActivate: (id: string | null) => void;
   isActive: boolean;
+  lang: string;
 }) {
   const draggedRef = useRef(false);
-  const [position, setPosition] = useState({ x: planet.start.x, y: planet.start.y });
   const [size, setSize] = useState({ w: planet.start.w, h: planet.start.h });
   const [imageH, setImageH] = useState(planet.imageH);
-  const [drag, setDrag] = useState({ x: 0, y: 0 });
   const [placed, setPlaced] = useState(false);
   const [pressed, setPressed] = useState(false);
   const [settling, setSettling] = useState(false);
+  const [showPressedLabel, setShowPressedLabel] = useState(false);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const xAnim = useRef(new Animated.Value(planet.start.x)).current;
+  const yAnim = useRef(new Animated.Value(planet.start.y)).current;
 
   useEffect(() => {
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -119,39 +152,81 @@ function PlanetPiece({
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => !placed,
-        onStartShouldSetPanResponderCapture: () => !placed,
+        onStartShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
         onMoveShouldSetPanResponder: () => !placed,
         onMoveShouldSetPanResponderCapture: () => !placed,
         onShouldBlockNativeResponder: () => true,
         onPanResponderGrant: () => {
-          if (placed) return;
+          setShowPressedLabel(true);
           draggedRef.current = false;
           setPressed(true);
           setSettling(false);
           onActivate(planet.id);
+          const isFa = lang === 'fa' || lang === 'ar';
+          const spokenName = isFa ? planet.labelFa : (PLANET_NAME_EN[planet.id] ?? planet.labelFa);
+          Speech.stop();
+          Speech.speak(spokenName, {
+            language: TTS(lang),
+            rate: RATE(lang),
+            pitch: 1.16,
+          });
+          Animated.timing(scaleAnim, {
+            toValue: 1.2,
+            duration: 180,
+            useNativeDriver: true,
+          }).start();
           void safeImpact();
         },
         onPanResponderMove: (_evt, gestureState) => {
           if (placed) return;
-          setDrag({ x: gestureState.dx, y: gestureState.dy });
+          xAnim.setValue(planet.start.x + gestureState.dx);
+          yAnim.setValue(planet.start.y + gestureState.dy);
           if (Math.abs(gestureState.dx) + Math.abs(gestureState.dy) > 8) {
             draggedRef.current = true;
           }
         },
         onPanResponderRelease: (_evt, gestureState) => {
-          if (placed) return;
+          setShowPressedLabel(false);
+          Animated.timing(scaleAnim, {
+            toValue: 1,
+            duration: 220,
+            useNativeDriver: true,
+          }).start();
+          if (placed) {
+            setPressed(false);
+            onActivate(null);
+            return;
+          }
           setPressed(false);
           const moved = draggedRef.current || Math.abs(gestureState.dx) + Math.abs(gestureState.dy) > 8;
+          const settleToTarget = () => {
+            Animated.parallel([
+              Animated.timing(xAnim, {
+                toValue: planet.target.x,
+                duration: SETTLE_MS,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+              }),
+              Animated.timing(yAnim, {
+                toValue: planet.target.y,
+                duration: SETTLE_MS,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              setSettling(false);
+            });
+          };
           if (!moved) {
             animatePlanetSettle();
             setSettling(true);
             setPlaced(true);
+            setShowPressedLabel(false);
             onPlaced(planet.id);
-            setPosition({ x: planet.target.x, y: planet.target.y });
             setSize({ w: planet.target.w, h: planet.target.w });
             setImageH(planet.target.w);
-            setDrag({ x: 0, y: 0 });
+            settleToTarget();
             onActivate(null);
             return;
           }
@@ -160,46 +235,80 @@ function PlanetPiece({
           setSettling(true);
           void safeSuccess();
           setPlaced(true);
+          setShowPressedLabel(false);
           onPlaced(planet.id);
-          setPosition({ x: planet.target.x, y: planet.target.y });
           setSize({ w: planet.target.w, h: planet.target.w });
           setImageH(planet.target.w);
-          setDrag({ x: 0, y: 0 });
+          settleToTarget();
           onActivate(null);
         },
         onPanResponderTerminate: () => {
-          if (placed) return;
+          setShowPressedLabel(false);
+          Animated.timing(scaleAnim, {
+            toValue: 1,
+            duration: 220,
+            useNativeDriver: true,
+          }).start();
+          if (placed) {
+            setPressed(false);
+            onActivate(null);
+            return;
+          }
           setPressed(false);
           animatePlanetSettle();
           setSettling(true);
-          setPosition({ x: planet.target.x, y: planet.target.y });
           setSize({ w: planet.target.w, h: planet.target.w });
           setImageH(planet.target.w);
-          setDrag({ x: 0, y: 0 });
+          Animated.parallel([
+            Animated.timing(xAnim, {
+              toValue: planet.target.x,
+              duration: SETTLE_MS,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.timing(yAnim, {
+              toValue: planet.target.y,
+              duration: SETTLE_MS,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+          ]).start(() => {
+            setSettling(false);
+          });
           onActivate(null);
         },
         onPanResponderTerminationRequest: () => false,
       }),
-    [onActivate, onPlaced, planet.id, planet.target.h, planet.target.w, planet.target.x, planet.target.y, placed, position.x, position.y, size.h, size.w],
+    [lang, onActivate, onPlaced, planet.id, planet.labelFa, planet.start.x, planet.start.y, planet.target.h, planet.target.w, planet.target.x, planet.target.y, placed, size.h, size.w, xAnim, yAnim],
   );
 
+  useEffect(() => {
+    if (!placed) return;
+    setSettling(false);
+  }, [placed]);
+
   return (
-    <View
+    <Animated.View
       {...panResponder.panHandlers}
       style={[
         styles.piece,
         {
-          left: position.x + drag.x,
-          top: position.y + drag.y,
+          left: 0,
+          top: 0,
           width: size.w,
           height: size.h,
           zIndex: placed ? 1000 + planet.zIndex : isActive ? 900 + planet.zIndex : planet.zIndex,
           opacity: pressed || settling ? 0.99 : 1,
+          transform: [
+            { translateX: xAnim },
+            { translateY: yAnim },
+            { scale: scaleAnim },
+          ],
         },
       ]}
       >
       <Image source={planet.source} style={[styles.pieceImage, { height: imageH }]} resizeMode="contain" />
-      {!placed && planet.id !== 'moon' ? (
+      {planet.id !== 'moon' && (!placed || showPressedLabel) ? (
         <View
           style={[
             styles.labelPill,
@@ -211,7 +320,7 @@ function PlanetPiece({
           </Text>
         </View>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -223,6 +332,14 @@ export default function SolarSystemPuzzleGame() {
   const [placedCount, setPlacedCount] = useState(0);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [placedIds, setPlacedIds] = useState<string[]>([]);
+  const [blinkStars, setBlinkStars] = useState<Array<{ id: number; left: number; top: number; size: number; boost: number }>>([]);
+  const starOpacity = useRef(new Animated.Value(0)).current;
+  const starScale = useRef(new Animated.Value(0.7)).current;
+  const starTwinkle = useRef(new Animated.Value(0)).current;
+  const starTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const starNextTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const starLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+  const blinkSeqRef = useRef(0);
   const isFa = lang === 'fa' || lang === 'ar';
 
   const layout = useMemo(() => {
@@ -249,17 +366,145 @@ export default function SolarSystemPuzzleGame() {
     handlePlaced();
   };
 
+  useEffect(() => {
+    if (!allPlaced || !stageSize.width || !stageSize.height) {
+      if (starTimeoutRef.current) {
+        clearTimeout(starTimeoutRef.current);
+        starTimeoutRef.current = null;
+      }
+      if (starNextTimeoutRef.current) {
+        clearTimeout(starNextTimeoutRef.current);
+        starNextTimeoutRef.current = null;
+      }
+      setBlinkStars([]);
+      starOpacity.setValue(0);
+      starScale.setValue(0.7);
+      starTwinkle.setValue(0);
+      starLoopRef.current?.stop();
+      starLoopRef.current = null;
+      return;
+    }
+
+    const spawnBlinkGroup = () => {
+      if (starTimeoutRef.current) {
+        clearTimeout(starTimeoutRef.current);
+        starTimeoutRef.current = null;
+      }
+      blinkSeqRef.current += 1;
+      const quadrants = [
+        { leftMin: 12, leftMax: stageSize.width * 0.42, topMin: 28, topMax: stageSize.height * 0.28 },
+        { leftMin: stageSize.width * 0.58, leftMax: Math.max(stageSize.width - 18, stageSize.width * 0.58), topMin: 28, topMax: stageSize.height * 0.30 },
+        { leftMin: 12, leftMax: stageSize.width * 0.42, topMin: stageSize.height * 0.58, topMax: Math.max(stageSize.height - 110, stageSize.height * 0.58) },
+        { leftMin: stageSize.width * 0.58, leftMax: Math.max(stageSize.width - 18, stageSize.width * 0.58), topMin: stageSize.height * 0.58, topMax: Math.max(stageSize.height - 110, stageSize.height * 0.58) },
+      ].sort(() => Math.random() - 0.5);
+      const next = quadrants.map((zone, index) => ({
+        id: blinkSeqRef.current * 10 + index,
+        left: clamp(
+          Math.round(zone.leftMin + Math.random() * Math.max(8, zone.leftMax - zone.leftMin)),
+          12,
+          Math.max(12, stageSize.width - 18),
+        ),
+        top: clamp(
+          Math.round(zone.topMin + Math.random() * Math.max(8, zone.topMax - zone.topMin)),
+          24,
+          Math.max(24, stageSize.height - 110),
+        ),
+        size: 10 + Math.round(Math.random() * 5),
+        boost: index === 0 ? 1.5 : 1,
+      }));
+      setBlinkStars(next);
+      starOpacity.setValue(0);
+      starScale.setValue(0.7);
+      starTwinkle.setValue(0);
+      starLoopRef.current?.stop();
+      starLoopRef.current = Animated.loop(
+        Animated.sequence([
+          Animated.timing(starTwinkle, { toValue: 1, duration: 820, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+          Animated.timing(starTwinkle, { toValue: 0, duration: 820, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+        ]),
+      );
+      starLoopRef.current.start();
+      Animated.parallel([
+        Animated.timing(starOpacity, { toValue: 1, duration: 760, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(starScale, { toValue: 1, duration: 760, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]).start();
+
+      starTimeoutRef.current = setTimeout(() => {
+        starLoopRef.current?.stop();
+        starLoopRef.current = null;
+        Animated.parallel([
+          Animated.timing(starOpacity, { toValue: 0, duration: STAR_FADE_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+          Animated.timing(starScale, { toValue: 0.7, duration: STAR_FADE_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+        ]).start(() => {
+          setBlinkStars([]);
+          starNextTimeoutRef.current = setTimeout(() => {
+            if (allPlaced && stageSize.width && stageSize.height) {
+              spawnBlinkGroup();
+            }
+          }, 1500);
+        });
+      }, STAR_VISIBLE_MS);
+    };
+
+    spawnBlinkGroup();
+
+    return () => {
+      if (starTimeoutRef.current) {
+        clearTimeout(starTimeoutRef.current);
+        starTimeoutRef.current = null;
+      }
+      if (starNextTimeoutRef.current) {
+        clearTimeout(starNextTimeoutRef.current);
+        starNextTimeoutRef.current = null;
+      }
+      starLoopRef.current?.stop();
+      starLoopRef.current = null;
+    };
+  }, [allPlaced, stageSize.height, stageSize.width, starOpacity, starScale, starTwinkle]);
+
   return (
     <View style={styles.root}>
       <ImageBackground source={SOLAR_SYSTEM_BACKGROUND} style={styles.bg} resizeMode="cover">
         <View style={styles.bgWash} />
       </ImageBackground>
 
-      <TopBar title="Solar System Puzzle" titleFa="پازل منظومه خورشیدی" showBack dark />
+      <TopBar title="Solar System" titleFa="منظومه خورشیدی" showBack dark />
 
       <View style={styles.stage} onLayout={event => setStageSize(event.nativeEvent.layout)}>
         {layout.length ? (
           <>
+            {blinkStars.map(star => (
+              <Animated.View
+                key={star.id}
+                pointerEvents="none"
+                  style={[
+                  styles.blinkStar,
+                  {
+                    left: star.left,
+                    top: star.top,
+                    width: star.size * star.boost * 1.18,
+                    height: star.size * star.boost * 1.18,
+                    opacity: starOpacity,
+                    transform: [
+                      {
+                        scale: Animated.multiply(
+                          starScale,
+                          starTwinkle.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.96, 1.28],
+                          }),
+                        ),
+                      },
+                      { rotate: '10deg' },
+                    ],
+                  },
+                ]}
+              >
+                <View style={styles.starGlow}>
+                  <StarSparkle />
+                </View>
+              </Animated.View>
+            ))}
             <View style={styles.trackLayer} pointerEvents="none">
               {moonLayout ? (
                 <View
@@ -281,7 +526,7 @@ export default function SolarSystemPuzzleGame() {
                   />
                 </View>
               ) : null}
-              {draggableLayout.map(planet => (
+              {!allPlaced ? draggableLayout.map(planet => (
                 <View
                   key={planet.id}
                   pointerEvents="none"
@@ -297,7 +542,7 @@ export default function SolarSystemPuzzleGame() {
                     },
                   ]}
                 />
-              ))}
+              )) : null}
             </View>
 
             <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
@@ -308,15 +553,26 @@ export default function SolarSystemPuzzleGame() {
                   isActive={activeId === planet.id}
                   onActivate={setActiveId}
                   onPlaced={handlePlanetPlaced}
+                  lang={lang}
                 />
               ))}
             </View>
           </>
         ) : null}
 
-        <View style={[styles.bottomTray, { height: bottomTrayHeight }]} pointerEvents="box-none">
-          <View style={styles.bottomTrayGlow} />
-        </View>
+        {!allPlaced ? (
+          <View
+            style={[
+              styles.bottomTray,
+              {
+                height: bottomTrayHeight,
+              },
+            ]}
+            pointerEvents="box-none"
+          >
+            <View style={styles.bottomTrayGlow} />
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -338,6 +594,20 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
     overflow: 'hidden',
+  },
+  blinkStar: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  starGlow: {
+    width: '100%',
+    height: '100%',
+    shadowColor: 'rgba(255, 244, 170, 1)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 30,
+    elevation: 18,
   },
   trackLayer: {
     ...StyleSheet.absoluteFillObject,

@@ -224,6 +224,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 0 },
     elevation: 4,
+    opacity: 0,
   },
   solarOrbit: {
     position: 'absolute',
@@ -232,6 +233,7 @@ const styles = StyleSheet.create({
     top: 56,
     height: 2,
     backgroundColor: 'rgba(255,255,255,0.24)',
+    opacity: 0,
   },
   solarOrbitSmall: {
     position: 'absolute',
@@ -240,6 +242,7 @@ const styles = StyleSheet.create({
     top: 92,
     height: 2,
     backgroundColor: 'rgba(255,255,255,0.16)',
+    opacity: 0,
   },
   solarPlanet: {
     position: 'absolute',
@@ -248,6 +251,7 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.55)',
+    opacity: 0,
   },
   solarPlanetOne: { left: 68, top: 46, backgroundColor: '#CBD5E1' },
   solarPlanetTwo: { left: 136, top: 46, backgroundColor: '#38BDF8' },

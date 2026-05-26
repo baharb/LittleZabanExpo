@@ -121,8 +121,8 @@ export const REAL_SOLAR_SYSTEM_PLANETS: SolarSystemPlanet[] = [
     source: require('../../assets/neli-world/puzzle/Solarsystem/planets/venus.png'),
     sizeFactor: 1.564562304,
     slotX: 0.35,
-    slotY: 0.451,
-    orbitY: 0.451,
+    slotY: 0.4715,
+    orbitY: 0.4715,
   },
   {
     id: 'earth',
@@ -148,8 +148,8 @@ export const REAL_SOLAR_SYSTEM_PLANETS: SolarSystemPlanet[] = [
     source: require('../../assets/neli-world/puzzle/Solarsystem/planets/mars.png'),
     sizeFactor: 1.3699368,
     slotX: 0.5118,
-    slotY: 0.4715,
-    orbitY: 0.4715,
+    slotY: 0.5125,
+    orbitY: 0.5125,
   },
   {
     id: 'jupiter',
@@ -166,8 +166,8 @@ export const REAL_SOLAR_SYSTEM_PLANETS: SolarSystemPlanet[] = [
     source: require('../../assets/neli-world/puzzle/Solarsystem/planets/saturn.png'),
     sizeFactor: 4.040356056674289,
     slotX: 0.6772,
-    slotY: 0.5948,
-    orbitY: 0.5948,
+    slotY: 0.5743,
+    orbitY: 0.5743,
   },
   {
     id: 'uranus',
