@@ -4,6 +4,7 @@ import TopBar from '../components/TopBar';
 import CharacterAvatar from '../components/CharacterAvatar';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
 import { IRAN_PUZZLE_OUTLINE } from '../assets/iranPuzzlePieces';
+import { SOLAR_SYSTEM_BACKGROUND, SOLAR_SYSTEM_PLANETS } from '../assets/solarSystemPuzzle';
 import { AppContext } from '../store/AppContext';
 import { useNav } from '../store/NavContext';
 import { dir, ff } from '../theme/fonts';
@@ -15,48 +16,56 @@ type PathStep = {
   type: 'section' | 'game' | 'tracing' | 'coloring' | 'video' | 'sel' | 'physical';
   stars: number;
   color: string;
+  soft: string;
   art: string;
 };
 
 const PATH: PathStep[] = [
-  { id: 'alphabet', label: 'Letters', labelFa: 'حروف', type: 'section', stars: 10, color: '#5E8CFF', art: 'letters' },
-  { id: 'numbers', label: 'Numbers', labelFa: 'اعداد', type: 'section', stars: 10, color: '#FFD166', art: 'numbers' },
-  { id: 'colors', label: 'Colors', labelFa: 'رنگ ها', type: 'section', stars: 10, color: '#FF78A8', art: 'colors' },
-  { id: 'tracing', label: 'Tracing', labelFa: 'تمرین حروف', type: 'tracing', stars: 15, color: '#7EF0C1', art: 'pencil' },
-  { id: 'animals', label: 'Animals', labelFa: 'حیوانات', type: 'section', stars: 10, color: '#FFB86B', art: 'animal' },
-  { id: 'family', label: 'Family', labelFa: 'خانواده', type: 'section', stars: 10, color: '#F06BA8', art: 'family' },
-  { id: 'quiz', label: 'Word Quiz', labelFa: 'مسابقه', type: 'game', stars: 20, color: '#6ED7FF', art: 'quiz' },
-  { id: 'food', label: 'Food', labelFa: 'غذا', type: 'section', stars: 10, color: '#FF9A3D', art: 'food' },
-  { id: 'coloring', label: 'Coloring', labelFa: 'نقاشی', type: 'coloring', stars: 15, color: '#B88CFF', art: 'paint' },
-  { id: 'iran-puzzle', label: 'Iran Puzzle', labelFa: 'پازل ایران', type: 'game', stars: 20, color: '#F97316', art: 'iranPuzzle' },
-  { id: 'memory', label: 'Memory', labelFa: 'حافظه', type: 'game', stars: 20, color: '#9B7CFF', art: 'memory' },
-  { id: 'nowruz', label: 'Nowruz', labelFa: 'نوروز', type: 'section', stars: 15, color: '#72E0B8', art: 'culture' },
-  { id: 'sel', label: 'Feelings', labelFa: 'احساسات', type: 'sel', stars: 15, color: '#FF78A8', art: 'heart' },
+  { id: 'alphabet', label: 'Letters', labelFa: 'حروف', type: 'section', stars: 10, color: '#5E8CFF', soft: '#EAF0FF', art: 'letters' },
+  { id: 'numbers', label: 'Numbers', labelFa: 'اعداد', type: 'section', stars: 10, color: '#F6B800', soft: '#FFF4C7', art: 'numbers' },
+  { id: 'tracing', label: 'Letter Tracing', labelFa: 'تمرین حروف', type: 'tracing', stars: 15, color: '#10B981', soft: '#DCFCE7', art: 'pencil' },
+  { id: 'quiz', label: 'Word Quiz', labelFa: 'مسابقه کلمه', type: 'game', stars: 20, color: '#0EA5E9', soft: '#E0F2FE', art: 'quiz' },
+  { id: 'counting', label: 'Counting', labelFa: 'شمارش', type: 'game', stars: 20, color: '#F59E0B', soft: '#FEF3C7', art: 'counting' },
+  { id: 'memory', label: 'Memory Match', labelFa: 'بازی حافظه', type: 'game', stars: 20, color: '#7C3AED', soft: '#F1E8FF', art: 'memory' },
+  { id: 'colors', label: 'Color Play', labelFa: 'بازی رنگ', type: 'game', stars: 15, color: '#EC4899', soft: '#FCE7F3', art: 'colors' },
+  { id: 'animals', label: 'Animals', labelFa: 'حیوانات', type: 'section', stars: 10, color: '#22C55E', soft: '#DCFCE7', art: 'animal' },
+  { id: 'food', label: 'Food', labelFa: 'غذا', type: 'section', stars: 10, color: '#F97316', soft: '#FFEDD5', art: 'food' },
+  { id: 'iran-puzzle', label: 'Iran Puzzle', labelFa: 'پازل ایران', type: 'game', stars: 20, color: '#EA580C', soft: '#FFF0E2', art: 'iranPuzzle' },
+  { id: 'solarPuzzle', label: 'Solar System', labelFa: 'منظومه خورشیدی', type: 'game', stars: 20, color: '#2563EB', soft: '#EAF2FF', art: 'solarPuzzle' },
+  { id: 'coloring', label: 'Painting', labelFa: 'نقاشی', type: 'coloring', stars: 15, color: '#A855F7', soft: '#F3E8FF', art: 'paint' },
+  { id: 'sel', label: 'Feelings', labelFa: 'احساسات', type: 'sel', stars: 15, color: '#FF5FA2', soft: '#FFE4EF', art: 'heart' },
+  { id: 'nowruz', label: 'Nowruz', labelFa: 'نوروز', type: 'section', stars: 15, color: '#14B8A6', soft: '#CCFBF1', art: 'culture' },
 ];
 
-function StepArt({ type }: { type: string }) {
+const FEATURED_IDS = ['tracing', 'quiz', 'solarPuzzle'];
+
+function planet(id: string) {
+  return SOLAR_SYSTEM_PLANETS.find(item => item.id === id)?.source ?? SOLAR_SYSTEM_PLANETS[0].source;
+}
+
+function StepArt({ type, color }: { type: string; color: string }) {
   const map: Record<string, any> = {
     letters: neliWorldAssets.ui.book,
     numbers: neliWorldAssets.ui.trophy,
-    colors: neliWorldAssets.ui.paintbrush,
     pencil: neliWorldAssets.ui.paintbrush,
-    animal: neliWorldAssets.animals.panda,
-    family: neliWorldAssets.characters.neli,
     quiz: neliWorldAssets.ui.star,
+    counting: neliWorldAssets.foods.apple,
+    colors: neliWorldAssets.ui.paintbrush,
+    animal: neliWorldAssets.animals.panda,
     food: neliWorldAssets.foods.pasta,
     paint: neliWorldAssets.ui.paintbrush,
-    memory: neliWorldAssets.ui.gamepad,
+    memory: neliWorldAssets.foods.strawberry,
     culture: neliWorldAssets.persianFoods.sabziPolo,
     heart: neliWorldAssets.ui.heart,
     iranPuzzle: IRAN_PUZZLE_OUTLINE,
     locked: neliWorldAssets.ui.lock,
   };
-  const source = map[type] ?? neliWorldAssets.ui.star;
 
   if (type === 'animal') {
     return (
       <ImageBackground source={neliWorldAssets.rooms.feedAnimalsJungle} style={styles.artStage} imageStyle={styles.artBg}>
-        <Image source={source} style={styles.stepImageLarge} resizeMode="contain" />
+        <View style={styles.imageWash} />
+        <Image source={neliWorldAssets.animals.panda} style={styles.stepImageLarge} resizeMode="contain" />
       </ImageBackground>
     );
   }
@@ -64,14 +73,15 @@ function StepArt({ type }: { type: string }) {
   if (type === 'food' || type === 'culture') {
     return (
       <ImageBackground source={neliWorldAssets.rooms.kitchen} style={styles.artStage} imageStyle={styles.artBg}>
-        <Image source={source} style={styles.stepImageLarge} resizeMode="contain" />
+        <View style={styles.imageWash} />
+        <Image source={map[type]} style={styles.stepImageLarge} resizeMode="contain" />
       </ImageBackground>
     );
   }
 
   if (type === 'iranPuzzle') {
     return (
-      <ImageBackground source={IRAN_PUZZLE_OUTLINE} style={styles.artStage} imageStyle={styles.artBg}>
+      <ImageBackground source={IRAN_PUZZLE_OUTLINE} style={styles.artStage} imageStyle={styles.iranArtBg}>
         <View style={styles.iranPuzzleWash} />
         <View style={styles.iranPuzzleFrame}>
           <Text style={[styles.iranPuzzleLabel, { fontFamily: ff('en', 'black') }]}>IRAN</Text>
@@ -80,9 +90,44 @@ function StepArt({ type }: { type: string }) {
     );
   }
 
+  if (type === 'solarPuzzle') {
+    return (
+      <ImageBackground source={SOLAR_SYSTEM_BACKGROUND} style={styles.artStage} imageStyle={styles.artBg}>
+        <View style={styles.solarWash} />
+        <Image source={planet('jupiter')} style={[styles.solarPlanet, styles.jupiter]} resizeMode="contain" />
+        <Image source={planet('earth')} style={[styles.solarPlanet, styles.earth]} resizeMode="contain" />
+        <Image source={planet('saturn')} style={[styles.solarPlanet, styles.saturn]} resizeMode="contain" />
+      </ImageBackground>
+    );
+  }
+
+  if (type === 'counting') {
+    return (
+      <View style={styles.artStage}>
+        {[0, 1, 2].map(index => (
+          <Image
+            key={index}
+            source={index === 1 ? neliWorldAssets.foods.carrot : neliWorldAssets.foods.apple}
+            style={[styles.countFruit, { left: 28 + index * 36, top: 26 + (index % 2) * 22 }]}
+            resizeMode="contain"
+          />
+        ))}
+      </View>
+    );
+  }
+
+  if (type === 'paint') {
+    return (
+      <View style={styles.paintingCardScene}>
+        <Image source={neliWorldAssets.painting.cardBunny} style={styles.paintingCardImage} resizeMode="contain" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.artStage}>
-      <Image source={source} style={type === 'family' ? styles.stepNeli : styles.stepImage} resizeMode="contain" />
+      <View style={[styles.blob, { backgroundColor: color }]} />
+      <Image source={map[type] ?? neliWorldAssets.ui.star} style={styles.stepImage} resizeMode="contain" />
     </View>
   );
 }
@@ -91,8 +136,10 @@ export default function LearningPathScreen() {
   const { lang, completedSections, stars, pathProgress, setPathProgress, selectedCharacterId } = useContext(AppContext);
   const { navigate } = useNav();
   const { width, height } = useWindowDimensions();
-  const ui = Math.min(width / 390, height / 844);
+  const ui = Math.min(width / 1024, height / 640);
   const isFa = lang === 'fa' || lang === 'ar';
+  const featured = PATH.filter(step => FEATURED_IDS.includes(step.id));
+  const regular = PATH.filter(step => !FEATURED_IDS.includes(step.id));
 
   const handleStep = (step: PathStep, index: number) => {
     if (index > pathProgress + 1) return;
@@ -113,38 +160,92 @@ export default function LearningPathScreen() {
 
   return (
     <View style={styles.root}>
-      <TopBar title="Learning Path" titleFa="مسیر یادگیری" showBack dark />
+      <View style={styles.bgSky} />
+      <View style={styles.bgSun} />
+      <View style={styles.bgLeaf} />
+      <View style={styles.bgPink} />
+      <TopBar title="Learning Path" titleFa="مسیر یادگیری" showBack dark={false} />
+
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={[styles.hero, { minHeight: Math.max(154, Math.round(168 * ui)), padding: Math.max(14, Math.round(16 * ui)), borderRadius: Math.max(26, Math.round(30 * ui)), gap: Math.max(12, Math.round(16 * ui)) }]}>
-          <CharacterAvatar characterId={selectedCharacterId} size={Math.max(100, Math.round(112 * ui))} />
+        <View style={styles.hero}>
+          <View style={styles.heroCharacterWrap}>
+            <View style={styles.heroCharacterGlow} />
+            <CharacterAvatar characterId={selectedCharacterId} size={Math.max(118, Math.round(146 * ui))} />
+          </View>
           <View style={styles.heroCopy}>
-            <Text style={[styles.kicker, { fontFamily: ff(lang, 'bold'), fontSize: Math.max(12, Math.round(13 * ui)), marginBottom: Math.max(4, Math.round(5 * ui)) }, dir(lang)]}>
-              {isFa ? `${stars} ستاره` : `${stars} stars`}
+            <View style={styles.starPill}>
+              <Text style={[styles.starPillText, { fontFamily: ff(lang, 'black') }]}>
+                {isFa ? `${stars} ستاره` : `${stars} stars`}
+              </Text>
+            </View>
+            <Text style={[styles.heroTitle, { fontFamily: ff(lang, 'black') }, dir(lang)]}>
+              {isFa ? 'امروز چی یاد بگیریم؟' : 'What shall we learn today?'}
             </Text>
-            <Text style={[styles.heroTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(22, Math.round(25 * ui)), lineHeight: Math.max(29, Math.round(34 * ui)), marginBottom: Math.max(10, Math.round(14 * ui)) }, dir(lang)]}>
-              {isFa ? 'مسیر ساده فارسی' : 'A Simple Persian Path'}
+            <Text style={[styles.heroSub, { fontFamily: ff(lang, 'bold') }, dir(lang)]}>
+              {isFa ? 'بازی‌های کوتاه، رنگی و مرحله‌به‌مرحله برای یادگیری فارسی' : 'Short colorful activities that grow Persian step by step'}
             </Text>
-            <View style={[styles.progressTrack, { height: Math.max(12, Math.round(14 * ui)) }]}>
+            <View style={styles.progressTrack}>
               <View style={[styles.progressFill, { width: `${progress}%` }]} />
             </View>
           </View>
         </View>
 
+        <View style={styles.featuredRow}>
+          {featured.map(step => {
+            const realIndex = PATH.findIndex(item => item.id === step.id);
+            const locked = realIndex > pathProgress + 1;
+            return (
+              <TouchableOpacity
+                key={step.id}
+                style={[styles.featureCard, locked && styles.lockedCard]}
+                onPress={() => handleStep(step, realIndex)}
+                activeOpacity={locked ? 1 : 0.88}
+              >
+                <View style={[styles.featureArt, { backgroundColor: locked ? '#E7E2F2' : step.soft }]}>
+                  <StepArt type={locked ? 'locked' : step.art} color={step.color} />
+                </View>
+                <View style={styles.featureText}>
+                  <Text style={[styles.featureTitle, { fontFamily: ff(lang, 'black') }, dir(lang)]} numberOfLines={1}>
+                    {locked ? (isFa ? 'قفل' : 'Locked') : isFa ? step.labelFa : step.label}
+                  </Text>
+                  <Text style={[styles.featureSub, { fontFamily: ff(lang, 'bold') }]}>
+                    {locked ? (isFa ? 'بعدی' : 'Next') : `+${step.stars}`}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <Text style={[styles.sectionTitle, { fontFamily: ff(lang, 'black') }, dir(lang)]}>
+          {isFa ? 'بازی‌ها و درس‌ها' : 'Games and lessons'}
+        </Text>
+
         <View style={styles.grid}>
-          {PATH.map((step, index) => {
-            const locked = index > pathProgress + 1;
+          {regular.map(step => {
+            const realIndex = PATH.findIndex(item => item.id === step.id);
+            const locked = realIndex > pathProgress + 1;
             const done = completedSections.includes(step.id);
             return (
-              <TouchableOpacity key={step.id} style={[styles.card, locked && styles.cardLocked]} onPress={() => handleStep(step, index)} activeOpacity={locked ? 1 : 0.86}>
-                <View style={[styles.thumb, { backgroundColor: locked ? '#6B647A' : step.color, height: Math.max(88, Math.round(96 * ui)), borderRadius: Math.max(18, Math.round(20 * ui)), marginBottom: Math.max(8, Math.round(10 * ui)) }]}>
-                  <StepArt type={locked ? 'locked' : step.art} />
+              <TouchableOpacity
+                key={step.id}
+                style={[styles.card, locked && styles.lockedCard]}
+                onPress={() => handleStep(step, realIndex)}
+                activeOpacity={locked ? 1 : 0.88}
+              >
+                <View style={[styles.thumb, { backgroundColor: locked ? '#E7E2F2' : step.soft }]}>
+                  <StepArt type={locked ? 'locked' : step.art} color={step.color} />
                 </View>
-                <Text style={[styles.cardTitle, { fontFamily: ff(lang, 'bold'), fontSize: Math.max(14, Math.round(15 * ui)) }, dir(lang)]} numberOfLines={1}>
-                  {locked ? (isFa ? 'قفل' : 'Locked') : isFa ? step.labelFa : step.label}
-                </Text>
-                <Text style={[styles.cardSub, { fontFamily: ff(lang, 'regular'), fontSize: Math.max(11, Math.round(12 * ui)) }]}>
-                  {done ? (isFa ? 'انجام شد' : 'Done') : `+${step.stars}`}
-                </Text>
+                <View style={styles.cardCopy}>
+                  <Text style={[styles.cardTitle, { fontFamily: ff(lang, 'black') }, dir(lang)]} numberOfLines={1}>
+                    {locked ? (isFa ? 'قفل' : 'Locked') : isFa ? step.labelFa : step.label}
+                  </Text>
+                  <View style={[styles.rewardChip, { backgroundColor: done ? '#DCFCE7' : step.soft }]}>
+                    <Text style={[styles.rewardText, { color: done ? '#15803D' : step.color, fontFamily: ff(lang, 'black') }]}>
+                      {done ? (isFa ? 'انجام شد' : 'Done') : `+${step.stars}`}
+                    </Text>
+                  </View>
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -155,39 +256,165 @@ export default function LearningPathScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#25105C' },
-  scroll: { paddingHorizontal: 14, paddingBottom: 34 },
-  hero: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 6, borderColor: '#FFFFFF' },
-  heroNeli: { width: 110, height: 142, marginBottom: -12 },
+  root: { flex: 1, backgroundColor: '#FFFDF4', overflow: 'hidden' },
+  bgSky: {
+    position: 'absolute',
+    left: -100,
+    top: 78,
+    width: 330,
+    height: 330,
+    borderRadius: 165,
+    backgroundColor: '#DDF4FF',
+  },
+  bgSun: {
+    position: 'absolute',
+    right: 34,
+    top: 88,
+    width: 166,
+    height: 166,
+    borderRadius: 83,
+    backgroundColor: '#FFF0A8',
+  },
+  bgLeaf: {
+    position: 'absolute',
+    left: '47%',
+    bottom: -90,
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    backgroundColor: '#DCFCE7',
+  },
+  bgPink: {
+    position: 'absolute',
+    right: -70,
+    bottom: -78,
+    width: 230,
+    height: 230,
+    borderRadius: 115,
+    backgroundColor: '#FFE4EF',
+  },
+  scroll: { paddingHorizontal: 24, paddingBottom: 36 },
+  hero: {
+    minHeight: 164,
+    borderRadius: 38,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    shadowColor: '#1E3A8A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.11,
+    shadowRadius: 18,
+    elevation: 4,
+  },
+  heroCharacterWrap: { width: 168, alignItems: 'center', justifyContent: 'center' },
+  heroCharacterGlow: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: '#FEF3C7',
+  },
   heroCopy: { flex: 1 },
-  kicker: { color: '#7C3AED', fontWeight: '900', marginBottom: 5 },
-  heroTitle: { color: '#221044', fontWeight: '900' },
-  progressTrack: { height: 14, borderRadius: 8, backgroundColor: '#E9E2FA', overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 8, backgroundColor: '#24C878' },
+  starPill: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    backgroundColor: '#FFF4C7',
+    paddingHorizontal: 15,
+    paddingVertical: 7,
+    marginBottom: 8,
+  },
+  starPillText: { color: '#A16207', fontSize: 13 },
+  heroTitle: { color: '#1A0050', fontSize: 28, lineHeight: 36 },
+  heroSub: { color: '#5D5875', fontSize: 14, lineHeight: 20, marginTop: 3, maxWidth: 560 },
+  progressTrack: {
+    width: '86%',
+    height: 14,
+    borderRadius: 999,
+    backgroundColor: '#E9E2FA',
+    overflow: 'hidden',
+    marginTop: 14,
+  },
+  progressFill: { height: '100%', borderRadius: 999, backgroundColor: '#22C55E' },
+  featuredRow: { flexDirection: 'row', gap: 14, marginTop: 16 },
+  featureCard: {
+    flex: 1,
+    minHeight: 178,
+    borderRadius: 26,
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    shadowColor: '#334155',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 3,
+  },
+  featureArt: { flex: 1, minHeight: 118, borderRadius: 26, overflow: 'hidden' },
+  featureText: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 6, paddingTop: 9 },
+  featureTitle: { color: '#1A0050', fontSize: 17, lineHeight: 23, flex: 1 },
+  featureSub: { color: '#7C3AED', fontSize: 13, marginLeft: 8 },
+  sectionTitle: { color: '#1A0050', fontSize: 21, lineHeight: 28, marginTop: 20, marginBottom: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  card: { width: '47.8%', backgroundColor: '#FFFFFF', borderRadius: 24, padding: 10, minHeight: 178, borderWidth: 4.5, borderColor: '#FFFFFF' },
-  cardLocked: { opacity: 0.72 },
-  thumb: { borderRadius: 20, overflow: 'hidden' },
-  cardTitle: { color: '#25105C', fontSize: 15, fontWeight: '900', textAlign: 'center' },
-  cardSub: { color: '#7C6B91', fontSize: 12, textAlign: 'center', marginTop: 4 },
+  card: {
+    width: '23.6%',
+    minHeight: 166,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    padding: 9,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    shadowColor: '#334155',
+    shadowOffset: { width: 0, height: 7 },
+    shadowOpacity: 0.09,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  lockedCard: { opacity: 0.62 },
+  thumb: { height: 96, borderRadius: 22, overflow: 'hidden' },
+  cardCopy: { paddingHorizontal: 4, paddingTop: 8 },
+  cardTitle: { color: '#1A0050', fontSize: 14, lineHeight: 19 },
+  rewardChip: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginTop: 5 },
+  rewardText: { fontSize: 11 },
   artStage: { flex: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   artBg: { width: '100%', height: '100%' },
-  stepImage: { width: 74, height: 74 },
-  stepImageLarge: { width: 96, height: 96 },
-  stepNeli: { width: 82, height: 108, marginBottom: -12 },
-  iranPuzzleWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.68)' },
+  iranArtBg: { width: '100%', height: '100%', transform: [{ scale: 1.08 }] },
+  imageWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.28)' },
+  paintingCardScene: { flex: 1, width: '100%', height: '100%', backgroundColor: '#18C977', alignItems: 'center', justifyContent: 'center' },
+  paintingCardImage: { width: '100%', height: '100%' },
+  blob: { position: 'absolute', width: 74, height: 74, borderRadius: 37, opacity: 0.14 },
+  stepImage: { width: 70, height: 70 },
+  stepImageLarge: { width: 90, height: 90 },
+  countFruit: { position: 'absolute', width: 54, height: 54 },
+  iranPuzzleWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.72)' },
   iranPuzzleFrame: {
     position: 'absolute',
     left: 10,
     right: 10,
     top: 10,
     bottom: 10,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.76)',
+    borderColor: 'rgba(255,255,255,0.82)',
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingBottom: 8,
   },
   iranPuzzleLabel: { color: '#F97316', fontSize: 12, letterSpacing: 0.8 },
+  solarWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(2, 8, 32, 0.08)' },
+  solarPlanet: {
+    position: 'absolute',
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+  },
+  jupiter: { width: 58, height: 58, right: 18, top: 16 },
+  earth: { width: 38, height: 38, left: 28, top: 50 },
+  saturn: { width: 72, height: 52, right: 62, bottom: 26 },
 });
+

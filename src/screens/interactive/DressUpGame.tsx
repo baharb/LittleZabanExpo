@@ -1,6 +1,7 @@
 import React, { useContext, useRef, useState } from 'react';
 import {
   Animated,
+  Easing,
   Image,
   ImageBackground,
   PanResponder,
@@ -67,6 +68,16 @@ type ClosetPlacement = {
   height?: number;
   zIndex?: number;
 };
+type FlightPath = {
+  item: OutfitItem;
+  fromX: number;
+  fromY: number;
+  fromW: number;
+  fromH: number;
+  toX: number;
+  toY: number;
+  targetScale: number;
+};
 type SelectedExclusiveSlots = {
   hat: Slot | null;
   dress: Slot | null;
@@ -90,9 +101,9 @@ const getOverlayLayer = (slot: Slot) => {
   if (isSunglassesSlot(slot)) return 80;
   if (slot === 'bag') return 70;
   if (slot === 'shirt') return 60;
-  if (slot === 'boots') return 45;
   if (slot === 'pants') return 40;
-  if (isShoesSlot(slot)) return 44;
+  if (slot === 'boots') return 45;
+  if (isShoesSlot(slot)) return 46;
   if (isDressSlot(slot)) return 50;
   return 10;
 };
@@ -235,6 +246,58 @@ function ClothingArt({ slot, size, tintColor }: { slot: Slot; size: number; tint
   return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#FFD166' }} />;
 }
 
+function getLandingPoint(slot: Slot, imgSize: number) {
+  if (slot === 'shirt' || slot === 'pants') {
+    const shirt = BODY_MAP.shirt;
+    const pants = BODY_MAP.pants;
+    const shirtW = shirt.fw * imgSize;
+    const shirtH = shirt.fh * imgSize;
+    const pantsW = pants.fw * imgSize;
+    const pantsH = pants.fh * imgSize;
+    const left = Math.min(shirt.cx * imgSize - shirtW / 2, pants.cx * imgSize - pantsW / 2);
+    const top = Math.min(shirt.cy * imgSize - shirtH / 2, pants.cy * imgSize - pantsH / 2);
+    const width = Math.max(shirt.cx * imgSize + shirtW / 2, pants.cx * imgSize + pantsW / 2) - left;
+    const height = Math.max(shirt.cy * imgSize + shirtH / 2, pants.cy * imgSize + pantsH / 2) - top;
+    return { x: left + width / 2, y: top + height / 2 };
+  }
+
+  const map = BODY_MAP[slot];
+  const itemW = map.fw * imgSize;
+  const itemH = map.fh * imgSize;
+  const isHat = isHatSlot(slot);
+  const isSunglasses = isSunglassesSlot(slot);
+  const isDress = isDressSlot(slot);
+  const isBoots = slot === 'boots';
+  const artSize = Math.round(Math.min(itemW, itemH) * (isSunglasses ? 3.96 : isHat ? 1.8 : isBoots ? 1.08 : isDress ? 1.18 : 1.2));
+  const overlayW = isDress ? Math.max(itemW, artSize) : itemW;
+  const overlayH = isDress ? Math.max(itemH, artSize * 1.08) : itemH;
+  const xOffset = isDress ? imgSize * 0.008 : isSunglasses ? itemW * 0.03 : 0;
+  const yOffset = isDress ? imgSize * 0.106 : isSunglasses ? itemH * 0.75 : 0;
+  if (isBoots) return { x: map.cx * imgSize - overlayW / 2 + overlayW * 0.105 + overlayW / 2, y: map.cy * imgSize - overlayH / 2 + overlayH / 2 };
+  return { x: map.cx * imgSize + xOffset, y: map.cy * imgSize + yOffset };
+}
+
+function getFlightScale(slot: Slot, imgSize: number, closetSize: number) {
+  const map = BODY_MAP[slot];
+  const itemW = map.fw * imgSize;
+  const itemH = map.fh * imgSize;
+  const isHat = isHatSlot(slot);
+  const isSunglasses = isSunglassesSlot(slot);
+  const isDress = isDressSlot(slot);
+  const isBoots = slot === 'boots';
+
+  if (slot === 'shirt' || slot === 'pants') {
+    const shirt = BODY_MAP.shirt;
+    const pants = BODY_MAP.pants;
+    const shirtSize = Math.round(Math.min(shirt.fw * imgSize, shirt.fh * imgSize) * 1.02 * 1.21);
+    const pantsSize = Math.round(Math.min(pants.fw * imgSize, pants.fh * imgSize) * 1.02 * 1.21);
+    return Math.max(shirtSize, pantsSize) / closetSize;
+  }
+
+  const targetSize = Math.round(Math.min(itemW, itemH) * (isSunglasses ? 3.96 : isHat ? 1.8 : isBoots ? 1.08 : isDress ? 1.18 : 1.2));
+  return Math.max(1, targetSize / closetSize);
+}
+
 function BodyPairOverlay({ imgSize, anim }: { imgSize: number; anim: Animated.Value }) {
   const shirt = BODY_MAP.shirt;
   const pants = BODY_MAP.pants;
@@ -301,7 +364,7 @@ function BootsOverlay({ imgSize, anim }: { imgSize: number; anim: Animated.Value
       style={{
         position: 'absolute',
         left: boots.cx * imgSize - bootsW / 2 + bootsW * 0.105,
-        top: boots.cy * imgSize - bootsH / 2,
+        top: boots.cy * imgSize - bootsH / 2 + bootsH * 0.05,
         width: bootsW,
         height: bootsH,
         zIndex: 45,
@@ -445,14 +508,15 @@ function getClosetPlacement(items: OutfitItem[], item: OutfitItem): ClosetPlacem
   const isShirt = item.slot === 'shirt';
   const isPants = item.slot === 'pants';
   const isBoots = item.slot === 'boots';
+  const isShoes = isShoesSlot(item.slot);
   const artSize = Math.round(Math.min(itemW, itemH) * (isSunglasses ? 3.96 : isHat ? 1.8 : isBoots ? 1.08 : isDress ? 1.180 : 1.2));
   const overlayW = isDress ? Math.max(itemW, artSize) : itemW;
   const overlayH = isDress ? Math.max(itemH, artSize * 1.08) : itemH;
   const xOffset = isDress ? imgSize * 0.008 : isSunglasses ? itemW * 0.03 : 0;
-  const yOffset = isDress ? imgSize * 0.1060 : isSunglasses ? itemH * 0.75 : 0;
+  const yOffset = isDress ? imgSize * 0.1060 : isSunglasses ? itemH * 0.75 : isShoes ? imgSize * 0.02 : 0;
   const wornClipHeight = isHat ? artSize * 0.72 : artSize;
   const wornLift = isHat ? -artSize * 0.12 : 0;
-  const overlayDepth = getOverlayLayer(item.slot);
+  const overlayDepth = isShoesSlot(item.slot) ? 75 : getOverlayLayer(item.slot);
 
   return (
     <Animated.View
@@ -461,11 +525,11 @@ function getClosetPlacement(items: OutfitItem[], item: OutfitItem): ClosetPlacem
           position: 'absolute',
           left: map.cx * imgSize - overlayW / 2 + xOffset,
           top: map.cy * imgSize - overlayH / 2 + yOffset,
-          width: overlayW,
-          height: overlayH,
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: overlayDepth,
+        width: overlayW,
+        height: overlayH,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: overlayDepth,
           elevation: overlayDepth,
           overflow: isDress ? 'visible' : 'hidden',
           transform: [
@@ -489,7 +553,8 @@ function DraggableClothing({
   isFa,
   lang,
   targetRef,
-  onDress,
+  landingPoint,
+  onLaunch,
   onDraggingChange,
   size,
   placement,
@@ -499,18 +564,58 @@ function DraggableClothing({
   isFa: boolean;
   lang: string;
   targetRef: React.MutableRefObject<DropTarget>;
-  onDress: (item: OutfitItem) => void;
+  landingPoint: { x: number; y: number };
+  onLaunch: (path: FlightPath) => void;
   onDraggingChange: (dragging: boolean) => void;
   size: number;
   placement: ClosetPlacement;
 }) {
-    const pan = useRef(new Animated.ValueXY()).current;
-    const isWornRef = useRef(isWorn);
-    const [dragging, setDragging] = useState(false);
+  const pan = useRef(new Animated.ValueXY()).current;
+  const itemRef = useRef<View>(null);
+  const isWornRef = useRef(isWorn);
+  const [dragging, setDragging] = useState(false);
+  const [flying, setFlying] = useState(false);
     const isHat = isHatSlot(item.slot);
   const closetArtSize = size * (isDressSlot(item.slot) ? 1.104 : 0.92);
   const showBodyPair = item.slot === 'shirt';
     isWornRef.current = isWorn;
+
+  React.useEffect(() => {
+    if (!isWorn) return;
+    setFlying(false);
+    pan.setValue({ x: 0, y: 0 });
+  }, [isWorn, pan]);
+
+  const animateToBody = (gesture?: { dx: number; dy: number }) => {
+    if (isWornRef.current || flying) return;
+    setDragging(true);
+    onDraggingChange(true);
+    Haptics.selectionAsync();
+    const current = gesture ?? { dx: 0, dy: 0 };
+    requestAnimationFrame(() => {
+      itemRef.current?.measureInWindow((x, y, w, h) => {
+        const itemCenterX = x + w * 0.5;
+        const itemCenterY = y + h * 0.5;
+        const target = targetRef.current;
+        const targetX = target ? target.x + landingPoint.x : itemCenterX;
+        const targetY = target ? target.y + landingPoint.y : itemCenterY;
+        setFlying(true);
+        setDragging(false);
+        onDraggingChange(false);
+        pan.setValue({ x: 0, y: 0 });
+        onLaunch({
+          item,
+          fromX: itemCenterX,
+          fromY: itemCenterY,
+          fromW: w,
+          fromH: h,
+          toX: targetX,
+          toY: targetY,
+          targetScale: getFlightScale(item.slot, targetRef.current ? targetRef.current.w : size, size * (isDressSlot(item.slot) ? 1.104 : 0.92)),
+        });
+      });
+    });
+  };
 
   const responder = useRef(PanResponder.create({
     onStartShouldSetPanResponder: () => !isWornRef.current,
@@ -523,38 +628,19 @@ function DraggableClothing({
       Haptics.selectionAsync();
     },
     onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], { useNativeDriver: false }),
-    onPanResponderRelease: e => {
-      const target = targetRef.current;
-      const x = e.nativeEvent.pageX;
-      const y = e.nativeEvent.pageY;
-      const hit = !!target && x >= target.x && x <= target.x + target.w && y >= target.y && y <= target.y + target.h;
-
-      if (hit) {
-        onDress(item);
-        pan.setValue({ x: 0, y: 0 });
-        setDragging(false);
-        onDraggingChange(false);
-        return;
-      }
-
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      Animated.spring(pan, { toValue: { x: 0, y: 0 }, tension: 130, friction: 8, useNativeDriver: false }).start(() => {
-        setDragging(false);
-        onDraggingChange(false);
-      });
+    onPanResponderRelease: (_e, gesture) => {
+      animateToBody({ dx: gesture.dx, dy: gesture.dy });
     },
     onPanResponderTerminate: () => {
-      Animated.spring(pan, { toValue: { x: 0, y: 0 }, tension: 130, friction: 8, useNativeDriver: false }).start(() => {
-        setDragging(false);
-        onDraggingChange(false);
-      });
+      pan.stopAnimation(value => animateToBody({ dx: value.x, dy: value.y }));
     },
   })).current;
 
   return (
     <Animated.View
+      ref={itemRef}
       {...responder.panHandlers}
-      pointerEvents={isWorn ? 'none' : 'auto'}
+      pointerEvents={isWorn || flying ? 'none' : 'auto'}
       style={[
         styles.hangingItem,
         isHat && styles.hatFront,
@@ -566,8 +652,8 @@ function DraggableClothing({
           zIndex: isWorn ? 0 : (placement.zIndex ?? 30),
           elevation: isWorn ? 0 : (placement.zIndex ?? 30),
         },
-        { width: size, height: dragging ? size : size * (placement.height ?? 1.6) },
-        isWorn && styles.hangingItemWorn,
+        { width: size, height: size * (placement.height ?? 1.6) },
+        (isWorn || flying) && styles.hangingItemWorn,
         dragging && styles.hangingItemDragging,
         { overflow: 'visible' },
         {
@@ -594,6 +680,13 @@ function DraggableClothing({
   );
 }
 
+function renderFlyingCopy(item: OutfitItem, size: number) {
+  if (item.slot === 'shirt' || item.slot === 'pants') {
+    return <BodyPairClosetArt size={size} />;
+  }
+  return <ClothingArt slot={item.slot} size={size} />;
+}
+
 export default function DressUpGame() {
   const { lang, addStars } = useContext(AppContext);
   const { width, height } = useLandscapeDimensions();
@@ -612,9 +705,11 @@ export default function DressUpGame() {
   const [draggingSlot, setDraggingSlot] = useState<Slot | null>(null);
   const doneSlide = useRef(new Animated.Value(420)).current;
   const neliScale = useRef(new Animated.Value(1)).current;
+  const flightAnim = useRef(new Animated.Value(0)).current;
   const anims = useRef<Record<string, Animated.Value>>({});
   const neliTargetRef = useRef<DropTarget>(null);
   const neliStageRef = useRef<View>(null);
+  const [flight, setFlight] = useState<FlightPath | null>(null);
 
   const outfit = OUTFITS[outfitIdx];
   const imgSize = Math.min(Math.max(width * 0.26, 250), isLandscape ? 360 : 320);
@@ -659,6 +754,8 @@ export default function DressUpGame() {
     });
     setDone(false);
     doneSlide.setValue(420);
+    setFlight(null);
+    flightAnim.setValue(0);
     anims.current = {};
   };
 
@@ -671,7 +768,7 @@ export default function DressUpGame() {
     });
   };
 
-  const wearItem = (item: OutfitItem) => {
+  const wearItem = (item: OutfitItem, immediate = false) => {
     if (worn[item.slot]) return;
 
     Speech.stop();
@@ -692,7 +789,11 @@ export default function DressUpGame() {
     ]).start();
 
     const animationSlots: Slot[] = isBodyPairSlot(item.slot) ? ['shirt'] : [item.slot];
-    animationSlots.forEach(slot => getAnim(slot).setValue(0));
+    if (immediate) {
+      animationSlots.forEach(slot => getAnim(slot).setValue(1));
+    } else {
+      animationSlots.forEach(slot => getAnim(slot).setValue(0));
+    }
     setWorn(prev => {
       const next = { ...prev };
       if (isHatSlot(item.slot)) {
@@ -761,10 +862,27 @@ export default function DressUpGame() {
       }
       return next;
     });
-    animationSlots.forEach(slot => {
-      Animated.spring(getAnim(slot), { toValue: 1, tension: 120, friction: 6, useNativeDriver: true }).start();
-    });
+    if (!immediate) {
+      animationSlots.forEach(slot => {
+        Animated.spring(getAnim(slot), { toValue: 1, tension: 120, friction: 6, useNativeDriver: true }).start();
+      });
+    }
     addStars(1);
+  };
+
+  const launchFlight = (path: FlightPath) => {
+    setFlight(path);
+    flightAnim.setValue(0);
+    Animated.timing(flightAnim, {
+      toValue: 1,
+      duration: 460,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start(() => {
+      wearItem(path.item, true);
+      setFlight(null);
+      flightAnim.setValue(0);
+    });
   };
 
   return (
@@ -834,7 +952,8 @@ export default function DressUpGame() {
                     isFa={isFa}
                     lang={lang}
                     targetRef={neliTargetRef}
-                    onDress={wearItem}
+                    landingPoint={getLandingPoint(item.slot, imgSize)}
+                    onLaunch={launchFlight}
                     onDraggingChange={(dragging) => setDraggingSlot(dragging ? item.slot : null)}
                     size={clothingSize}
                     placement={getClosetPlacement(outfit.items, item)}
@@ -859,6 +978,8 @@ export default function DressUpGame() {
                       introVisibleMs={800}
                       repeatMs={3000}
                       blinkClosedMs={700}
+                      overlayOffsetX={-imgSize * 0.003}
+                      overlayOffsetY={imgSize * 0.01}
                     />
                   </View>
                   {[...outfit.items].sort((a, b) => getOverlayLayer(a.slot) - getOverlayLayer(b.slot)).map(item => {
@@ -891,6 +1012,31 @@ export default function DressUpGame() {
           <Text style={[styles.progressText, { fontFamily: ff(lang, 'bold') }]}>{wornCount}/{neededCount}</Text>
         </View>
       </ImageBackground>
+
+      {flight ? (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: flight.fromX - flight.fromW / 2,
+            top: flight.fromY - flight.fromH / 2,
+            width: flight.fromW,
+            height: flight.fromH,
+            zIndex: 220,
+            elevation: 220,
+            overflow: 'visible',
+            transform: [
+              { translateX: flightAnim.interpolate({ inputRange: [0, 1], outputRange: [0, flight.toX - flight.fromX] }) },
+              { translateY: flightAnim.interpolate({ inputRange: [0, 1], outputRange: [0, flight.toY - flight.fromY] }) },
+              { scale: flightAnim.interpolate({ inputRange: [0, 1], outputRange: [1, flight.targetScale] }) },
+            ],
+          }}
+        >
+          <View style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+            {renderFlyingCopy(flight.item, Math.max(72, Math.min(flight.fromW, flight.fromH)))}
+          </View>
+        </Animated.View>
+      ) : null}
 
       <Animated.View style={[styles.doneCard, { transform: [{ translateY: doneSlide }] }]}>
         <Text style={[styles.doneTitle, { fontFamily: ff(lang, 'black') }, dir(lang)]}>
@@ -984,7 +1130,7 @@ const styles = StyleSheet.create({
   },
   hangingItemDragging: { zIndex: 999, elevation: 999 },
   hatFront: { zIndex: 60, elevation: 60, position: 'relative' },
-  hangingItemWorn: { opacity: 0.32 },
+  hangingItemWorn: { opacity: 0.52 },
   hangerGlyph: { width: 56, height: 44, alignItems: 'center', justifyContent: 'flex-start' },
   hangerImage: { width: 56, height: 44 },
   closetDragging: { zIndex: 200, elevation: 0 },

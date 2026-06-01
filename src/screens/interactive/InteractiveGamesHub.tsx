@@ -11,9 +11,12 @@ import { dir, ff } from '../../theme/fonts';
 import { useResponsive } from '../../theme/responsive';
 import { BOX_CHARACTER_HEIGHT, BOX_CHARACTER_WIDTH } from '../../theme/characterSizes';
 import { neliWorldAssets, puzzleBackgroundPickers, roomBackgroundPickers } from '../../assets/neliWorldAssets';
+import { SOLAR_SYSTEM_BACKGROUND, SOLAR_SYSTEM_PLANETS } from '../../assets/solarSystemPuzzle';
 
 type GameId = 'ConversationGame' | 'DailyRoutine' | 'FeedAnimals' | 'BuildScene' | 'DressUp' | 'Cooking' | 'ToothBrush' | 'IranPuzzle' | 'SolarPuzzle';
 type Kind = 'talk' | 'routine' | 'feed' | 'home' | 'dress' | 'cook' | 'tooth' | 'puzzle' | 'solar';
+
+const solarPlanetSource = (id: string) => SOLAR_SYSTEM_PLANETS.find(planet => planet.id === id)?.source ?? SOLAR_SYSTEM_PLANETS[0].source;
 
 const GAMES: {
   id: GameId;
@@ -108,20 +111,13 @@ function GameIllustration({ kind, color, width, height }: { kind: Kind; color: s
   }
   if (kind === 'solar') {
     return (
-      <View style={[styles.sceneArt, styles.solarArt]}>
-        <Image source={neliWorldAssets.puzzle.solarSystem} style={styles.solarBg} resizeMode="cover" />
-        <View style={styles.solarGlowOne} />
-        <View style={styles.solarGlowTwo} />
-        <View style={styles.solarSun} />
-        <View style={styles.solarOrbit} />
-        <View style={styles.solarOrbitSmall} />
-        <View style={[styles.solarPlanet, styles.solarMercury]} />
-        <View style={[styles.solarPlanet, styles.solarEarth]} />
-        <View style={[styles.solarPlanet, styles.solarJupiter]} />
-        <View style={styles.solarLabelPill}>
-          <Text style={[styles.solarLabelText, { fontFamily: ff('fa', 'bold') }]}>Ù…Ù†Ø¸ÙˆÙ…Ù‡</Text>
-        </View>
-      </View>
+      <ImageBackground source={SOLAR_SYSTEM_BACKGROUND} style={styles.sceneArt} imageStyle={[styles.sceneArtImage, styles.solarPreviewBg]}>
+        <View style={styles.solarPreviewWash} />
+        <Image source={solarPlanetSource('jupiter')} style={[styles.solarPreviewPlanet, styles.solarPreviewJupiter]} resizeMode="contain" />
+        <Image source={solarPlanetSource('earth')} style={[styles.solarPreviewPlanet, styles.solarPreviewEarth]} resizeMode="contain" />
+        <Image source={solarPlanetSource('saturn')} style={[styles.solarPreviewPlanet, styles.solarPreviewSaturn]} resizeMode="contain" />
+        <Image source={solarPlanetSource('mars')} style={[styles.solarPreviewPlanet, styles.solarPreviewMars]} resizeMode="contain" />
+      </ImageBackground>
     );
   }
   return (
@@ -226,6 +222,19 @@ const styles = StyleSheet.create({
   sceneArt: { flex: 1, width: '100%', height: '100%', overflow: 'hidden' },
   sceneArtImage: { width: '100%', height: '100%' },
   sceneWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(44, 20, 74, 0.10)' },
+  solarPreviewBg: { width: '100%', height: '100%', transform: [{ scale: 1.1 }] },
+  solarPreviewWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(2, 8, 32, 0.08)' },
+  solarPreviewPlanet: {
+    position: 'absolute',
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+  },
+  solarPreviewJupiter: { width: 64, height: 64, right: 18, top: 22 },
+  solarPreviewEarth: { width: 42, height: 42, left: 34, top: 66 },
+  solarPreviewSaturn: { width: 76, height: 52, right: 84, bottom: 48 },
+  solarPreviewMars: { width: 32, height: 32, left: 118, top: 34 },
   hubNeli: { position: 'absolute', right: 8, bottom: -12, width: 78, height: 106 },
   hubAnimal: { position: 'absolute', right: 8, bottom: 0, width: 86, height: 100 },
   hubIcon: { position: 'absolute', left: 10, top: 10, width: 48, height: 48 },
@@ -308,6 +317,9 @@ const styles = StyleSheet.create({
   puzzlePieceRightOne: { right: 16, bottom: 20, width: 112, height: 94, transform: [{ rotate: '-5deg' }] },
   solarArt: { backgroundColor: '#07112D', justifyContent: 'center', alignItems: 'center' },
   solarBg: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
+  solarCardStarOne: { position: 'absolute', left: 30, top: 36, width: 4, height: 4, borderRadius: 2, backgroundColor: '#FFF7C2' },
+  solarCardStarTwo: { position: 'absolute', right: 44, top: 30, width: 5, height: 5, borderRadius: 3, backgroundColor: '#BFEAFF' },
+  solarCardStarThree: { position: 'absolute', right: 76, bottom: 62, width: 3, height: 3, borderRadius: 2, backgroundColor: '#FFEFB0' },
   solarGlowOne: {
     position: 'absolute',
     right: -24,
@@ -316,7 +328,6 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 70,
     backgroundColor: 'rgba(255, 193, 92, 0.26)',
-    opacity: 0,
   },
   solarGlowTwo: {
     position: 'absolute',
@@ -326,7 +337,6 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 75,
     backgroundColor: 'rgba(56, 189, 248, 0.22)',
-    opacity: 0,
   },
   solarSun: {
     position: 'absolute',
@@ -341,7 +351,6 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 0 },
     elevation: 7,
-    opacity: 0,
   },
   solarOrbit: {
     position: 'absolute',
@@ -350,7 +359,6 @@ const styles = StyleSheet.create({
     top: 76,
     height: 2,
     backgroundColor: 'rgba(255,255,255,0.24)',
-    opacity: 0,
   },
   solarOrbitSmall: {
     position: 'absolute',
@@ -359,7 +367,6 @@ const styles = StyleSheet.create({
     top: 116,
     height: 2,
     backgroundColor: 'rgba(255,255,255,0.14)',
-    opacity: 0,
   },
   solarPlanet: {
     position: 'absolute',
@@ -368,7 +375,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.55)',
-    opacity: 0,
   },
   solarMercury: { left: 66, top: 66, backgroundColor: '#CBD5E1' },
   solarEarth: { left: 132, top: 66, backgroundColor: '#38BDF8' },

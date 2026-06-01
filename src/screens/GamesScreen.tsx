@@ -8,6 +8,7 @@ import { useResponsive } from '../theme/responsive';
 import CharacterAvatar from '../components/CharacterAvatar';
 import { characterAssets } from '../assets/characterAssets';
 import { neliWorldAssets, roomBackgroundPickers, roomBackgroundVariants } from '../assets/neliWorldAssets';
+import { SOLAR_SYSTEM_BACKGROUND, SOLAR_SYSTEM_PLANETS } from '../assets/solarSystemPuzzle';
 import { BOX_CHARACTER_WIDTH } from '../theme/characterSizes';
 
 type Kind = 'talk' | 'dress' | 'tooth' | 'animal' | 'cook' | 'paint' | 'routine' | 'room' | 'memory' | 'quiz' | 'color' | 'count' | 'culture' | 'tracing' | 'iranPuzzle' | 'solarPuzzle';
@@ -30,7 +31,7 @@ const GAMES: Tile[] = [
   { id: 'teeth', route: { name: 'ToothBrush' }, en: 'Brush Teeth', fa: 'مسواک زدن', descEn: 'Move the brush', descFa: 'مسواک را حرکت بده', kind: 'tooth', color: '#38BDF8', accent: '#6C4EFF', group: 'play' },
   { id: 'animals', route: { name: 'FeedAnimals' }, en: 'Feed Animals', fa: 'غذا بده', descEn: 'Drag food to animals', descFa: 'غذا را به حیوان بده', kind: 'animal', color: '#22C55E', accent: '#FACC15', group: 'play' },
   { id: 'cook', route: { name: 'Cooking' }, en: 'Cooking', fa: 'آشپزی', descEn: 'Make fun recipes', descFa: 'غذا درست کن', kind: 'cook', color: '#FB923C', accent: '#FACC15', group: 'play' },
-  { id: 'coloring', route: { name: 'Coloring' }, en: 'Coloring Book', fa: 'نقاشی', descEn: 'Paint picture pages', descFa: 'صفحه‌ها را رنگ کن', kind: 'paint', color: '#A855F7', accent: '#FF80C0', group: 'play' },
+  { id: 'coloring', route: { name: 'Coloring' }, en: 'Painting', fa: 'نقاشی', descEn: 'Paint picture pages', descFa: 'صفحه‌ها را رنگ کن', kind: 'paint', color: '#A855F7', accent: '#FF80C0', group: 'play' },
   { id: 'routine', route: { name: 'DailyRoutine' }, en: 'Daily Routine', fa: 'کارهای روزانه', descEn: 'Wash, dress, sleep', descFa: 'بشور، بپوش، بخواب', kind: 'routine', color: '#14B8A6', accent: '#FDE68A', group: 'play' },
   { id: 'room', route: { name: 'BuildScene' }, en: 'Build a Room', fa: 'اتاق بساز', descEn: 'Place objects', descFa: 'وسایل را بگذار', kind: 'room', color: '#38BDF8', accent: '#FB923C', group: 'play' },
   { id: 'iranPuzzle', route: { name: 'IranPuzzle' }, en: 'Iran Puzzle', fa: 'پازل ایران', descEn: 'Drag the provinces', descFa: 'استان‌ها را جابجا کن', kind: 'iranPuzzle', color: '#F97316', accent: '#FFF0E2', group: 'learn' },
@@ -48,6 +49,8 @@ const GROUPS = [
   { id: 'learn', en: 'Learning Games', fa: 'بازی‌های یادگیری' },
   { id: 'culture', en: 'Culture', fa: 'فرهنگ' },
 ] as const;
+
+const solarPlanetSource = (id: string) => SOLAR_SYSTEM_PLANETS.find(planet => planet.id === id)?.source ?? SOLAR_SYSTEM_PLANETS[0].source;
 
 function TileArt({ kind, color, accent, characterId, width, height }: { kind: Kind; color: string; accent: string; characterId: string; width: number; height: number }) {
   if (kind === 'talk') {
@@ -102,7 +105,14 @@ function TileArt({ kind, color, accent, characterId, width, height }: { kind: Ki
       </ImageBackground>
     );
   }
-  if (kind === 'paint' || kind === 'color') return <View style={styles.art}>{[color, accent, '#22C55E', '#38BDF8'].map((c, i) => <View key={c} style={[styles.paintDot, { backgroundColor: c, left: 42 + (i % 2) * 38, top: 24 + Math.floor(i / 2) * 38 }]} />)}</View>;
+  if (kind === 'paint') {
+    return (
+      <View style={styles.paintingCardScene}>
+        <Image source={neliWorldAssets.painting.cardBunny} style={styles.paintingCardImage} resizeMode="contain" />
+      </View>
+    );
+  }
+  if (kind === 'color') return <View style={styles.art}>{[color, accent, '#22C55E', '#38BDF8'].map((c, i) => <View key={c} style={[styles.paintDot, { backgroundColor: c, left: 42 + (i % 2) * 38, top: 24 + Math.floor(i / 2) * 38 }]} />)}</View>;
   if (kind === 'room') return <View style={styles.art}><View style={[styles.roof, { borderBottomColor: color }]} /><View style={styles.house} /><View style={[styles.door, { backgroundColor: accent }]} /></View>;
   if (kind === 'tracing') return <View style={styles.art}><Image source={neliWorldAssets.ui.brush} style={styles.tileBrush} resizeMode="contain" /><Image source={neliWorldAssets.ui.book} style={styles.tileWater} resizeMode="contain" /></View>;
   if (kind === 'iranPuzzle') return (
@@ -114,17 +124,12 @@ function TileArt({ kind, color, accent, characterId, width, height }: { kind: Ki
     </ImageBackground>
   );
   if (kind === 'solarPuzzle') return (
-    <ImageBackground source={neliWorldAssets.puzzle.solarSystem} style={styles.sceneArt} imageStyle={styles.sceneArtImage}>
-      <View style={styles.sceneWashSoft} />
-      <View style={styles.solarSun} />
-      <View style={styles.solarOrbit} />
-      <View style={styles.solarOrbitSmall} />
-      <View style={[styles.solarPlanet, styles.solarPlanetOne]} />
-      <View style={[styles.solarPlanet, styles.solarPlanetTwo]} />
-      <View style={[styles.solarPlanet, styles.solarPlanetThree]} />
-      <View style={styles.solarLabelWrap}>
-        <Text style={[styles.solarLabel, { fontFamily: ff('fa', 'bold') }]}>منظومه</Text>
-      </View>
+    <ImageBackground source={SOLAR_SYSTEM_BACKGROUND} style={styles.sceneArt} imageStyle={[styles.sceneArtImage, styles.solarPreviewBg]}>
+      <View style={styles.solarPreviewWash} />
+      <Image source={solarPlanetSource('jupiter')} style={[styles.solarPreviewPlanet, styles.solarPreviewJupiter]} resizeMode="contain" />
+      <Image source={solarPlanetSource('earth')} style={[styles.solarPreviewPlanet, styles.solarPreviewEarth]} resizeMode="contain" />
+      <Image source={solarPlanetSource('saturn')} style={[styles.solarPreviewPlanet, styles.solarPreviewSaturn]} resizeMode="contain" />
+      <Image source={solarPlanetSource('mars')} style={[styles.solarPreviewPlanet, styles.solarPreviewMars]} resizeMode="contain" />
     </ImageBackground>
   );
   if (kind === 'count') return <View style={styles.art}>{[0, 1, 2].map(i => <View key={i} style={[styles.countBall, { backgroundColor: i === 1 ? accent : color, left: 40 + i * 32 }]} />)}</View>;
@@ -188,6 +193,25 @@ const styles = StyleSheet.create({
   sceneArtImageCover: { width: '100%', height: '100%' },
   sceneWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(44, 20, 74, 0.10)' },
   sceneWashSoft: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.06)' },
+  paintingCardScene: { flex: 1, width: '100%', height: '100%', backgroundColor: '#18C977', alignItems: 'center', justifyContent: 'center' },
+  paintingCardImage: { width: '100%', height: '100%' },
+  solarPreviewBg: { width: '100%', height: '100%', transform: [{ scale: 1.1 }] },
+  solarPreviewWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(2, 8, 32, 0.08)' },
+  solarPreviewPlanet: {
+    position: 'absolute',
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+  },
+  solarPreviewJupiter: { width: 58, height: 58, right: 16, top: 18 },
+  solarPreviewEarth: { width: 38, height: 38, left: 30, top: 58 },
+  solarPreviewSaturn: { width: 68, height: 48, right: 74, bottom: 42 },
+  solarPreviewMars: { width: 30, height: 30, left: 102, top: 30 },
+  solarCardArt: { backgroundColor: '#07112D' },
+  solarCardStarOne: { position: 'absolute', left: 28, top: 34, width: 4, height: 4, borderRadius: 2, backgroundColor: '#FFF7C2' },
+  solarCardStarTwo: { position: 'absolute', right: 42, top: 26, width: 5, height: 5, borderRadius: 3, backgroundColor: '#BFEAFF' },
+  solarCardStarThree: { position: 'absolute', right: 72, bottom: 58, width: 3, height: 3, borderRadius: 2, backgroundColor: '#FFEFB0' },
   sceneNeliLarge: { position: 'absolute', width: 177, height: 231, alignSelf: 'center', bottom: -40.2 },
   sceneGiraffe: { position: 'absolute', width: 172.2, height: 218.4, alignSelf: 'center', bottom: -14 },
   tileGiraffe: { position: 'absolute', width: 172.2, height: 218.4, alignSelf: 'center', bottom: -14 },
@@ -224,7 +248,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 0 },
     elevation: 4,
-    opacity: 0,
   },
   solarOrbit: {
     position: 'absolute',
@@ -233,7 +256,6 @@ const styles = StyleSheet.create({
     top: 56,
     height: 2,
     backgroundColor: 'rgba(255,255,255,0.24)',
-    opacity: 0,
   },
   solarOrbitSmall: {
     position: 'absolute',
@@ -242,7 +264,6 @@ const styles = StyleSheet.create({
     top: 92,
     height: 2,
     backgroundColor: 'rgba(255,255,255,0.16)',
-    opacity: 0,
   },
   solarPlanet: {
     position: 'absolute',
@@ -251,7 +272,6 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.55)',
-    opacity: 0,
   },
   solarPlanetOne: { left: 68, top: 46, backgroundColor: '#CBD5E1' },
   solarPlanetTwo: { left: 136, top: 46, backgroundColor: '#38BDF8' },
@@ -289,3 +309,4 @@ const styles = StyleSheet.create({
   tileTalkCharacter: { position: 'absolute', right: 10, bottom: -10, width: 92, height: 120 },
   tileDressCharacter: { position: 'absolute', right: 10, bottom: 2, width: 92, height: 120 },
 });
+

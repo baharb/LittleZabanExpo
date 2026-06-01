@@ -24,9 +24,9 @@ const TODAY: Action[] = [
   { en: 'Talk', fa: 'گفتگو', descEn: 'Listen and answer', descFa: 'گوش بده و جواب بده', route: { name: 'ConversationGame' }, colors: ['#24C878', '#119C65'], art: 'talk' },
   { en: 'Dress', fa: 'لباس', descEn: 'Drag clothes', descFa: 'لباس را بکش', route: { name: 'DressUp' }, colors: ['#FF78A8', '#C84B7A'], art: 'dress' },
   { en: 'Brush', fa: 'مسواک', descEn: 'Move the brush', descFa: 'مسواک را حرکت بده', route: { name: 'ToothBrush' }, colors: ['#53C8FF', '#2D8CFF'], art: 'teeth' },
-  { en: 'Color', fa: 'رنگ', descEn: 'Paint pictures', descFa: 'تصویرها را رنگ کن', route: { name: 'Coloring' }, colors: ['#B88CFF', '#7C3AED'], art: 'paint' },
+  { en: 'Painting', fa: 'نقاشی', descEn: 'Paint pictures', descFa: 'تصویرها را رنگ کن', route: { name: 'Coloring' }, colors: ['#B88CFF', '#7C3AED'], art: 'paint' },
   { en: 'Story', fa: 'قصه', descEn: 'Listen to a book', descFa: 'داستان گوش بده', route: { name: 'Audiobooks' }, colors: ['#FFD166', '#F59E0B'], art: 'story' },
-  { en: 'Games', fa: 'بازی‌ها', descEn: 'Open game library', descFa: 'کتابخانه بازی ها', route: { name: 'Main', tab: 'Games' }, colors: ['#6D3DF4', '#20B8D7'], art: 'games' },
+  { en: 'Games', fa: 'بازی‌ها', descEn: 'Open game library', descFa: 'کتابخانه بازی‌ها', route: { name: 'Main', tab: 'Games' }, colors: ['#6D3DF4', '#20B8D7'], art: 'games' },
 ];
 
 function HomeCharacterArt({ characterId, style, size, talking = false }: { characterId: string; style?: any; size: number; talking?: boolean }) {
@@ -80,11 +80,8 @@ function ActionScene({
     }
   if (type === 'paint') {
     return (
-      <View style={[styles.sceneFill, styles.paintScene]}>
-        <Image source={neliWorldAssets.ui.paintbrush} style={styles.paintBrushImage} resizeMode="contain" />
-        <View style={styles.paintPaletteBig}>
-          {['#FF3B86', '#FFD400', '#13C8C5', '#56D600', '#078BFF'].map(color => <View key={color} style={[styles.paintBlob, { backgroundColor: color }]} />)}
-        </View>
+      <View style={[styles.sceneFill, styles.paintCardScene]}>
+        <Image source={neliWorldAssets.painting.cardBunny} style={styles.paintCardImage} resizeMode="contain" />
       </View>
     );
   }
@@ -117,6 +114,7 @@ export default function HomeScreen() {
   const columns = contentWidth >= 960 ? 4 : contentWidth >= 680 ? 3 : 2;
   const gap = 12;
   const cardW = (contentWidth - responsive.horizontalPadding * 2 - gap * (columns - 1)) / columns;
+  const cardRadius = Math.max(24, Math.round(26 * ui));
   const compactHero = responsive.isLandscape && !responsive.isTablet;
   const actions = TODAY;
 
@@ -141,7 +139,7 @@ export default function HomeScreen() {
               {isFa ? 'فارسی را با بازی یاد بگیر' : 'Learn Persian through play'}
             </Text>
             <Text style={[styles.heroSub, { fontFamily: ff(lang, 'regular'), fontSize: Math.max(12, Math.round(13 * ui)), lineHeight: Math.max(17, Math.round(19 * ui)), marginTop: Math.max(4, Math.round(6 * ui)) }, dir(lang)]}>
-              {isFa ? 'یک صفحه ساده برای شروع. همه بازی ها در تب بازی هاست.' : 'A simple starting page. All games are in the Games tab.'}
+              {isFa ? 'یک صفحه ساده برای شروع. همه بازی‌ها در تب بازی‌هاست.' : 'A simple starting page. All games are in the Games tab.'}
             </Text>
             <View style={[styles.starPill, { borderRadius: Math.max(16, Math.round(18 * ui)), marginTop: Math.max(10, Math.round(14 * ui)), paddingHorizontal: Math.max(10, Math.round(12 * ui)), paddingVertical: Math.max(5, Math.round(6 * ui)) }]}>
               <Text style={[styles.starTxt, { fontFamily: ff(lang, 'bold'), fontSize: Math.max(12, Math.round(13 * ui)) }]}>★ {stars}</Text>
@@ -157,8 +155,8 @@ export default function HomeScreen() {
         </Text>
         <View style={styles.grid}>
           {actions.map(item => (
-            <TouchableOpacity key={item.en} style={[styles.card, { width: cardW, height: Math.max(204, Math.round(226 * ui)), borderRadius: Math.max(24, Math.round(26 * ui)) }]} onPress={() => navigate(item.route)} activeOpacity={0.86}>
-              <View style={styles.cardArt}>
+            <TouchableOpacity key={item.en} style={[styles.card, { width: cardW, height: Math.max(204, Math.round(226 * ui)), borderRadius: cardRadius }]} onPress={() => navigate(item.route)} activeOpacity={0.86}>
+              <View style={[styles.cardArt, { borderRadius: cardRadius }]}>
                 <ActionScene type={item.art} characterId={selectedCharacterId} width={width} height={height} previewSize={Math.max(92, Math.round(BOX_CHARACTER_WIDTH * Math.max(0.92, ui)))} />
                 <View style={styles.cardShade} />
                 <View style={styles.cardTextBand}>
@@ -204,6 +202,8 @@ const styles = StyleSheet.create({
   sceneGiraffe: { position: 'absolute', width: 116, height: 150, right: 8, bottom: 14 },
   sceneGiraffeCentered: { position: 'absolute', width: 172.2, height: 218.4, alignSelf: 'center', bottom: -14 },
   paintScene: { backgroundColor: '#B88CFF', alignItems: 'center', justifyContent: 'center' },
+  paintCardScene: { backgroundColor: '#18C977', alignItems: 'center', justifyContent: 'center' },
+  paintCardImage: { width: '100%', height: '100%' },
   paintBrushImage: { position: 'absolute', width: 94, height: 94, right: 14, top: 28, transform: [{ rotate: '-18deg' }] },
   paintPaletteBig: { position: 'absolute', left: 18, bottom: 68, width: 112, height: 82, borderRadius: 42, backgroundColor: '#FFFFFF', flexDirection: 'row', flexWrap: 'wrap', padding: 13, gap: 7 },
   paintBlob: { width: 24, height: 24, borderRadius: 12 },
@@ -242,3 +242,4 @@ const styles = StyleSheet.create({
   gameArt: { width: 76, height: 64, alignItems: 'center', justifyContent: 'center' },
   gameDot: { position: 'absolute', width: 36, height: 36, borderRadius: 18 },
 });
+

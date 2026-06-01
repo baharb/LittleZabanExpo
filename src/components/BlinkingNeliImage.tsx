@@ -14,6 +14,7 @@ type Props = {
   singleBlinkMs?: number;
   overlaySource?: any;
   overlayScale?: number;
+  overlayOffsetX?: number;
   overlayOffsetY?: number;
   overlayOpacity?: number;
   blinkClosedMs?: number;
@@ -31,6 +32,7 @@ export default function BlinkingNeliImage({
   singleBlinkMs = 0,
   overlaySource,
   overlayScale = 1,
+  overlayOffsetX = 0,
   overlayOffsetY = 0.5,
   overlayOpacity = 1,
   blinkClosedMs = 190,
@@ -39,67 +41,51 @@ export default function BlinkingNeliImage({
   const imageHeight = height ?? size * 1.18;
 
   useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let cancelled = false;
+    const later = (fn: () => void, delay: number) => {
+      const timer = setTimeout(fn, delay);
+      timers.push(timer);
+      return timer;
+    };
+
     if (forceVisible) {
       setBlinkVisible(true);
       return;
     }
     if (singleBlinkMs > 0) {
       setBlinkVisible(true);
-      const timer = setTimeout(() => setBlinkVisible(false), singleBlinkMs);
-      return () => clearTimeout(timer);
+      later(() => setBlinkVisible(false), singleBlinkMs);
+      return () => timers.forEach(clearTimeout);
     }
-    if (introVisibleMs > 0) {
+
+    const blinkOnce = () => {
+      if (cancelled) return;
       setBlinkVisible(true);
-      const introTimer = setTimeout(() => setBlinkVisible(false), introVisibleMs);
-      let cancelled = false;
-      let timer: ReturnType<typeof setTimeout> | undefined;
-
-      const schedule = (delay: number) => {
-        timer = setTimeout(() => {
-          if (cancelled) return;
-          setBlinkVisible(true);
-          timer = setTimeout(() => {
-            if (cancelled) return;
-            setBlinkVisible(false);
-            schedule(repeatMs);
-          }, blinkClosedMs);
-        }, delay);
-      };
-
-      timer = setTimeout(() => {
+      later(() => {
         if (cancelled) return;
         setBlinkVisible(false);
-        schedule(180);
-      }, introVisibleMs);
-
-      return () => {
-        cancelled = true;
-        clearTimeout(introTimer);
-        if (timer) clearTimeout(timer);
-      };
-    }
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-
-    const schedule = (delay: number) => {
-      timer = setTimeout(() => {
-        if (cancelled) return;
-        setBlinkVisible(true);
-        timer = setTimeout(() => {
-          if (cancelled) return;
-          setBlinkVisible(false);
-          schedule(repeatMs);
-        }, blinkClosedMs);
-      }, delay);
+        later(blinkOnce, repeatMs);
+      }, blinkClosedMs);
     };
 
-    schedule(preview ? 180 : 1200);
+    if (introVisibleMs > 0) {
+      setBlinkVisible(true);
+      later(() => {
+        if (cancelled) return;
+        setBlinkVisible(false);
+        later(blinkOnce, 180);
+      }, introVisibleMs);
+    } else {
+      setBlinkVisible(false);
+      later(blinkOnce, preview ? 180 : 1200);
+    }
 
     return () => {
       cancelled = true;
-      if (timer) clearTimeout(timer);
+      timers.forEach(clearTimeout);
     };
-  }, [preview, forceVisible, introVisibleMs, repeatMs, singleBlinkMs, overlaySource, overlayScale, overlayOffsetY, overlayOpacity, blinkClosedMs]);
+  }, [preview, forceVisible, introVisibleMs, repeatMs, singleBlinkMs, blinkClosedMs]);
 
   const overlayWidth = size * 1.03 * overlayScale;
   const overlayHeight = imageHeight * 1.03 * overlayScale;
@@ -113,22 +99,20 @@ export default function BlinkingNeliImage({
           resizeMode="contain"
         />
       ) : null}
-      {blinkVisible ? (
-        <Image
-          source={overlaySource ?? neliWorldAssets.characters.neliBlinkOverlay}
-          style={[
-            styles.overlay,
-            {
-              width: overlayWidth,
-              height: overlayHeight,
-              left: -(overlayWidth - size) / 2,
-              top: -(overlayHeight - imageHeight) / 2 + overlayOffsetY,
-              opacity: overlayOpacity,
-            },
-          ]}
-          resizeMode="contain"
-        />
-      ) : null}
+      <Image
+        source={overlaySource ?? neliWorldAssets.characters.neliBlinkOverlay}
+        style={[
+          styles.overlay,
+          {
+            width: overlayWidth,
+            height: overlayHeight,
+            left: -(overlayWidth - size) / 2 + overlayOffsetX,
+            top: -(overlayHeight - imageHeight) / 2 + overlayOffsetY,
+            opacity: blinkVisible ? overlayOpacity : 0,
+          },
+        ]}
+        resizeMode="contain"
+      />
     </View>
   );
 }

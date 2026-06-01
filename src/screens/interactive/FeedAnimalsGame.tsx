@@ -18,10 +18,9 @@ import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
 import TopBar from '../../components/TopBar';
 import { dir, ff } from '../../theme/fonts';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
-import { FEED_ANIMAL_SVG_MAP } from '../../components/Characters';
 
-type AnimalId = 'monkey' | 'rabbit' | 'cat' | 'panda' | 'bear';
-type FoodId = 'carrot' | 'fish' | 'banana' | 'apple' | 'honey';
+type AnimalId = 'monkey' | 'rabbit' | 'cat' | 'panda' | 'bear' | 'giraffe';
+type FoodId = 'carrot' | 'fish' | 'banana' | 'apple' | 'honey' | 'bamboo';
 type Rect = { x: number; y: number; w: number; h: number };
 type Point = { x: number; y: number };
 
@@ -49,17 +48,19 @@ const ANIMALS: Animal[] = [
   { id: 'cat', fa: 'گربه', en: 'Cat', foodId: 'fish', foodFa: 'ماهی', foodEn: 'Fish', color: '#FDBA74' },
   { id: 'panda', fa: 'پاندا', en: 'Panda', foodId: 'apple', foodFa: 'سیب', foodEn: 'Apple', color: '#111827' },
   { id: 'bear', fa: 'خرس', en: 'Bear', foodId: 'honey', foodFa: 'عسل', foodEn: 'Honey', color: '#8B5E3C' },
+  { id: 'giraffe', fa: 'زرافه', en: 'Giraffe', foodId: 'bamboo', foodFa: 'بامبو', foodEn: 'Bamboo', color: '#84CC16' },
 ];
 
 const FOODS: Food[] = [
   { id: 'carrot', fa: 'هویج', en: 'Carrot', source: neliWorldAssets.foods.carrot, color: '#F97316' },
   { id: 'fish', fa: 'ماهی', en: 'Fish', source: neliWorldAssets.foods.fish, color: '#38BDF8' },
   { id: 'banana', fa: 'موز', en: 'Banana', source: neliWorldAssets.foods.banana, color: '#FACC15' },
-  { id: 'apple', fa: 'سیب', en: 'Apple', source: neliWorldAssets.foods.apple, color: '#EF4444' },
+  { id: 'apple', fa: 'سیب', en: 'Apple', source: neliWorldAssets.foods.herbs, color: '#EF4444' },
   { id: 'honey', fa: 'عسل', en: 'Honey', source: neliWorldAssets.foods.honey, color: '#EAB308' },
+  { id: 'bamboo', fa: 'بامبو', en: 'Bamboo', source: neliWorldAssets.foods.celery, color: '#22C55E' },
 ];
 
-const TRAY_ORDER: FoodId[] = ['banana', 'apple', 'carrot', 'honey', 'fish'];
+const TRAY_ORDER: FoodId[] = ['banana', 'apple', 'carrot', 'honey', 'fish', 'bamboo'];
 
 const FOOD_BY_ID = Object.fromEntries(FOODS.map(item => [item.id, item])) as Record<FoodId, Food>;
 const ANIMAL_BY_FOOD_ID = Object.fromEntries(ANIMALS.map(animal => [animal.foodId, animal])) as Record<FoodId, Animal>;
@@ -75,6 +76,7 @@ function getFedPlacement(target: Rect, foodSize: number, animalId: AnimalId): Re
     cat: { x: 0.56, y: 0.56, scale: 0.98 },
     panda: { x: 0.52, y: 0.48, scale: 0.98 },
     bear: { x: 0.55, y: 0.53, scale: 1.00 },
+    giraffe: { x: 0.52, y: 0.54, scale: 0.98 },
   };
   const offset = offsets[animalId];
   const size = Math.max(42, Math.round(foodSize * offset.scale));
@@ -93,6 +95,7 @@ function getFedAnchor(animalId: AnimalId, foodSize: number) {
     cat: { x: 0.56, y: 0.55, scale: 0.98 },
     panda: { x: 0.52, y: 0.47, scale: 0.98 },
     bear: { x: 0.55, y: 0.52, scale: 1.00 },
+    giraffe: { x: 0.52, y: 0.53, scale: 0.98 },
   };
   const anchor = anchors[animalId];
   const size = Math.max(42, Math.round(foodSize * anchor.scale));
@@ -109,41 +112,89 @@ function animalSlots(width: number, height: number) {
   const w = 110;
   const h = 150;
   const yShift = Math.round(height * 0.06);
+  const rabbitDown = Math.round(height * 0.3);
+  const catDown = Math.round(height * 0.4);
+  const rabbitRight = Math.round(width * 0.1);
+  const rabbitLeft = Math.round(width * 0.12);
+  const rabbitUp = Math.round(height * 0.19);
+  const catUp = Math.round(height * 0.09);
+  const catLeft = Math.round(width * 0.12);
+  const bearUp = Math.round(height * 0.08);
+  const bearDown = Math.round(height * 0.04);
+  const pandaDown = Math.round(height * 0.25);
+  const pandaLeft = Math.round(width * 0.19);
+  const pandaUp = Math.round(height * 0.1);
+  const monkeyRight = 0;
+  const monkeyUp = Math.round(height * 0.05);
+  const giraffeLeft = Math.round(width * 0.13);
+  const giraffeDown = Math.round(height * -0.05);
   if (isLandscape) {
     return [
-      { x: Math.max(6, Math.round(width * 0.03)), y: Math.max(8, Math.round(height * 0.04)) + yShift, w, h },
-      { x: Math.max(6, Math.round(width * 0.22)), y: Math.max(10, Math.round(height * 0.09)) + yShift, w, h },
-      { x: Math.max(6, Math.round(width * 0.42)), y: Math.max(18, Math.round(height * 0.15)) + yShift, w, h },
-      { x: Math.max(6, Math.round(width * 0.62)), y: Math.max(10, Math.round(height * 0.09)) + yShift, w, h },
-      { x: Math.max(6, Math.round(width * 0.80)), y: Math.max(18, Math.round(height * 0.16)) + yShift, w, h },
+      { x: Math.max(6, Math.round(width * 0.03) + monkeyRight), y: Math.max(8, Math.round(height * 0.04)) + yShift - monkeyUp, w, h },
+      { x: Math.min(width - w - 6, Math.max(6, Math.round(width * 0.22) + rabbitRight - rabbitLeft)), y: Math.min(height - h - 8, Math.max(10, Math.round(height * 0.09)) + yShift + rabbitDown - rabbitUp), w, h },
+      { x: Math.max(6, Math.round(width * 0.42) - catLeft), y: Math.min(height - h - 8, Math.max(18, Math.round(height * 0.15)) + yShift + catDown - catUp), w, h },
+      { x: Math.max(6, Math.round(width * 0.62) - pandaLeft), y: Math.min(height - h - 8, Math.max(10, Math.round(height * 0.09)) + yShift + pandaDown - pandaUp), w, h },
+      { x: Math.max(6, Math.round(width * 0.60)), y: Math.max(18, Math.round(height * 0.16)) + yShift - bearUp + bearDown, w, h },
+      { x: Math.max(6, Math.round(width * 0.90) - giraffeLeft), y: Math.max(10, Math.round(height * 0.06)) + yShift + giraffeDown, w, h },
     ];
   }
   return [
-    { x: Math.max(8, Math.round(width * 0.04)), y: Math.max(10, Math.round(height * 0.05)) + yShift, w, h },
-    { x: Math.max(8, Math.round(width - width * 0.06 - w)), y: Math.max(14, Math.round(height * 0.10)) + yShift, w, h },
-    { x: Math.max(8, Math.round(width * 0.08)), y: Math.max(14, Math.round(height * 0.38)) + yShift, w, h },
-    { x: Math.max(8, Math.round(width - width * 0.08 - w)), y: Math.max(14, Math.round(height * 0.38)) + yShift, w, h },
-    { x: Math.max(8, Math.round(width * 0.5 - w / 2)), y: Math.max(14, Math.round(height * 0.62)) + yShift, w, h },
+    { x: Math.max(8, Math.round(width * 0.04) + monkeyRight), y: Math.max(10, Math.round(height * 0.05)) + yShift - monkeyUp, w, h },
+    { x: Math.min(width - w - 8, Math.max(8, Math.round(width - width * 0.06 - w) + rabbitRight - rabbitLeft)), y: Math.min(height - h - 8, Math.max(14, Math.round(height * 0.10)) + yShift + rabbitDown - rabbitUp), w, h },
+    { x: Math.max(8, Math.round(width * 0.08) - catLeft), y: Math.min(height - h - 8, Math.max(14, Math.round(height * 0.38)) + yShift + catDown - catUp), w, h },
+    { x: Math.max(8, Math.round(width - width * 0.08 - w) - pandaLeft), y: Math.min(height - h - 8, Math.max(14, Math.round(height * 0.38)) + yShift + pandaDown - pandaUp), w, h },
+    { x: Math.max(8, Math.round(width * 0.3 - w / 2)), y: Math.max(14, Math.round(height * 0.62)) + yShift - bearUp + bearDown, w, h },
+    { x: Math.max(8, Math.round(width * 0.82 - w / 2) - giraffeLeft), y: Math.max(14, Math.round(height * 0.18)) + yShift + giraffeDown, w, h },
   ];
 }
 
-function foodSlots(width: number, height: number) {
+function sceneFoodSlots(width: number, height: number, seed: number) {
   const isLandscape = width > height;
-  const cols = isLandscape ? 5 : 3;
-  const cardW = Math.min(isLandscape ? 92 : 86, Math.max(64, (width - 44 - 10 * (cols - 1)) / cols));
-  const cardH = isLandscape ? 96 : 90;
-  const gapX = 10;
-  const gapY = 10;
-  const totalW = cardW * cols + gapX * (cols - 1);
-  const left = Math.max(18, Math.round((width - totalW) / 2));
-  const top = Math.round(height * (isLandscape ? 0.34 : 0.42)) + Math.round(height * 0.06);
+  const cardW = Math.min(isLandscape ? 88 : 82, Math.max(62, Math.round(Math.min(width, height) * 0.13)));
+  const cardH = Math.round(cardW * 1.08);
+  const appleUp = Math.round(height * 0.90);
+  const appleRight = Math.round(width * 0.01);
+  const carrotRight = Math.round(width * 0.63);
+  const carrotDown = Math.round(height * 0.4);
+  const bananaRight = Math.round(width * 0.05);
+  const bananaUp = Math.round(height * 0.3);
+  const honeyLeft = Math.round(width * 0.2);
+  const honeyDown = Math.round(height * 0.5);
+  const fishLeft = Math.round(width * 0.6);
+  const fishUp = Math.round(height * 0.2);
+  const fishExtraSize = 0.2;
+  const surfaceSlots = isLandscape
+    ? [
+        { x: 0.11, y: 0.17 },
+        { x: 0.86, y: 0.70 },
+        { x: 0.17, y: 0.24 },
+        { x: 0.62, y: 0.18 },
+        { x: 0.73, y: 0.56 },
+        { x: 0.47, y: 0.16 },
+      ]
+    : [
+        { x: 0.14, y: 0.21 },
+        { x: 0.83, y: 0.77 },
+        { x: 0.18, y: 0.26 },
+        { x: 0.63, y: 0.19 },
+        { x: 0.47, y: 0.62 },
+        { x: 0.47, y: 0.15 },
+      ];
 
-  return TRAY_ORDER.map((_, index) => {
-    const row = Math.floor(index / cols);
-    const col = index % cols;
+  return TRAY_ORDER.map((_foodId, index) => {
+    const slot = surfaceSlots[index];
+    const driftX = ((seed + index) % 3 - 1) * 6 + (index === 1 ? appleRight : 0) + (index === 0 ? bananaRight : 0);
+    const driftY = index === 1 ? -appleUp : index === 0 ? -bananaUp : 0;
+    const minY = index === 1 ? 8 : index === 0 ? 0 : 64;
+    const carrotXBoost = index === 2 ? carrotRight : 0;
+    const carrotYBoost = index === 2 ? carrotDown : 0;
+    const honeyXBoost = index === 3 ? -honeyLeft : 0;
+    const honeyYBoost = index === 3 ? honeyDown : 0;
+    const fishXBoost = index === 4 ? -fishLeft : 0;
+    const fishYBoost = index === 4 ? -fishUp : 0;
     return {
-      x: left + col * (cardW + gapX),
-      y: top + row * (cardH + gapY),
+      x: Math.max(8, Math.min(width - cardW - 8, Math.round(width * slot.x - cardW * 0.5 + driftX + carrotXBoost + honeyXBoost + fishXBoost))),
+      y: Math.max(minY, Math.min(height - cardH - 26, Math.round(height * slot.y - cardH * 0.5 + driftY + carrotYBoost + honeyYBoost + fishYBoost))),
       w: cardW,
       h: cardH,
     };
@@ -159,33 +210,38 @@ function AnimalSpot({
   active: boolean;
   width: number;
 }) {
-  const AnimalSvg = FEED_ANIMAL_SVG_MAP[animal.id] ?? FEED_ANIMAL_SVG_MAP.panda;
-  const isMonkey = animal.id === 'monkey';
-  const iconSize = Math.max(88, Math.min(128, width * 0.14));
+  const animalSource = {
+    monkey: neliWorldAssets.animals.monkey,
+    rabbit: neliWorldAssets.animals.rabbit,
+    cat: neliWorldAssets.animals.cat,
+    panda: neliWorldAssets.animals.panda,
+    bear: neliWorldAssets.animals.bear,
+    giraffe: neliWorldAssets.animals.giraffe,
+  }[animal.id];
+  const imageSize = {
+    monkey: Math.max(196, Math.min(280, width * 0.29)),
+    rabbit: Math.max(142, Math.min(192, width * 0.186)),
+    cat: Math.max(123, Math.min(169, width * 0.165)),
+    panda: Math.max(168, Math.min(224, width * 0.221)),
+    bear: Math.max(165, Math.min(230, width * 0.223)),
+    giraffe: Math.max(275, Math.min(389, width * 0.377)),
+  }[animal.id];
 
   return (
     <View style={styles.animalSpot}>
-      {isMonkey ? (
-        <Image
-          source={neliWorldAssets.animals.monkey}
-          style={[
-            styles.monkeyImage,
-            {
-              width: Math.max(198, Math.min(280, width * 0.297)),
-              height: Math.max(198, Math.min(280, width * 0.297)),
-              transform: [{ rotate: '-10deg' }],
-              marginLeft: Math.round(width * 0.05),
-              marginTop: -Math.round(width * 0.023),
-            },
-          ]}
-          resizeMode="contain"
-        />
-      ) : (
-        <View style={[styles.animalCard, active && styles.animalCardActive]}>
-          <AnimalSvg size={iconSize} />
-        </View>
-      )}
-      <Text style={[styles.animalLabel, { fontFamily: ff('fa', 'bold') }]}>{animal.fa}</Text>
+      <Image
+        source={animalSource}
+        style={[
+          styles.animalImage,
+          active && styles.animalImageActive,
+          animal.id === 'monkey' ? styles.monkeyImage : null,
+          {
+            width: imageSize,
+            height: imageSize,
+          },
+        ]}
+        resizeMode="contain"
+      />
     </View>
   );
 }
@@ -267,8 +323,22 @@ function FoodTile({
         style={[
           styles.foodImage,
           {
-            width: size + 8,
-            height: size + 8,
+            width:
+              (food.id === 'carrot'
+                ? size * 1.1
+                : food.id === 'banana'
+                  ? size * 1.05
+                  : food.id === 'fish'
+                    ? size * 1.2
+                    : size) + 8,
+            height:
+              (food.id === 'carrot'
+                ? size * 1.1
+                : food.id === 'banana'
+                  ? size * 1.05
+                  : food.id === 'fish'
+                    ? size * 1.2
+                    : size) + 8,
           },
         ]}
         resizeMode="contain"
@@ -348,6 +418,7 @@ export default function FeedAnimalsGame() {
     cat: { x: 0, y: 0, w: 1, h: 1 },
     panda: { x: 0, y: 0, w: 1, h: 1 },
     bear: { x: 0, y: 0, w: 1, h: 1 },
+    giraffe: { x: 0, y: 0, w: 1, h: 1 },
   });
   const [fly, setFly] = useState<{ food: Food; from: Point; to: Point } | null>(null);
   const [fedFoodByAnimal, setFedFoodByAnimal] = useState<Record<AnimalId, FoodId | null>>({
@@ -356,12 +427,13 @@ export default function FeedAnimalsGame() {
     cat: null,
     panda: null,
     bear: null,
+    giraffe: null,
   });
 
   const currentAnimal = useMemo(() => ANIMALS.find(animal => !fedIds.includes(animal.foodId)) ?? ANIMALS[ANIMALS.length - 1], [fedIds]);
   const currentFood = FOOD_BY_ID[currentAnimal.foodId];
   const animalLayout = useMemo(() => animalSlots(width, height), [height, width]);
-  const foodLayout = useMemo(() => foodSlots(width, height), [height, width]);
+  const foodLayout = useMemo(() => sceneFoodSlots(width, height, resetToken), [height, resetToken, width]);
   const foodSize = Math.max(48, Math.min(78, Math.round(Math.min(width, height) * 0.085)));
 
   const say = (fa: string, en: string) => {
@@ -459,6 +531,7 @@ export default function FeedAnimalsGame() {
       cat: null,
       panda: null,
       bear: null,
+      giraffe: null,
     });
     setResetToken(prev => prev + 1);
     say('بیا دوباره غذا بدهیم.', 'Let us feed them again.');
@@ -513,7 +586,9 @@ export default function FeedAnimalsGame() {
 
           {foodLayout.map((slot, index) => {
             const food = FOOD_BY_ID[TRAY_ORDER[index]];
-            const disabled = fedIds.includes(food.id) || done;
+            const fed = fedIds.includes(food.id);
+            if (fed) return null;
+            const disabled = done;
             return (
               <FoodTile
                 key={food.id}
@@ -594,8 +669,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
+  animalImage: {
+    marginTop: -8,
+  },
+  animalImageActive: {
+    transform: [{ scale: 1.05 }],
+  },
   monkeyImage: {
     marginTop: -14,
+    marginLeft: 10,
   },
   animalCard: {
     width: 110,
@@ -608,12 +690,6 @@ const styles = StyleSheet.create({
   },
   animalCardDone: {
     opacity: 1,
-  },
-  animalLabel: {
-    marginTop: 6,
-    color: '#2F2F2F',
-    fontSize: 14,
-    textAlign: 'center',
   },
   foodTile: {
     position: 'absolute',

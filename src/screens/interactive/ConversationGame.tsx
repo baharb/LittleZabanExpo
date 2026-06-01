@@ -172,7 +172,7 @@ const CHOICE_IMAGES: Partial<Record<Choice['kind'], any>> = {
 function NeliTalkCharacter({ size }: { size: number }) {
   return (
     <View style={{ width: size, height: size * 1.18, alignItems: 'center', justifyContent: 'center' }}>
-      <BlinkingNeliImage size={size} height={size * 1.18} preview />
+      <BlinkingNeliImage size={size} height={size * 1.18} preview overlayOffsetY={size * 0.01} />
     </View>
   );
 }

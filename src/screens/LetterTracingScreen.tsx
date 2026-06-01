@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
+  ImageSourcePropType,
   PanResponder,
   ScrollView,
   StyleSheet,
@@ -10,7 +11,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import Svg, { Line as SvgLine, Text as SvgText } from 'react-native-svg';
 import { AppContext, Lang } from '../store/AppContext';
 import { useSpeech } from '../hooks/useSpeech';
 import TopBar from '../components/TopBar';
@@ -19,106 +19,64 @@ import { C } from '../theme/colors';
 import { ff } from '../theme/fonts';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
 
-type Letter = { char: string; name: string; word: string; en: string; color: string };
+type Letter = { char: string; name: string; word: string; en: string; color: string; soft: string; icon: ImageSourcePropType };
 type Point = { x: number; y: number };
-type ExampleItem = { label: string; icon: any; color: string };
 
 const LETTERS: Letter[] = [
-  { char: 'ا', name: 'الف', word: 'آب', en: 'Water', color: '#38BDF8' },
-  { char: 'ب', name: 'بِه', word: 'بابا', en: 'Dad', color: '#6C4EFF' },
-  { char: 'پ', name: 'پِه', word: 'پلو', en: 'Rice', color: '#22C55E' },
-  { char: 'ت', name: 'تِه', word: 'توپ', en: 'Ball', color: '#FACC15' },
-  { char: 'ث', name: 'ثَنا', word: 'ثمر', en: 'Fruit', color: '#FB923C' },
-  { char: 'ج', name: 'جیم', word: 'جوراب', en: 'Socks', color: '#EC4899' },
-  { char: 'چ', name: 'چِه', word: 'چتر', en: 'Umbrella', color: '#A855F7' },
-  { char: 'ح', name: 'حِه', word: 'حلوا', en: 'Halva', color: '#14B8A6' },
-  { char: 'خ', name: 'خِه', word: 'خرس', en: 'Bear', color: '#F97316' },
-  { char: 'د', name: 'دال', word: 'درخت', en: 'Tree', color: '#38BDF8' },
-  { char: 'ذ', name: 'ذال', word: 'ذرت', en: 'Corn', color: '#6C4EFF' },
-  { char: 'ر', name: 'راء', word: 'رنگ', en: 'Color', color: '#22C55E' },
-  { char: 'ز', name: 'زاء', word: 'زنبور', en: 'Bee', color: '#FACC15' },
-  { char: 'ژ', name: 'ژه', word: 'ژاله', en: 'Dew', color: '#FB923C' },
-  { char: 'س', name: 'سین', word: 'سیب', en: 'Apple', color: '#EF4444' },
-  { char: 'ش', name: 'شین', word: 'شیر', en: 'Milk', color: '#7C3AED' },
-  { char: 'ص', name: 'صاد', word: 'صابون', en: 'Soap', color: '#06B6D4' },
-  { char: 'ض', name: 'ضاد', word: 'ضربان', en: 'Beat', color: '#EC4899' },
-  { char: 'ط', name: 'طاء', word: 'طبل', en: 'Drum', color: '#84CC16' },
-  { char: 'ظ', name: 'ظاء', word: 'ظرف', en: 'Dish', color: '#8B5CF6' },
-  { char: 'ع', name: 'عین', word: 'عروسک', en: 'Doll', color: '#F97316' },
-  { char: 'غ', name: 'غین', word: 'غذا', en: 'Food', color: '#06B6D4' },
-  { char: 'ف', name: 'فاء', word: 'فیل', en: 'Elephant', color: '#22C55E' },
-  { char: 'ق', name: 'قاف', word: 'قورباغه', en: 'Frog', color: '#A855F7' },
-  { char: 'ک', name: 'کاف', word: 'کفش', en: 'Shoe', color: '#FACC15' },
-  { char: 'گ', name: 'گاف', word: 'گل', en: 'Flower', color: '#EC4899' },
-  { char: 'ل', name: 'لام', word: 'لیمو', en: 'Lemon', color: '#14B8A6' },
-  { char: 'م', name: 'میم', word: 'ماه', en: 'Moon', color: '#3B82F6' },
-  { char: 'ن', name: 'نون', word: 'نان', en: 'Bread', color: '#F59E0B' },
-  { char: 'و', name: 'واو', word: 'وان', en: 'Tub', color: '#EF4444' },
-  { char: 'ه', name: 'ها', word: 'هوا', en: 'Air', color: '#8B5CF6' },
-  { char: 'ی', name: 'یا', word: 'یخ', en: 'Ice', color: '#0EA5E9' },
+  { char: 'ا', name: 'الف', word: 'آب', en: 'Water', color: '#1FB6FF', soft: '#DFF5FF', icon: neliWorldAssets.foods.water },
+  { char: 'ب', name: 'ب', word: 'بابا', en: 'Dad', color: '#6C4EFF', soft: '#EEE9FF', icon: neliWorldAssets.ui.home },
+  { char: 'پ', name: 'پ', word: 'پلو', en: 'Rice', color: '#22C55E', soft: '#DCFCE7', icon: neliWorldAssets.foods.rice },
+  { char: 'ت', name: 'ت', word: 'توپ', en: 'Ball', color: '#FACC15', soft: '#FFF7C2', icon: neliWorldAssets.ui.star },
+  { char: 'ث', name: 'ث', word: 'ثمر', en: 'Fruit', color: '#FB923C', soft: '#FFEDD5', icon: neliWorldAssets.foods.apple },
+  { char: 'ج', name: 'جیم', word: 'جوراب', en: 'Socks', color: '#EC4899', soft: '#FCE7F3', icon: neliWorldAssets.ui.heart },
+  { char: 'چ', name: 'چ', word: 'چتر', en: 'Umbrella', color: '#A855F7', soft: '#F3E8FF', icon: neliWorldAssets.ui.trophy },
+  { char: 'ح', name: 'ح', word: 'حلوا', en: 'Halva', color: '#14B8A6', soft: '#CCFBF1', icon: neliWorldAssets.persianFoods.kukuSabzi },
+  { char: 'خ', name: 'خ', word: 'خرس', en: 'Bear', color: '#F97316', soft: '#FFEDD5', icon: neliWorldAssets.animals.bear },
+  { char: 'د', name: 'دال', word: 'درخت', en: 'Tree', color: '#38BDF8', soft: '#E0F2FE', icon: neliWorldAssets.ui.star },
+  { char: 'ذ', name: 'ذال', word: 'ذرت', en: 'Corn', color: '#EAB308', soft: '#FEF9C3', icon: neliWorldAssets.foods.corn },
+  { char: 'ر', name: 'ر', word: 'رنگ', en: 'Color', color: '#22C55E', soft: '#DCFCE7', icon: neliWorldAssets.ui.paintbrush },
+  { char: 'ز', name: 'ز', word: 'زنبور', en: 'Bee', color: '#FACC15', soft: '#FFF7C2', icon: neliWorldAssets.ui.star },
+  { char: 'ژ', name: 'ژ', word: 'ژاله', en: 'Dew', color: '#FB923C', soft: '#FFEDD5', icon: neliWorldAssets.foods.water },
+  { char: 'س', name: 'سین', word: 'سیب', en: 'Apple', color: '#EF4444', soft: '#FFE4E6', icon: neliWorldAssets.foods.apple },
+  { char: 'ش', name: 'شین', word: 'شیر', en: 'Milk', color: '#7C3AED', soft: '#F1E8FF', icon: neliWorldAssets.foods.yogurt },
+  { char: 'ص', name: 'صاد', word: 'صابون', en: 'Soap', color: '#06B6D4', soft: '#CFFAFE', icon: neliWorldAssets.ui.toothbrush },
+  { char: 'ض', name: 'ضاد', word: 'ضربان', en: 'Beat', color: '#EC4899', soft: '#FCE7F3', icon: neliWorldAssets.ui.heart },
+  { char: 'ط', name: 'طا', word: 'طبل', en: 'Drum', color: '#84CC16', soft: '#ECFCCB', icon: neliWorldAssets.ui.voice },
+  { char: 'ظ', name: 'ظا', word: 'ظرف', en: 'Dish', color: '#8B5CF6', soft: '#EDE9FE', icon: neliWorldAssets.foods.pasta },
+  { char: 'ع', name: 'عین', word: 'عروسک', en: 'Doll', color: '#F97316', soft: '#FFEDD5', icon: neliWorldAssets.characters.neli },
+  { char: 'غ', name: 'غین', word: 'غذا', en: 'Food', color: '#06B6D4', soft: '#CFFAFE', icon: neliWorldAssets.foods.pasta },
+  { char: 'ف', name: 'فا', word: 'فیل', en: 'Elephant', color: '#22C55E', soft: '#DCFCE7', icon: neliWorldAssets.animals.elephant },
+  { char: 'ق', name: 'قاف', word: 'قورباغه', en: 'Frog', color: '#A855F7', soft: '#F3E8FF', icon: neliWorldAssets.animals.panda },
+  { char: 'ک', name: 'کاف', word: 'کفش', en: 'Shoe', color: '#FACC15', soft: '#FFF7C2', icon: neliWorldAssets.ui.trophy },
+  { char: 'گ', name: 'گاف', word: 'گل', en: 'Flower', color: '#EC4899', soft: '#FCE7F3', icon: neliWorldAssets.ui.heart },
+  { char: 'ل', name: 'لام', word: 'لیمو', en: 'Lemon', color: '#14B8A6', soft: '#CCFBF1', icon: neliWorldAssets.foods.lemonSlice },
+  { char: 'م', name: 'میم', word: 'ماه', en: 'Moon', color: '#3B82F6', soft: '#DBEAFE', icon: neliWorldAssets.ui.star },
+  { char: 'ن', name: 'نون', word: 'نان', en: 'Bread', color: '#F59E0B', soft: '#FEF3C7', icon: neliWorldAssets.foods.bread },
+  { char: 'و', name: 'واو', word: 'وان', en: 'Tub', color: '#EF4444', soft: '#FFE4E6', icon: neliWorldAssets.ui.toothbrush },
+  { char: 'ه', name: 'ها', word: 'هوا', en: 'Air', color: '#8B5CF6', soft: '#EDE9FE', icon: neliWorldAssets.ui.sparkle },
+  { char: 'ی', name: 'یا', word: 'یخ', en: 'Ice', color: '#0EA5E9', soft: '#E0F2FE', icon: neliWorldAssets.foods.water },
 ];
 
-const TRACE_EXAMPLE_LABELS: Record<string, string[]> = {
-  'ا': ['آب', 'آهو', 'آبنبات'],
-  'ب': ['بابا', 'بادکنک', 'بستنی'],
-  'پ': ['پلو', 'پروانه', 'پرتقال'],
-  'ت': ['توپ', 'تخم‌مرغ', 'تلفن'],
-  'ث': ['ثمر', 'ثانیه', 'ثروت'],
-  'ج': ['جوراب', 'جوجه', 'جنگل'],
-  'چ': ['چتر', 'چای', 'چشم'],
-  'ح': ['حلوا', 'حیاط', 'حوض'],
-  'خ': ['خرس', 'خیار', 'خرگوش'],
-  'د': ['درخت', 'دامن', 'دوچرخه'],
-  'ذ': ['ذرت', 'ذهن', 'ذره'],
-  'ر': ['رنگ', 'روباه', 'رودخانه'],
-  'ز': ['زنبور', 'زرافه', 'زیتون'],
-  'ژ': ['ژاله', 'ژاکت', 'ژیله'],
-  'س': ['سیب', 'سبد', 'ستاره'],
-  'ش': ['شیر', 'شتر', 'شب'],
-  'ص': ['صابون', 'صدف', 'صندلی'],
-  'ض': ['ضربان', 'ضیافت', 'ضامن'],
-  'ط': ['طبل', 'طاووس', 'طوفان'],
-  'ظ': ['ظرف', 'ظریف', 'ظاهر'],
-  'ع': ['عروسک', 'عینک', 'عقاب'],
-  'غ': ['غذا', 'غنچه', 'غاز'],
-  'ف': ['فیل', 'فنجان', 'فرشته'],
-  'ق': ['قورباغه', 'قفل', 'قلم'],
-  'ک': ['کتاب', 'کفش', 'کدو'],
-  'گ': ['گل', 'گربه', 'گاو'],
-  'ل': ['لیمو', 'لیوان', 'لانه'],
-  'م': ['ماه', 'ماهی', 'موش'],
-  'ن': ['نان', 'نمک', 'نارنگی'],
-  'و': ['وان', 'وال', 'ویترین'],
-  'ه': ['هوا', 'هلو', 'هدیه'],
-  'ی': ['یخ', 'یوز', 'یادگار'],
-};
-
-const TRACE_EXAMPLE_ICONS = [
-  neliWorldAssets.foods.apple,
-  neliWorldAssets.animals.bear,
-  neliWorldAssets.animals.cat,
-];
-
-function getTraceExamples(letter: string): ExampleItem[] {
-  const labels = TRACE_EXAMPLE_LABELS[letter] ?? ['آب', 'آهو', 'آبنبات'];
-  const colors = ['#FF5AAE', '#18C9D4', '#8A5CFF'];
-  return labels.slice(0, 3).map((label, index) => ({
-    label,
-    icon: TRACE_EXAMPLE_ICONS[index % TRACE_EXAMPLE_ICONS.length],
-    color: colors[index % colors.length],
-  }));
+function ProgressDots({ total, current, color }: { total: number; current: number; color: string }) {
+  return (
+    <View style={styles.progressDots}>
+      {Array.from({ length: total }).map((_, index) => (
+        <View key={index} style={[styles.progressDot, index <= current && { backgroundColor: color, width: 22 }]} />
+      ))}
+    </View>
+  );
 }
 
-function TracePad({ letter, lang, onDone }: { letter: Letter; lang: Lang; onDone: () => void }) {
+function TracePad({ letter, lang, onComplete }: { letter: Letter; lang: Lang; onComplete: () => void }) {
   const { width, height } = useWindowDimensions();
-  const size = Math.max(260, Math.min(360, Math.min(width * 0.36, height * 0.68)));
+  const size = Math.max(285, Math.min(430, Math.min(width * 0.38, height * 0.7)));
   const [strokes, setStrokes] = useState<Point[][]>([]);
-  const [done, setDone] = useState(false);
-  const bandsRef = useRef([false, false, false]);
+  const [complete, setComplete] = useState(false);
   const current = useRef<Point[]>([]);
-  const tracedDistance = useRef(0);
-  const origin = useRef({ x: 0, y: 0 });
   const padRef = useRef<View | null>(null);
+  const origin = useRef({ x: 0, y: 0 });
+  const touchedZones = useRef([false, false, false]);
+  const tracedDistance = useRef(0);
 
   const syncOrigin = () => {
     requestAnimationFrame(() => {
@@ -128,71 +86,66 @@ function TracePad({ letter, lang, onDone }: { letter: Letter; lang: Lang; onDone
     });
   };
 
-  const clearTrace = () => {
+  const reset = () => {
     setStrokes([]);
-    setDone(false);
-    bandsRef.current = [false, false, false];
+    setComplete(false);
     current.current = [];
+    touchedZones.current = [false, false, false];
     tracedDistance.current = 0;
+    syncOrigin();
   };
 
   useEffect(() => {
-    clearTrace();
-    syncOrigin();
+    reset();
   }, [letter.char]);
 
-  const markBands = (pt: Point) => {
-    const next = [...bandsRef.current];
-    const bandIndex = pt.y < size * 0.33 ? 0 : pt.y < size * 0.66 ? 1 : 2;
-    next[bandIndex] = true;
-    bandsRef.current = next;
+  const markZone = (pt: Point) => {
+    const index = pt.y < size * 0.34 ? 0 : pt.y < size * 0.67 ? 1 : 2;
+    touchedZones.current[index] = true;
   };
 
-  const canFinish = () => bandsRef.current.every(Boolean) && tracedDistance.current > size * 1.05;
-
-  const finish = () => {
-    if (done) return;
-    setDone(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    onDone();
+  const maybeComplete = () => {
+    if (complete) return;
+    const enoughZones = touchedZones.current.every(Boolean);
+    const enoughDrawing = tracedDistance.current > size * 0.95;
+    if (enoughZones && enoughDrawing) {
+      setComplete(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onComplete();
+    }
   };
 
   const pan = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => !done,
-      onMoveShouldSetPanResponder: () => !done,
+      onStartShouldSetPanResponder: () => !complete,
+      onMoveShouldSetPanResponder: () => !complete,
       onPanResponderGrant: event => {
-        const pt = {
-          x: event.nativeEvent.pageX - origin.current.x,
-          y: event.nativeEvent.pageY - origin.current.y,
-        };
+        const pt = { x: event.nativeEvent.pageX - origin.current.x, y: event.nativeEvent.pageY - origin.current.y };
         current.current = [pt];
+        markZone(pt);
         setStrokes(prev => [...prev, [pt]]);
-        markBands(pt);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       },
       onPanResponderMove: event => {
-        const pt = {
-          x: event.nativeEvent.pageX - origin.current.x,
-          y: event.nativeEvent.pageY - origin.current.y,
-        };
-        const prev = current.current[current.current.length - 1];
-        if (prev) {
-          const dx = pt.x - prev.x;
-          const dy = pt.y - prev.y;
+        const pt = { x: event.nativeEvent.pageX - origin.current.x, y: event.nativeEvent.pageY - origin.current.y };
+        const prevPoint = current.current[current.current.length - 1];
+        if (prevPoint) {
+          const dx = pt.x - prevPoint.x;
+          const dy = pt.y - prevPoint.y;
           tracedDistance.current += Math.sqrt(dx * dx + dy * dy);
         }
         current.current.push(pt);
-        markBands(pt);
+        markZone(pt);
         setStrokes(prev => {
           const next = [...prev];
           next[next.length - 1] = [...current.current];
           return next;
         });
-        if (canFinish()) finish();
+        maybeComplete();
       },
       onPanResponderRelease: () => {
         current.current = [];
+        maybeComplete();
       },
       onPanResponderTerminate: () => {
         current.current = [];
@@ -200,120 +153,92 @@ function TracePad({ letter, lang, onDone }: { letter: Letter; lang: Lang; onDone
     }),
   ).current;
 
-  const renderLine = (pts: Point[], si: number) =>
-    pts.slice(1).map((pt, i) => {
-      const prev = pts[i];
-      const dx = pt.x - prev.x;
-      const dy = pt.y - prev.y;
-      const len = Math.sqrt(dx * dx + dy * dy);
-      if (len < 0.4) return null;
+  const renderStroke = (stroke: Point[], strokeIndex: number) =>
+    stroke.slice(1).map((point, index) => {
+      const previous = stroke[index];
+      const dx = point.x - previous.x;
+      const dy = point.y - previous.y;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      if (length < 0.5) return null;
       const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
       return (
         <View
-          key={`${si}-${i}`}
-          style={{
-            position: 'absolute',
-            width: len + 14,
-            height: 18,
-            borderRadius: 9,
-            backgroundColor: done ? '#22C55E' : letter.color,
-            left: (pt.x + prev.x) / 2 - (len + 14) / 2,
-            top: (pt.y + prev.y) / 2 - 9,
-            transform: [{ rotate: `${angle}deg` }],
-            opacity: 0.92,
-          }}
+          key={`${strokeIndex}-${index}`}
+          style={[
+            styles.stroke,
+            {
+              width: length + 18,
+              left: (point.x + previous.x) / 2 - (length + 18) / 2,
+              top: (point.y + previous.y) / 2 - 10,
+              backgroundColor: complete ? '#20C878' : letter.color,
+              transform: [{ rotate: `${angle}deg` }],
+            },
+          ]}
         />
       );
     });
 
   return (
-    <View style={styles.padWrap}>
+    <View style={styles.padShell}>
       <View
         ref={padRef}
-        style={[styles.pad, { width: size, height: size }]}
+        style={[styles.pad, { width: size, height: size, backgroundColor: letter.soft }]}
         onLayout={syncOrigin}
         {...pan.panHandlers}
       >
-        <View style={styles.ghostWrap} pointerEvents="none">
-          <Svg width={size} height={size}>
-            <SvgLine
-              x1={size / 2}
-              y1={size * 0.16}
-              x2={size / 2}
-              y2={size * 0.84}
-              stroke="rgba(149, 128, 214, 0.62)"
-              strokeWidth={Math.max(6, size * 0.022)}
-              strokeDasharray={`${Math.max(16, size * 0.038)} ${Math.max(10, size * 0.024)}`}
-              strokeLinecap="round"
-            />
-            <SvgText
-              x={size / 2}
-              y={size / 2}
-              dy="0.35em"
-              textAnchor="middle"
-              fill="none"
-              stroke="rgba(149, 128, 214, 0.68)"
-              strokeWidth={Math.max(8, size * 0.04)}
-              strokeDasharray={`${Math.max(18, size * 0.042)} ${Math.max(10, size * 0.026)}`}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fontSize={size * 1.06}
-              fontFamily={ff(lang, 'black')}
-            >
-              {letter.char}
-            </SvgText>
-          </Svg>
-        </View>
+        <View style={styles.letterAura} />
+        <Text
+          style={[
+            styles.traceLetter,
+            {
+              color: letter.color,
+              fontFamily: ff(lang, 'black'),
+              fontSize: size * 0.82,
+              lineHeight: size * 0.9,
+            },
+          ]}
+        >
+          {letter.char}
+        </Text>
         <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-          {strokes.map((stroke, i) => renderLine(stroke, i))}
+          {strokes.map((stroke, index) => renderStroke(stroke, index))}
         </View>
-        {done ? <View style={styles.doneBadge}><Text style={styles.doneMark}>✓</Text></View> : null}
+        <View pointerEvents="none" style={styles.traceHint}>
+          <Text style={[styles.traceHintText, { fontFamily: ff(lang, 'bold') }]}>
+            {lang === 'fa' || lang === 'ar' ? 'با انگشتت روی حرف بکش' : 'Trace with your finger'}
+          </Text>
+        </View>
+        {complete ? (
+          <View style={styles.doneBadge}>
+            <Text style={styles.doneMark}>✓</Text>
+          </View>
+        ) : null}
       </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.clearBtn} onPress={clearTrace}>
-          <Text style={styles.clearText}>{lang === 'fa' || lang === 'ar' ? 'پاک کن' : 'Clear'}</Text>
+      <View style={styles.padActions}>
+        <TouchableOpacity style={styles.clearButton} onPress={reset} activeOpacity={0.86}>
+          <Text style={[styles.clearText, { fontFamily: ff(lang, 'black') }]}>
+            {lang === 'fa' || lang === 'ar' ? 'پاک کن' : 'Clear'}
+          </Text>
         </TouchableOpacity>
-        {done ? (
-          <TouchableOpacity
-            style={[styles.nextBtn, { backgroundColor: letter.color }]}
-            onPress={() => {
-              clearTrace();
-              onDone();
-            }}
-          >
-            <Text style={styles.nextText}>{lang === 'fa' || lang === 'ar' ? 'بعدی' : 'Next'}</Text>
-          </TouchableOpacity>
-        ) : null}
       </View>
     </View>
   );
 }
 
-function ExampleCard({
-  label,
-  color,
-  icon,
-  cardWidth,
-  cardHeight,
-  lang,
-}: {
-  label: string;
-  color: string;
-  icon: any;
-  cardWidth: number;
-  cardHeight: number;
-  lang: Lang;
-}) {
+function WordCard({ letter, index, lang }: { letter: Letter; index: number; lang: Lang }) {
+  const bg = index === 0 ? letter.color : index === 1 ? '#FF7A45' : '#7C3AED';
+  const label = index === 0 ? letter.word : index === 1 ? letter.name : letter.en;
+  const caption = index === 0 ? 'کلمه' : index === 1 ? 'نام حرف' : 'English';
+
   return (
-    <View style={[styles.exampleCard, { borderColor: color, width: cardWidth, height: cardHeight }]}>
-      <View style={styles.exampleTop}>
-        <Image source={icon} style={styles.exampleImage} resizeMode="contain" />
+    <View style={[styles.wordCard, { backgroundColor: bg }]}>
+      <View style={styles.wordImageBubble}>
+        <Image source={letter.icon} style={styles.wordIcon} resizeMode="contain" />
       </View>
-      <View style={styles.exampleLabelWrap}>
-        <Text style={[styles.exampleLabel, { fontFamily: ff(lang, 'black') }]} numberOfLines={1}>
-          {label}
-        </Text>
+      <View style={styles.wordCopy}>
+        <Text style={[styles.wordLabel, { fontFamily: ff(lang, 'black') }]} numberOfLines={1}>{label}</Text>
+        <Text style={[styles.wordCaption, { fontFamily: ff(lang, 'bold') }]}>{caption}</Text>
       </View>
     </View>
   );
@@ -323,16 +248,13 @@ export default function LetterTracingScreen() {
   const { lang } = useContext(AppContext);
   const { speakFarsiOnly, speakInLang, stop } = useSpeech();
   const [idx, setIdx] = useState(0);
-  const letter = LETTERS[idx % LETTERS.length];
-  const isFa = lang === 'fa' || lang === 'ar';
   const { width, height } = useWindowDimensions();
-  const giraffeSize = Math.max(200, Math.min(320, height * 0.44));
-  const leftColWidth = Math.max(180, Math.min(260, width * 0.22));
-  const rightColWidth = Math.max(250, Math.min(400, width * 0.34));
-  const exampleItems = useMemo(() => getTraceExamples(letter.char), [letter.char]);
-  const exampleGap = 8;
-  const exampleCardWidth = Math.max(74, (rightColWidth - exampleGap * 2) / 3);
-  const exampleCardHeight = Math.max(108, Math.min(150, height * 0.2));
+  const letter = LETTERS[idx];
+  const isFa = lang === 'fa' || lang === 'ar';
+  const mascotSize = Math.max(165, Math.min(250, height * 0.34));
+  const railHeight = Math.max(72, Math.min(88, height * 0.13));
+
+  const wordCards = useMemo(() => [0, 1, 2], [letter.char]);
 
   const speak = () => {
     stop();
@@ -341,202 +263,305 @@ export default function LetterTracingScreen() {
     });
   };
 
+  const nextLetter = () => {
+    setIdx(prev => Math.min(prev + 1, LETTERS.length - 1));
+  };
+
   return (
     <View style={styles.root}>
-      <TopBar title="Trace the letters" titleFa="یادگیری حروف" showBack dark compactTitle />
+      <View style={styles.skyGlow} />
+      <View style={styles.lemonGlow} />
+      <View style={styles.pinkGlow} />
+      <TopBar title="Letter Tracing" titleFa="تمرین حروف" showBack dark={false} compactTitle />
 
-      <View style={styles.page}>
-        <View style={[styles.mainRow, { gap: Math.max(8, width * 0.01), paddingHorizontal: Math.max(10, width * 0.012) }]}>
-          <View style={[styles.giraffeCol, { width: leftColWidth }]}>
-            <CharacterAvatar characterId="dara" size={giraffeSize} floating={false} />
-          </View>
-
-          <View style={styles.centerCol}>
-            <View style={styles.centerHeader}>
-              <View style={styles.letterPill}>
-                <Text style={styles.letterPillText}>{letter.char}</Text>
-              </View>
-              <TouchableOpacity style={styles.soundBtn} onPress={speak} activeOpacity={0.9}>
-                <Image source={neliWorldAssets.ui.voice} style={styles.soundIcon} resizeMode="contain" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.centerTraceCard}>
-              <TracePad
-                key={letter.char}
-                letter={letter}
-                lang={lang}
-                onDone={() => setIdx(prev => Math.min(prev + 1, LETTERS.length - 1))}
-              />
-            </View>
-          </View>
-
-          <View style={[styles.examplesCol, { width: rightColWidth }]}>
-            <View style={[styles.examplesRow, { gap: exampleGap }]}>
-              {exampleItems.map(example => (
-                <ExampleCard
-                  key={example.label}
-                  label={example.label}
-                  color={example.color}
-                  icon={example.icon}
-                  cardWidth={exampleCardWidth}
-                  cardHeight={exampleCardHeight}
-                  lang={lang}
-                />
-              ))}
+      <View style={[styles.stage, { paddingHorizontal: Math.max(16, width * 0.025), paddingBottom: railHeight + 8 }]}>
+        <View style={styles.leftPanel}>
+          <View style={styles.mascotCard}>
+            <CharacterAvatar characterId="dara" size={mascotSize} floating={false} />
+            <View style={[styles.speechBubble, { borderColor: letter.color }]}>
+              <Text style={[styles.speechText, { fontFamily: ff(lang, 'black') }]}>
+                {isFa ? 'آفرین! بکش و یاد بگیر' : 'Trace and learn!'}
+              </Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.letterRowWrap}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.letterRow}>
-            {LETTERS.map((l, i) => (
-              <TouchableOpacity
-                key={`${l.char}-${i}`}
-                style={[styles.tile, i === idx && { backgroundColor: l.color }]}
-                onPress={() => setIdx(i)}
-                activeOpacity={0.86}
-              >
-                <Text style={[styles.tileText, { color: i === idx ? '#FFFFFF' : C.textDark, fontFamily: ff(lang, 'black') }]}>
-                  {l.char}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+        <View style={styles.centerPanel}>
+          <View style={styles.headerCard}>
+            <View style={[styles.bigLetterChip, { backgroundColor: letter.color }]}>
+              <Text style={[styles.bigLetterText, { fontFamily: ff(lang, 'black') }]}>{letter.char}</Text>
+            </View>
+            <View style={styles.headerCopy}>
+              <Text style={[styles.title, { fontFamily: ff(lang, 'black') }]}>
+                {isFa ? 'حرف را دنبال کن' : 'Trace the Persian letter'}
+              </Text>
+              <Text style={[styles.subtitle, { fontFamily: ff(lang, 'bold') }]}>
+                {letter.name} • {letter.word}
+              </Text>
+              <ProgressDots total={LETTERS.length} current={idx} color={letter.color} />
+            </View>
+            <TouchableOpacity style={[styles.soundButton, { borderColor: letter.color }]} onPress={speak} activeOpacity={0.88}>
+              <Image source={neliWorldAssets.ui.voice} style={styles.soundIcon} resizeMode="contain" />
+            </TouchableOpacity>
+          </View>
+
+          <TracePad letter={letter} lang={lang} onComplete={nextLetter} />
         </View>
+
+        <View style={styles.rightPanel}>
+          {wordCards.map(index => (
+            <WordCard key={`${letter.char}-${index}`} letter={letter} index={index} lang={lang} />
+          ))}
+          <TouchableOpacity style={[styles.nextButton, { backgroundColor: letter.color }]} onPress={nextLetter} activeOpacity={0.88}>
+            <Text style={[styles.nextText, { fontFamily: ff(lang, 'black') }]}>
+              {isFa ? 'حرف بعدی' : 'Next letter'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={[styles.letterRailWrap, { height: railHeight }]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.letterRail}>
+          {LETTERS.map((item, index) => (
+            <TouchableOpacity
+              key={`${item.char}-${index}`}
+              style={[styles.letterTile, index === idx && { backgroundColor: item.color, transform: [{ translateY: -7 }] }]}
+              onPress={() => setIdx(index)}
+              activeOpacity={0.86}
+            >
+              <Text style={[styles.letterTileText, { color: index === idx ? '#FFFFFF' : '#24305E', fontFamily: ff(lang, 'black') }]}>
+                {item.char}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#16C8D4' },
-  page: { flex: 1, paddingTop: 4, paddingBottom: 0 },
-  mainRow: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  giraffeCol: { alignItems: 'center', justifyContent: 'flex-end' },
-  centerCol: { flex: 1, alignItems: 'stretch', justifyContent: 'center' },
-  centerHeader: {
+  root: { flex: 1, backgroundColor: '#BFF3FF', overflow: 'hidden' },
+  skyGlow: {
+    position: 'absolute',
+    left: -120,
+    top: 72,
+    width: 330,
+    height: 330,
+    borderRadius: 165,
+    backgroundColor: 'rgba(42, 201, 255, 0.34)',
+  },
+  lemonGlow: {
+    position: 'absolute',
+    right: 60,
+    top: 88,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    backgroundColor: 'rgba(255, 242, 141, 0.75)',
+  },
+  pinkGlow: {
+    position: 'absolute',
+    right: -95,
+    bottom: 70,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: 'rgba(255, 143, 190, 0.5)',
+  },
+  stage: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 16, paddingTop: 10 },
+  leftPanel: { width: '21%', minWidth: 170, alignItems: 'center', justifyContent: 'center' },
+  centerPanel: { flex: 1, alignItems: 'stretch', justifyContent: 'center' },
+  rightPanel: { width: '26%', minWidth: 260, gap: 12, justifyContent: 'center' },
+  mascotCard: {
+    width: '100%',
+    minHeight: 300,
+    borderRadius: 34,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingTop: 14,
+    paddingBottom: 18,
+    shadowColor: '#24648A',
+    shadowOpacity: 0.11,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+  },
+  speechBubble: {
+    marginTop: -14,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  speechText: { color: '#24305E', fontSize: 13, textAlign: 'center' },
+  headerCard: {
+    minHeight: 94,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
+    padding: 12,
+    marginBottom: 14,
+    shadowColor: '#24648A',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   },
-  letterPill: {
-    minWidth: 108,
-    height: 68,
+  bigLetterChip: {
+    width: 74,
+    height: 74,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  bigLetterText: { color: '#FFFFFF', fontSize: 45, lineHeight: 58 },
+  headerCopy: { flex: 1 },
+  title: { color: '#1F2450', fontSize: 25, lineHeight: 32 },
+  subtitle: { color: '#626A8F', fontSize: 15, lineHeight: 22, marginTop: 1 },
+  progressDots: { flexDirection: 'row', gap: 4, marginTop: 8, alignItems: 'center' },
+  progressDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#D8E4F2' },
+  soundButton: {
+    width: 62,
+    height: 62,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  soundIcon: { width: 34, height: 34 },
+  padShell: { alignItems: 'center' },
+  pad: {
+    borderRadius: 42,
+    borderWidth: 6,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    shadowColor: '#1D2B68',
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 14 },
+    elevation: 8,
+  },
+  letterAura: {
+    position: 'absolute',
+    width: '78%',
+    height: '78%',
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.72)',
+  },
+  traceLetter: {
+    opacity: 0.22,
+    includeFontPadding: false,
+    textAlign: 'center',
+    textShadowColor: 'rgba(255,255,255,0.95)',
+    textShadowOffset: { width: 0, height: 8 },
+    textShadowRadius: 14,
+  },
+  stroke: { position: 'absolute', height: 20, borderRadius: 10, opacity: 0.93 },
+  traceHint: {
+    position: 'absolute',
+    bottom: 16,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+  },
+  traceHintText: { color: '#5D668A', fontSize: 12 },
+  doneBadge: {
+    position: 'absolute',
+    right: 18,
+    top: 18,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+  },
+  doneMark: { color: '#FFFFFF', fontFamily: ff('fa', 'black'), fontSize: 28 },
+  padActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 12 },
+  clearButton: {
+    minWidth: 132,
+    height: 48,
     borderRadius: 24,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 22,
-    shadowColor: '#1D1850',
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
+    borderWidth: 2,
+    borderColor: '#EEF4FF',
   },
-  letterPillText: {
-    color: '#19A9C0',
-    fontSize: 42,
-    lineHeight: 46,
-    fontFamily: ff('fa', 'black'),
-  },
-  centerTraceCard: { alignItems: 'center' },
-  examplesCol: { alignItems: 'flex-end', justifyContent: 'center' },
-  examplesRow: { flexDirection: 'row', alignItems: 'stretch', justifyContent: 'flex-end' },
-  padWrap: { alignItems: 'center' },
-  pad: {
-    borderRadius: 36,
-    backgroundColor: '#FFFFFF',
+  clearText: { color: C.purple, fontSize: 14 },
+  wordCard: {
+    minHeight: 102,
+    borderRadius: 30,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    padding: 12,
     borderWidth: 3,
-    borderColor: 'rgba(190, 221, 242, 0.95)',
-    shadowColor: '#21104C',
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
+    borderColor: 'rgba(255,255,255,0.8)',
+    shadowColor: '#1D2B68',
+    shadowOpacity: 0.13,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
   },
-  ghostWrap: { ...StyleSheet.absoluteFillObject },
-  doneBadge: {
+  wordImageBubble: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wordIcon: { width: '78%', height: '78%' },
+  wordCopy: { flex: 1, marginLeft: 12 },
+  wordLabel: { color: '#FFFFFF', fontSize: 22, lineHeight: 30 },
+  wordCaption: { color: 'rgba(255,255,255,0.86)', fontSize: 12 },
+  nextButton: {
+    height: 58,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+  },
+  nextText: { color: '#FFFFFF', fontSize: 16 },
+  letterRailWrap: {
     position: 'absolute',
-    right: 16,
-    top: 16,
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: '#22C55E',
-    alignItems: 'center',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.86)',
     justifyContent: 'center',
   },
-  doneMark: { fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: 26 },
-  actions: { flexDirection: 'row', gap: 12, marginTop: 14 },
-  clearBtn: {
-    height: 50,
-    minWidth: 120,
-    borderRadius: 25,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  clearText: { fontFamily: ff('fa', 'black'), color: C.purple, fontSize: 14 },
-  nextBtn: { height: 50, minWidth: 120, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
-  nextText: { fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: 14 },
-  letterRowWrap: { marginTop: 2, paddingBottom: 0 },
-  letterRow: { gap: 8, paddingVertical: 8, paddingHorizontal: 2 },
-  tile: { width: 54, height: 54, borderRadius: 18, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-  tileText: { fontSize: 24, lineHeight: 34 },
-  soundBtn: {
-    width: 56,
-    height: 56,
+  letterRail: { alignItems: 'center', gap: 9, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 8 },
+  letterTile: {
+    width: 54,
+    height: 54,
     borderRadius: 18,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#1D1850',
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
+    shadowColor: '#234A77',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 5 },
     elevation: 3,
   },
-  soundIcon: { width: 30, height: 30 },
-  exampleCard: {
-    borderRadius: 22,
-    borderWidth: 4,
-    backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
-    shadowColor: '#1D1850',
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 7 },
-    elevation: 4,
-  },
-  exampleTop: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 4,
-    backgroundColor: '#FFFFFF',
-  },
-  exampleImage: {
-    width: '68%',
-    height: '68%',
-    marginTop: 2,
-  },
-  exampleLabelWrap: {
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(25, 169, 192, 0.12)',
-  },
-  exampleLabel: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#2F335B',
-  },
+  letterTileText: { fontSize: 27, lineHeight: 36 },
 });

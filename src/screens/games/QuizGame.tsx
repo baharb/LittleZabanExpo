@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ImageBackground, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { AppContext } from '../../store/AppContext';
 import { useSpeech } from '../../hooks/useSpeech';
@@ -9,15 +9,23 @@ import { C } from '../../theme/colors';
 import { dir, ff } from '../../theme/fonts';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
 
-type Item = { id: string; fa: string; en: string; kind: 'cat' | 'apple' | 'water' | 'sun' | 'house' | 'flower'; color: string; accent: string };
+type Item = {
+  id: string;
+  fa: string;
+  en: string;
+  source: ImageSourcePropType;
+  color: string;
+  soft: string;
+  kind: 'cat' | 'apple' | 'water' | 'sun' | 'house' | 'flower';
+};
 
 const ITEMS: Item[] = [
-  { id: 'cat', fa: 'گربه', en: 'Cat', kind: 'cat', color: '#A855F7', accent: '#FDE68A' },
-  { id: 'apple', fa: 'سیب', en: 'Apple', kind: 'apple', color: '#EF4444', accent: '#22C55E' },
-  { id: 'water', fa: 'آب', en: 'Water', kind: 'water', color: '#38BDF8', accent: '#93C5FD' },
-  { id: 'sun', fa: 'خورشید', en: 'Sun', kind: 'sun', color: '#FACC15', accent: '#FB923C' },
-  { id: 'house', fa: 'خانه', en: 'House', kind: 'house', color: '#FB923C', accent: '#A855F7' },
-  { id: 'flower', fa: 'گل', en: 'Flower', kind: 'flower', color: '#EC4899', accent: '#22C55E' },
+  { id: 'cat', fa: 'گربه', en: 'Cat', kind: 'cat', source: neliWorldAssets.animals.cat, color: '#A855F7', soft: '#F1E8FF' },
+  { id: 'apple', fa: 'سیب', en: 'Apple', kind: 'apple', source: neliWorldAssets.foods.apple, color: '#EF4444', soft: '#FFE4E6' },
+  { id: 'water', fa: 'آب', en: 'Water', kind: 'water', source: neliWorldAssets.foods.water, color: '#0EA5E9', soft: '#E0F2FE' },
+  { id: 'sun', fa: 'خورشید', en: 'Sun', kind: 'sun', source: neliWorldAssets.ui.star, color: '#F59E0B', soft: '#FEF3C7' },
+  { id: 'house', fa: 'خانه', en: 'House', kind: 'house', source: neliWorldAssets.rooms.livingRoom, color: '#F97316', soft: '#FFEDD5' },
+  { id: 'flower', fa: 'گل', en: 'Flower', kind: 'flower', source: neliWorldAssets.ui.paintbrush, color: '#EC4899', soft: '#FCE7F3' },
 ];
 
 function shuffle<T>(items: T[]) {
@@ -31,26 +39,20 @@ function makeQuestion() {
 }
 
 function ItemArt({ item, characterId }: { item: Item; characterId: string }) {
-  const source = {
-    apple: neliWorldAssets.foods.apple,
-    water: neliWorldAssets.foods.water,
-    sun: neliWorldAssets.ui.star,
-    house: neliWorldAssets.rooms.livingRoom,
-    flower: neliWorldAssets.ui.paintbrush,
-    cat: neliWorldAssets.animals.cat,
-  }[item.kind];
-
   if (item.kind === 'house') {
     return (
-      <ImageBackground source={source} style={styles.art} imageStyle={styles.artImage}>
+      <ImageBackground source={item.source} style={[styles.art, { backgroundColor: item.soft }]} imageStyle={styles.artImage}>
+        <View style={styles.houseOverlay} />
         <CharacterAvatar characterId={characterId} size={124} />
       </ImageBackground>
     );
   }
 
   return (
-    <View style={[styles.art, { backgroundColor: item.accent + '55' }]}>
-      <Image source={source} style={item.kind === 'cat' ? styles.artCharacter : styles.artAsset} resizeMode="contain" />
+    <View style={[styles.art, { backgroundColor: item.soft }]}>
+      <View style={[styles.artHalo, { backgroundColor: item.color }]} />
+      <View style={[styles.artSpark, { backgroundColor: item.color }]} />
+      <Image source={item.source} style={item.kind === 'cat' ? styles.artCharacter : styles.artAsset} resizeMode="contain" />
     </View>
   );
 }
@@ -58,11 +60,13 @@ function ItemArt({ item, characterId }: { item: Item; characterId: string }) {
 export default function QuizGame() {
   const { lang, addStars, selectedCharacterId } = useContext(AppContext);
   const { speakFarsiOnly, speakInLang, stop } = useSpeech();
+  const { width } = useWindowDimensions();
   const [q, setQ] = useState(makeQuestion);
   const [selected, setSelected] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [total, setTotal] = useState(0);
   const isFa = lang === 'fa' || lang === 'ar';
+  const compact = width < 760;
 
   const speakItem = () => {
     stop();
@@ -86,27 +90,78 @@ export default function QuizGame() {
     setTimeout(() => {
       setQ(makeQuestion());
       setSelected(null);
-    }, 1000);
+    }, 980);
   };
 
   return (
     <View style={styles.root}>
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#E9F7FF' }]} />
-      <TopBar title="Word Quiz" titleFa="مسابقه کلمه" showBack dark={false} rightContent={<Text style={styles.score}>{score}/{total}</Text>} />
-      <View style={styles.content}>
-        <TouchableOpacity style={styles.questionCard} onPress={speakItem} activeOpacity={0.9}>
-          <ItemArt item={q.correct} characterId={selectedCharacterId} />
-          <Text style={[styles.question, { fontFamily: ff(lang, 'black') }, dir(lang)]}>{isFa ? 'این چیه؟' : 'What is this?'}</Text>
-          <Text style={styles.listen}>{isFa ? 'برای شنیدن لمس کن' : 'Tap to hear'}</Text>
-        </TouchableOpacity>
-        <View style={styles.options}>
-          {q.options.map(opt => {
+      <View style={styles.skyBubble} />
+      <View style={styles.lemonBubble} />
+      <View style={styles.peachBubble} />
+      <View style={styles.tinyDotA} />
+      <View style={styles.tinyDotB} />
+      <TopBar
+        title="Word Quiz"
+        titleFa="مسابقه کلمه"
+        showBack
+        dark={false}
+        rightContent={<Text style={styles.score}>{score}/{total}</Text>}
+      />
+
+      <View style={[styles.content, compact && styles.contentCompact]}>
+        <View style={[styles.questionCard, compact && styles.questionCardCompact]}>
+          <View style={styles.questionHeader}>
+            <View style={[styles.topicPill, { backgroundColor: q.correct.soft }]}>
+              <Text style={[styles.topicText, { color: q.correct.color, fontFamily: ff(lang, 'black') }]}>
+                {isFa ? 'ببین و بگو' : 'Look and choose'}
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.listenButton} onPress={speakItem} activeOpacity={0.86}>
+              <Text style={styles.listenIcon}>▶</Text>
+              <Text style={[styles.listenText, { fontFamily: ff(lang, 'black') }]}>{isFa ? 'صدا' : 'Hear'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={styles.artButton} onPress={speakItem} activeOpacity={0.92}>
+            <ItemArt item={q.correct} characterId={selectedCharacterId} />
+          </TouchableOpacity>
+
+          <Text style={[styles.question, { fontFamily: ff(lang, 'black') }, dir(lang)]}>
+            {isFa ? 'این چیه؟' : 'What is this?'}
+          </Text>
+          <Text style={[styles.listenHint, { fontFamily: ff(lang, 'bold') }]}>
+            {isFa ? 'برای شنیدن، تصویر را لمس کن' : 'Tap the picture to hear the word'}
+          </Text>
+        </View>
+
+        <View style={[styles.optionsPanel, compact && styles.optionsPanelCompact]}>
+          {q.options.map((opt, index) => {
             const correct = selected && opt.id === q.correct.id;
             const wrong = selected === opt.id && opt.id !== q.correct.id;
+            const disabled = !!selected;
             return (
-              <TouchableOpacity key={opt.id} style={[styles.option, !!correct && styles.correct, wrong && styles.wrong]} onPress={() => answer(opt)}>
-                <Text style={[styles.optFa, { fontFamily: ff('fa', 'black') }]}>{opt.fa}</Text>
-                <Text style={styles.optEn}>{opt.en}</Text>
+              <TouchableOpacity
+                key={opt.id}
+                style={[
+                  styles.option,
+                  { backgroundColor: opt.soft },
+                  index % 2 === 0 ? styles.optionTiltLeft : styles.optionTiltRight,
+                  !!correct && styles.correct,
+                  wrong && styles.wrong,
+                  disabled && !correct && !wrong && styles.optionDisabled,
+                ]}
+                onPress={() => answer(opt)}
+                activeOpacity={0.88}
+              >
+                <View style={[styles.optionBadge, { backgroundColor: opt.color }]}>
+                  <Image source={opt.source} style={styles.optionIcon} resizeMode="contain" />
+                </View>
+                <View style={styles.optionTextWrap}>
+                  <Text style={[styles.optFa, { fontFamily: ff('fa', 'black') }]} numberOfLines={1}>{opt.fa}</Text>
+                  <Text style={styles.optEn} numberOfLines={1}>{opt.en}</Text>
+                </View>
+                {correct ? <Text style={styles.feedbackMark}>✓</Text> : null}
+                {wrong ? <Text style={styles.feedbackMark}>×</Text> : null}
               </TouchableOpacity>
             );
           })}
@@ -117,40 +172,215 @@ export default function QuizGame() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
-  score: { minWidth: 58, height: 42, borderRadius: 21, backgroundColor: C.yellow, color: C.textDark, fontFamily: ff('fa', 'black'), fontSize: 15, textAlign: 'center', textAlignVertical: 'center', paddingTop: 10 },
-  content: { flex: 1, padding: 16, paddingTop: 8 },
-  questionCard: { minHeight: 330, borderRadius: 32, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', padding: 18 },
-  question: { color: C.textDark, fontSize: 28, lineHeight: 36, marginTop: 10, textAlign: 'center' },
-  listen: { fontFamily: ff('fa', 'bold'), color: C.textMid, fontSize: 12, marginTop: 5 },
-  options: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 16 },
-  option: { width: '48%', minHeight: 86, borderRadius: 24, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', borderWidth: 4.5, borderColor: 'transparent' },
-  correct: { borderColor: '#22C55E', backgroundColor: '#F0FFF4' },
-  wrong: { borderColor: '#FF6B6B', backgroundColor: '#FFF1F2' },
-  optFa: { color: C.textDark, fontSize: 19 },
-  optEn: { fontFamily: ff('fa', 'bold'), color: C.textMid, fontSize: 12 },
-  art: { width: '100%', height: 210, borderRadius: 28, backgroundColor: '#F7F4FF', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  root: { flex: 1, backgroundColor: '#F7FCFF', overflow: 'hidden' },
+  skyBubble: {
+    position: 'absolute',
+    left: -90,
+    top: 76,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: '#DDF4FF',
+  },
+  lemonBubble: {
+    position: 'absolute',
+    right: 64,
+    top: 88,
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: '#FFF0A8',
+  },
+  peachBubble: {
+    position: 'absolute',
+    right: -70,
+    bottom: -78,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: '#FFE0D3',
+  },
+  tinyDotA: {
+    position: 'absolute',
+    left: '45%',
+    top: 112,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: '#86EFAC',
+  },
+  tinyDotB: {
+    position: 'absolute',
+    left: '76%',
+    bottom: 72,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#FDA4AF',
+  },
+  score: {
+    minWidth: 64,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
+    color: C.textDark,
+    fontFamily: ff('fa', 'black'),
+    fontSize: 15,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    paddingTop: 10,
+    borderWidth: 2,
+    borderColor: '#BDEBFF',
+  },
+  content: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 18,
+    paddingHorizontal: 28,
+    paddingBottom: 18,
+  },
+  contentCompact: { gap: 12, paddingHorizontal: 18 },
+  questionCard: {
+    width: '48%',
+    maxWidth: 520,
+    minWidth: 360,
+    alignSelf: 'stretch',
+    marginVertical: 10,
+    borderRadius: 38,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    shadowColor: '#075985',
+    shadowOpacity: 0.11,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+  },
+  questionCardCompact: { minWidth: 320 },
+  questionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 10,
+  },
+  topicPill: {
+    minHeight: 42,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topicText: { fontSize: 15, lineHeight: 20 },
+  listenButton: {
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: C.yellow,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    gap: 6,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  listenIcon: { color: C.textDark, fontFamily: ff('fa', 'black'), fontSize: 13, marginTop: 1 },
+  listenText: { color: C.textDark, fontSize: 14 },
+  artButton: { flex: 1, minHeight: 190 },
+  art: {
+    flex: 1,
+    minHeight: 190,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
   artImage: { width: '100%', height: '100%' },
-  artAsset: { width: 150, height: 150 },
-  artCharacter: { width: 174, height: 174 },
-  sceneNeli: { position: 'absolute', right: 20, bottom: -8, width: 112, height: 146 },
-  apple: { width: 92, height: 92, borderRadius: 46 },
-  leaf: { position: 'absolute', top: 56, right: 126, width: 28, height: 16, borderRadius: 12, transform: [{ rotate: '-25deg' }] },
-  drop: { width: 84, height: 112, borderRadius: 46, transform: [{ rotate: '45deg' }] },
-  sunHalo: { position: 'absolute', width: 138, height: 138, borderRadius: 69, opacity: 0.35 },
-  sun: { width: 90, height: 90, borderRadius: 45 },
-  roof: { width: 0, height: 0, borderLeftWidth: 70, borderRightWidth: 70, borderBottomWidth: 62, borderLeftColor: 'transparent', borderRightColor: 'transparent' },
-  house: { width: 118, height: 78, borderRadius: 16, backgroundColor: '#FFFFFF' },
-  door: { position: 'absolute', bottom: 45, width: 30, height: 44, borderRadius: 11 },
-  petal: { position: 'absolute', top: 48, width: 44, height: 52, borderRadius: 24 },
-  petalLeft: { position: 'absolute', left: 115, top: 78, width: 44, height: 52, borderRadius: 24 },
-  petalRight: { position: 'absolute', right: 115, top: 78, width: 44, height: 52, borderRadius: 24 },
-  center: { width: 36, height: 36, borderRadius: 18 },
-  stem: { position: 'absolute', bottom: 44, width: 9, height: 58, borderRadius: 5 },
-  catHead: { width: 112, height: 104, borderRadius: 52 },
-  catEarLeft: { position: 'absolute', left: 108, top: 52, width: 36, height: 42, borderRadius: 19 },
-  catEarRight: { position: 'absolute', right: 108, top: 52, width: 36, height: 42, borderRadius: 19 },
-  eyeLeft: { position: 'absolute', left: 35, top: 40, width: 12, height: 12, borderRadius: 6, backgroundColor: '#1B1238' },
-  eyeRight: { position: 'absolute', right: 35, top: 40, width: 12, height: 12, borderRadius: 6, backgroundColor: '#1B1238' },
-  smile: { position: 'absolute', bottom: 27, alignSelf: 'center', width: 42, height: 20, borderBottomWidth: 5, borderBottomColor: '#1B1238', borderRadius: 20 },
+  houseOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
+  artHalo: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    opacity: 0.12,
+  },
+  artSpark: {
+    position: 'absolute',
+    right: 36,
+    top: 30,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    opacity: 0.35,
+  },
+  artAsset: { width: 160, height: 160 },
+  artCharacter: { width: 180, height: 180 },
+  question: { color: C.textDark, fontSize: 29, lineHeight: 37, marginTop: 12, textAlign: 'center' },
+  listenHint: { color: C.textMid, fontSize: 13, lineHeight: 18, marginTop: 3, textAlign: 'center' },
+  optionsPanel: {
+    width: '43%',
+    maxWidth: 470,
+    minWidth: 320,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignContent: 'center',
+    gap: 12,
+  },
+  optionsPanelCompact: { minWidth: 300 },
+  option: {
+    width: '47%',
+    minHeight: 118,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    shadowColor: '#1E293B',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
+  },
+  optionTiltLeft: { transform: [{ rotate: '-1deg' }] },
+  optionTiltRight: { transform: [{ rotate: '1deg' }] },
+  optionDisabled: { opacity: 0.58 },
+  optionBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.86)',
+  },
+  optionIcon: { width: 44, height: 44 },
+  optionTextWrap: { maxWidth: '100%', alignItems: 'center' },
+  correct: {
+    borderColor: '#22C55E',
+    backgroundColor: '#ECFDF5',
+    transform: [{ scale: 1.03 }],
+  },
+  wrong: {
+    borderColor: '#FB7185',
+    backgroundColor: '#FFF1F2',
+  },
+  optFa: { color: C.textDark, fontSize: 20, lineHeight: 27, textAlign: 'center' },
+  optEn: { fontFamily: ff('en', 'black'), color: C.textMid, fontSize: 12, lineHeight: 16, textAlign: 'center' },
+  feedbackMark: {
+    position: 'absolute',
+    top: 8,
+    right: 12,
+    color: C.textDark,
+    fontFamily: ff('fa', 'black'),
+    fontSize: 22,
+  },
 });

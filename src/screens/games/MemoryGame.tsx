@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { Image, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { AppContext } from '../../store/AppContext';
 import { ff } from '../../theme/fonts';
@@ -11,9 +11,9 @@ type MemoryItem = {
   id: string;
   fa: string;
   en: string;
+  source: ImageSourcePropType;
   color: string;
-  accent: string;
-  kind: 'cat' | 'flower' | 'fish' | 'rocket' | 'house' | 'sun';
+  soft: string;
 };
 
 type Card = {
@@ -25,12 +25,12 @@ type Card = {
 };
 
 const POOL: MemoryItem[] = [
-  { id: 'cat', fa: 'گربه', en: 'Cat', color: '#A855F7', accent: '#FDE68A', kind: 'cat' },
-  { id: 'flower', fa: 'گل', en: 'Flower', color: '#EC4899', accent: '#86EFAC', kind: 'flower' },
-  { id: 'fish', fa: 'ماهی', en: 'Fish', color: '#38BDF8', accent: '#FACC15', kind: 'fish' },
-  { id: 'rocket', fa: 'موشک', en: 'Rocket', color: '#EF4444', accent: '#93C5FD', kind: 'rocket' },
-  { id: 'house', fa: 'خانه', en: 'House', color: '#FB923C', accent: '#A78BFA', kind: 'house' },
-  { id: 'sun', fa: 'خورشید', en: 'Sun', color: '#FACC15', accent: '#FDBA74', kind: 'sun' },
+  { id: 'apple', fa: 'سیب', en: 'Apple', source: neliWorldAssets.foods.apple, color: '#EF4444', soft: '#FFE4E6' },
+  { id: 'banana', fa: 'موز', en: 'Banana', source: neliWorldAssets.foods.banana, color: '#FBBF24', soft: '#FEF3C7' },
+  { id: 'carrot', fa: 'هویج', en: 'Carrot', source: neliWorldAssets.foods.carrot, color: '#F97316', soft: '#FFEDD5' },
+  { id: 'strawberry', fa: 'توت فرنگی', en: 'Strawberry', source: neliWorldAssets.foods.strawberry, color: '#F43F5E', soft: '#FFE4E6' },
+  { id: 'broccoli', fa: 'کلم بروکلی', en: 'Broccoli', source: neliWorldAssets.foods.broccoli, color: '#22C55E', soft: '#DCFCE7' },
+  { id: 'corn', fa: 'ذرت', en: 'Corn', source: neliWorldAssets.foods.corn, color: '#EAB308', soft: '#FEF9C3' },
 ];
 
 function shuffle<T>(arr: T[]) {
@@ -49,59 +49,82 @@ function makeDeck(): Card[] {
   );
 }
 
-function CardArt({ item }: { item: MemoryItem }) {
-  const source = {
-    cat: neliWorldAssets.animals.cat,
-    flower: neliWorldAssets.ui.paintbrush,
-    fish: neliWorldAssets.foods.fish,
-    rocket: neliWorldAssets.ui.play,
-    house: neliWorldAssets.rooms.livingRoom,
-    sun: neliWorldAssets.ui.star,
-  }[item.kind];
-  if (item.kind === 'house') {
-    return (
-      <ImageBackground source={source} style={styles.art} imageStyle={styles.artBg}>
-        <Image source={neliWorldAssets.ui.home} style={styles.memoryAsset} resizeMode="contain" />
-      </ImageBackground>
-    );
-  }
+function CardBack() {
   return (
-    <View style={[styles.art, { backgroundColor: item.accent + '55' }]}>
-      <Image source={source} style={styles.memoryAsset} resizeMode="contain" />
+    <View style={styles.cardBack}>
+      <View style={styles.backIcon}>
+        <Text style={styles.backIconText}>?</Text>
+      </View>
+      <View style={styles.backSmile} />
+    </View>
+  );
+}
+
+function CardFace({ item }: { item: MemoryItem }) {
+  return (
+    <View style={[styles.cardFaceInner, { backgroundColor: item.soft }]}>
+      <View style={[styles.faceHalo, { backgroundColor: item.color }]} />
+      <Image source={item.source} style={styles.memoryAsset} resizeMode="contain" />
+      <Text style={[styles.cardLabel, { color: item.color }]} numberOfLines={1}>
+        {item.fa}
+      </Text>
     </View>
   );
 }
 
 export default function MemoryGame() {
   const { lang, addStars } = useContext(AppContext);
+  const { width, height } = useWindowDimensions();
   const [cards, setCards] = useState<Card[]>(makeDeck);
   const [selected, setSelected] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
   const [won, setWon] = useState(false);
+  const cardsRef = useRef(cards);
+  const awardedRef = useRef(false);
+
+  const compactHeight = Math.max(0, height - 118);
+  const cardSize = Math.min(88, Math.max(66, Math.floor(Math.min((width - 360) / 4, (compactHeight - 74) / 3))));
+  const matchedCount = cards.filter(card => card.matched).length / 2;
+
+  useEffect(() => {
+    cardsRef.current = cards;
+  }, [cards]);
 
   useEffect(() => {
     if (selected.length !== 2) return;
     const [a, b] = selected;
-    const first = cards[a];
-    const second = cards[b];
+    const first = cardsRef.current[a];
+    const second = cardsRef.current[b];
+
+    if (!first || !second) {
+      setSelected([]);
+      return;
+    }
+
+    setMoves(prev => prev + 1);
 
     if (first.pairId === second.pairId) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setCards(prev => prev.map((card, i) => (i === a || i === b ? { ...card, matched: true } : card)));
-      const matchedCount = cards.filter(card => card.matched).length + 2;
-      if (matchedCount === cards.length) {
+      const next = cardsRef.current.map((card, i) => (i === a || i === b ? { ...card, matched: true } : card));
+      const gameWon = next.every(card => card.matched);
+      cardsRef.current = next;
+      setCards(next);
+      if (gameWon && !awardedRef.current) {
+        awardedRef.current = true;
         setWon(true);
         addStars(10);
       }
       setSelected([]);
-    } else {
-      setTimeout(() => {
-        setCards(prev => prev.map((card, i) => (i === a || i === b ? { ...card, flipped: false } : card)));
-        setSelected([]);
-      }, 750);
+      return;
     }
-    setMoves(prev => prev + 1);
-  }, [selected]);
+
+    const timeout = setTimeout(() => {
+      setCards(prev => prev.map((card, i) => (i === a || i === b ? { ...card, flipped: false } : card)));
+      setSelected([]);
+    }, 720);
+
+    return () => clearTimeout(timeout);
+  }, [addStars, selected]);
 
   const flip = (idx: number) => {
     if (selected.length === 2 || cards[idx].flipped || cards[idx].matched) return;
@@ -115,13 +138,18 @@ export default function MemoryGame() {
     setSelected([]);
     setMoves(0);
     setWon(false);
+    awardedRef.current = false;
   };
 
   return (
     <View style={styles.root}>
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#F4EEFF' }]} />
+      <View style={styles.bgMint} />
+      <View style={styles.bgSun} />
+      <View style={styles.bgBerry} />
+      <View style={styles.bgDotA} />
+      <View style={styles.bgDotB} />
       <TopBar
-        title="Memory"
+        title="Memory Match"
         titleFa="بازی حافظه"
         showBack
         dark={false}
@@ -129,148 +157,289 @@ export default function MemoryGame() {
       />
 
       <View style={styles.content}>
-        {won ? (
-          <View style={styles.winBox}>
-            <View style={styles.winBadge}>
-              <Text style={styles.winMark}>✓</Text>
-            </View>
-            <Text style={[styles.winTitle, { fontFamily: ff(lang, 'black') }]}>
-              {lang === 'fa' ? 'همه را پیدا کردی!' : 'You found them all!'}
+        <View style={styles.sidePanel}>
+          <View style={styles.progressBadge}>
+            <Text style={[styles.progressNumber, { fontFamily: ff(lang, 'black') }]}>{matchedCount}/6</Text>
+            <Text style={[styles.progressLabel, { fontFamily: ff(lang, 'bold') }]}>
+              {lang === 'fa' ? 'جفت پیدا شد' : 'pairs found'}
             </Text>
-            <TouchableOpacity style={styles.playAgain} onPress={reset} activeOpacity={0.86}>
-              <Text style={[styles.playAgainText, { fontFamily: ff(lang, 'black') }]}>
-                {lang === 'fa' ? 'دوباره بازی کن' : 'Play again'}
-              </Text>
-            </TouchableOpacity>
           </View>
-        ) : (
-          <>
-            <Text style={[styles.prompt, { fontFamily: ff(lang, 'black') }]}>
-              {lang === 'fa' ? 'جفت‌های شبیه را پیدا کن' : 'Find the matching pairs'}
-            </Text>
-            <View style={styles.grid}>
+          <Text style={[styles.prompt, { fontFamily: ff(lang, 'black') }]}>
+            {lang === 'fa' ? 'میوه‌ها و سبزی‌های شبیه را پیدا کن' : 'Find the fruit and veggie pairs'}
+          </Text>
+          <View style={styles.sampleStrip}>
+            <Image source={neliWorldAssets.foods.strawberry} style={styles.sampleFood} resizeMode="contain" />
+            <Image source={neliWorldAssets.foods.broccoli} style={styles.sampleFood} resizeMode="contain" />
+            <Image source={neliWorldAssets.foods.corn} style={styles.sampleFood} resizeMode="contain" />
+          </View>
+        </View>
+
+        <View style={styles.boardWrap}>
+          {won ? (
+            <View style={styles.winBox}>
+              <View style={styles.winBadge}>
+                <Text style={styles.winMark}>✓</Text>
+              </View>
+              <Text style={[styles.winTitle, { fontFamily: ff(lang, 'black') }]}>
+                {lang === 'fa' ? 'همه را پیدا کردی!' : 'You found them all!'}
+              </Text>
+              <TouchableOpacity style={styles.playAgain} onPress={reset} activeOpacity={0.86}>
+                <Text style={[styles.playAgainText, { fontFamily: ff(lang, 'black') }]}>
+                  {lang === 'fa' ? 'دوباره بازی کن' : 'Play again'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={[styles.grid, { width: cardSize * 4 + 30 }]}>
               {cards.map((card, i) => {
                 const visible = card.flipped || card.matched;
                 return (
                   <TouchableOpacity
                     key={card.id}
-                    style={[styles.card, visible && styles.cardFront, card.matched && styles.cardMatched]}
+                    style={[
+                      styles.card,
+                      { width: cardSize, height: cardSize },
+                      visible && styles.cardFront,
+                      card.matched && styles.cardMatched,
+                    ]}
                     onPress={() => flip(i)}
-                    activeOpacity={0.86}
+                    activeOpacity={0.9}
                   >
-                    {visible ? (
-                      <>
-                        <CardArt item={card.item} />
-                        <Text style={styles.cardLabel}>{lang === 'fa' ? card.item.fa : card.item.en}</Text>
-                      </>
-                    ) : (
-                      <View style={styles.cardBack}>
-                        <View style={styles.backDotLarge} />
-                        <View style={styles.backDotSmall} />
-                      </View>
-                    )}
+                    {visible ? <CardFace item={card.item} /> : <CardBack />}
                   </TouchableOpacity>
                 );
               })}
             </View>
-          </>
-        )}
+          )}
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+  root: { flex: 1, backgroundColor: '#FFFDF4', overflow: 'hidden' },
+  bgMint: {
+    position: 'absolute',
+    left: -90,
+    top: 86,
+    width: 290,
+    height: 290,
+    borderRadius: 145,
+    backgroundColor: '#D9FBEA',
+  },
+  bgSun: {
+    position: 'absolute',
+    right: 42,
+    top: 76,
+    width: 176,
+    height: 176,
+    borderRadius: 88,
+    backgroundColor: '#FFF0A8',
+  },
+  bgBerry: {
+    position: 'absolute',
+    right: -80,
+    bottom: -60,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: '#FFE0EA',
+  },
+  bgDotA: {
+    position: 'absolute',
+    left: '31%',
+    top: 106,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#7DD3FC',
+  },
+  bgDotB: {
+    position: 'absolute',
+    left: '82%',
+    bottom: 64,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#86EFAC',
+  },
   moves: {
-    minWidth: 48,
+    minWidth: 52,
     height: 42,
     borderRadius: 21,
-    backgroundColor: C.yellow,
+    backgroundColor: '#FFFFFF',
     color: C.textDark,
     fontFamily: ff('fa', 'black'),
     fontSize: 17,
     textAlign: 'center',
     textAlignVertical: 'center',
     paddingTop: 9,
+    borderWidth: 2,
+    borderColor: '#FFE08A',
   },
-  content: { flex: 1, padding: 16, paddingTop: 8 },
-  prompt: { color: C.textDark, fontSize: 24, lineHeight: 31, textAlign: 'center', marginBottom: 14 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
-  card: {
-    width: '30.5%',
-    aspectRatio: 0.86,
-    borderRadius: 24,
-    backgroundColor: C.purple,
+  content: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#20124D',
-    shadowOpacity: 0.12,
-    shadowRadius: 9,
-    shadowOffset: { width: 0, height: 6 },
+    paddingHorizontal: 30,
+    paddingBottom: 18,
+    gap: 18,
+  },
+  sidePanel: {
+    width: 230,
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+    gap: 14,
+  },
+  progressBadge: {
+    alignSelf: 'flex-start',
+    minWidth: 122,
+    borderRadius: 28,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#E8F7DB',
+    shadowColor: '#2D5B34',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 7 },
     elevation: 2,
   },
-  cardFront: { backgroundColor: '#FFFFFF', borderWidth: 3, borderColor: '#ECE6FF' },
-  cardMatched: { borderColor: '#22C55E', backgroundColor: '#F0FFF4' },
-  cardBack: { width: '78%', height: '78%', borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  backDotLarge: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFFFFF', opacity: 0.9 },
-  backDotSmall: { position: 'absolute', right: 16, top: 16, width: 16, height: 16, borderRadius: 8, backgroundColor: C.yellow },
-  cardLabel: { fontFamily: ff('fa', 'black'), color: C.textDark, fontSize: 12, marginTop: 3, textAlign: 'center' },
-  art: { width: 68, height: 68, borderRadius: 20, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  artBg: { width: '100%', height: '100%' },
-  memoryAsset: { width: 56, height: 56 },
-  petal: { position: 'absolute', width: 24, height: 28, borderRadius: 14 },
-  centerDot: { width: 24, height: 24, borderRadius: 12 },
-  stem: { position: 'absolute', bottom: 2, width: 7, height: 24, borderRadius: 4 },
-  fishBody: { width: 46, height: 32, borderRadius: 20 },
-  fishTail: {
+  progressNumber: { color: '#169B5B', fontSize: 24, lineHeight: 29, textAlign: 'center' },
+  progressLabel: { color: C.textMid, fontSize: 12, lineHeight: 16, textAlign: 'center' },
+  prompt: { color: C.textDark, fontSize: 25, lineHeight: 34 },
+  sampleStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 9,
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 2,
+    borderColor: '#F7ECD3',
+  },
+  sampleFood: { width: 40, height: 40 },
+  boardWrap: {
+    minWidth: 420,
+    minHeight: 300,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  card: {
+    borderRadius: 24,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#7C4A03',
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 3,
+  },
+  cardFront: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  cardMatched: {
+    borderColor: '#8DE8A9',
+    shadowColor: '#15803D',
+    shadowOpacity: 0.15,
+  },
+  cardBack: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 24,
+    backgroundColor: '#FFE59D',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+  },
+  backIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#A16207',
+    shadowOpacity: 0.11,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  backIconText: {
+    color: '#F59E0B',
+    fontFamily: ff('fa', 'black'),
+    fontSize: 25,
+    lineHeight: 31,
+    marginTop: -1,
+  },
+  backSmile: {
     position: 'absolute',
-    right: 2,
-    width: 0,
-    height: 0,
-    borderTopWidth: 15,
-    borderBottomWidth: 15,
-    borderLeftWidth: 22,
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
+    bottom: 15,
+    width: 22,
+    height: 10,
+    borderBottomWidth: 3,
+    borderBottomColor: 'rgba(161,98,7,0.42)',
+    borderRadius: 12,
   },
-  fishEye: { position: 'absolute', left: 18, top: 21, width: 5, height: 5, borderRadius: 3, backgroundColor: '#1B1238' },
-  rocketBody: { width: 30, height: 48, borderRadius: 15 },
-  rocketTip: {
+  cardFaceInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  faceHalo: {
     position: 'absolute',
-    top: 0,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 16,
-    borderRightWidth: 16,
-    borderBottomWidth: 24,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
+    width: '78%',
+    height: '78%',
+    borderRadius: 500,
+    opacity: 0.12,
   },
-  rocketWindow: { position: 'absolute', top: 25, width: 12, height: 12, borderRadius: 6, backgroundColor: '#FFFFFF' },
-  flame: { position: 'absolute', bottom: 0, width: 18, height: 20, borderRadius: 12 },
-  roof: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 30,
-    borderRightWidth: 30,
-    borderBottomWidth: 28,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
+  memoryAsset: { width: '66%', height: '58%' },
+  cardLabel: {
+    fontFamily: ff('fa', 'black'),
+    fontSize: 11,
+    lineHeight: 15,
+    textAlign: 'center',
+    marginTop: 1,
+    paddingHorizontal: 4,
   },
-  houseBody: { width: 48, height: 34, borderRadius: 8 },
-  door: { position: 'absolute', bottom: 8, width: 12, height: 18, borderRadius: 4, backgroundColor: '#FFFFFF' },
-  sunHalo: { position: 'absolute', width: 58, height: 58, borderRadius: 29, opacity: 0.55 },
-  sunCore: { width: 38, height: 38, borderRadius: 19 },
-  catHead: { width: 48, height: 44, borderRadius: 22 },
-  catEarLeft: { position: 'absolute', left: 9, top: 7, width: 18, height: 22, borderRadius: 10 },
-  catEarRight: { position: 'absolute', right: 9, top: 7, width: 18, height: 22, borderRadius: 10 },
-  catEyeLeft: { position: 'absolute', left: 15, top: 18, width: 6, height: 6, borderRadius: 3, backgroundColor: '#1B1238' },
-  catEyeRight: { position: 'absolute', right: 15, top: 18, width: 6, height: 6, borderRadius: 3, backgroundColor: '#1B1238' },
-  winBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  winBadge: { width: 118, height: 118, borderRadius: 59, backgroundColor: '#22C55E', alignItems: 'center', justifyContent: 'center' },
-  winMark: { fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: 62 },
-  winTitle: { color: C.textDark, fontSize: 25, marginTop: 18, textAlign: 'center' },
-  playAgain: { backgroundColor: C.yellow, borderRadius: 26, paddingHorizontal: 32, paddingVertical: 15, marginTop: 22 },
-  playAgainText: { color: C.textDark, fontSize: 17 },
+  winBox: {
+    width: 330,
+    borderRadius: 36,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 28,
+    borderWidth: 2,
+    borderColor: '#DBFBE7',
+    shadowColor: '#065F46',
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 3,
+  },
+  winBadge: { width: 92, height: 92, borderRadius: 46, backgroundColor: '#22C55E', alignItems: 'center', justifyContent: 'center' },
+  winMark: { fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: 50 },
+  winTitle: { color: C.textDark, fontSize: 25, marginTop: 16, textAlign: 'center' },
+  playAgain: { backgroundColor: C.yellow, borderRadius: 24, paddingHorizontal: 28, paddingVertical: 13, marginTop: 20 },
+  playAgainText: { color: C.textDark, fontSize: 16 },
 });

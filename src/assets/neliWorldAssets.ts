@@ -191,7 +191,7 @@ export const neliWorldAssets = {
   },
   neliPosesPremium: {
     brushingTeeth: require('../../assets/neli-world/characters/neli-poses-premium/brushing_teeth.png'),
-    cooking: require('../../assets/neli-world/characters/neli-poses-premium/cooking.png'),
+    cooking: characterAssets.neli.poses.cooking,
     happy: require('../../assets/neli-world/characters/neli-poses-premium/happy.png'),
     sleeping: require('../../assets/neli-world/characters/neli-poses-premium/sleeping.png'),
     talking: require('../../assets/neli-world/characters/neli-poses-premium/talking.png'),
@@ -252,12 +252,13 @@ export const neliWorldAssets = {
     },
   },
   animals: {
-    bear: require('../../assets/neli-world/animals/bear.png'),
-    cat: require('../../assets/neli-world/animals/cat.png'),
-    elephant: require('../../assets/neli-world/animals/elephant.png'),
+    bear: require('../../assets/neli-world/animals/bear_kids_app_clean_transparent.webp'),
+    cat: require('../../assets/neli-world/animals/cat_kids_app_clean_transparent.webp'),
+    elephant: require('../../assets/neli-world/animals/giraffe_kids_app_clean_transparent.webp'),
+    giraffe: require('../../assets/neli-world/animals/giraffe_kids_app_clean_transparent.webp'),
     monkey: require('../../assets/neli-world/animals/monkey.webp'),
-    panda: require('../../assets/neli-world/animals/panda.png'),
-    rabbit: require('../../assets/neli-world/animals/rabbit.png'),
+    panda: require('../../assets/neli-world/animals/panda_kids_app_clean_transparent.webp'),
+    rabbit: require('../../assets/neli-world/animals/rabbit_kids_app_clean_transparent.webp'),
   },
   bathroom: {
     toothbrush: require('../../assets/neli-world/bathroom/toothbrush.png'),
@@ -470,6 +471,9 @@ export const neliWorldAssets = {
     iranTabletPortrait: iranPuzzleBackgrounds.tabletPortrait,
     iranMaster: iranPuzzleBackgrounds.master,
     solarSystem: require('../../assets/neli-world/puzzle/Solarsystem/solarsystem.png'),
+  },
+  painting: {
+    cardBunny: require('../../assets/neli-world/painting/painting_card_bunny.png'),
   },
   ui: {
     back: require('../../assets/neli-world/ui-icons/ui/back.png'),
