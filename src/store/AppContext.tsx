@@ -21,6 +21,7 @@ export function getLang(lang: Lang) { return LANGUAGES.find(l => l.code === lang
 
 interface AppContextType {
   lang: Lang; setLang: (l: Lang) => void; rtl: boolean;
+  settingsLang: Lang; setSettingsLang: (l: Lang) => void;
   age: number; setAge: (a: number) => void;
   stars: number; addStars: (n: number) => void;
   streak: number;
@@ -35,7 +36,8 @@ interface AppContextType {
 export const AppContext = createContext<AppContextType>({} as AppContextType);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>('en');
+  const [lang] = useState<Lang>('fa');
+  const [settingsLang, setSettingsLangState] = useState<Lang>('fa');
   const [age, setAgeState] = useState(0);
   const [stars, setStars] = useState(0);
   const [streak] = useState(3);
@@ -52,7 +54,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const saved = await AsyncStorage.getItem('lz_state_v2');
         if (saved) {
           const s = JSON.parse(saved);
-          if (s.lang) setLangState(s.lang);
+          if (LANGUAGES.some(language => language.code === s.settingsLang)) setSettingsLangState(s.settingsLang);
           if (s.age) setAgeState(s.age);
           if (s.stars) setStars(s.stars);
           if (s.badges) setBadges(s.badges);
@@ -74,7 +76,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {}
   };
 
-  const setLang = (l: Lang) => { setLangState(l); save({ lang: l }); };
+  const setLang = (_l: Lang) => { save({ lang: 'fa' }); };
+  const setSettingsLang = (l: Lang) => { setSettingsLangState(l); save({ settingsLang: l }); };
   const setAge = (a: number) => { setAgeState(a); save({ age: a }); };
   const addStars = (n: number) => setStars(p => { const v = p + n; save({ stars: v }); return v; });
   const addBadge = (b: string) => setBadges(p => { if (p.includes(b)) return p; const v = [...p, b]; save({ badges: v }); return v; });
@@ -87,6 +90,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       lang, setLang, rtl: isRTL(lang),
+      settingsLang, setSettingsLang,
       age, setAge, stars, addStars, streak,
       badges, addBadge, stickers, addSticker,
       completedSections, completeSection,

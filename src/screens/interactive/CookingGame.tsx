@@ -563,7 +563,7 @@ export default function CookingGame() {
     <View style={styles.root}>
       <ImageBackground source={sceneSource} style={styles.scene} resizeMode="cover">
         <View style={[styles.sceneWash, done && styles.sceneWashDone]} />
-        <TopBar title="Cooking" titleFa="آشپزی" showBack dark topInset={10} />
+        <TopBar title="Cooking" titleFa="آشپزی" showClose dark topInset={10} />
 
         <ScrollView
           horizontal

@@ -184,7 +184,7 @@ export default function CultureQuizGame() {
       <TopBar
         title="Culture"
         titleFa="فرهنگ ایران"
-        showBack
+        showClose
         dark={false}
         rightContent={<Text style={styles.score}>{score}/{total}</Text>}
       />

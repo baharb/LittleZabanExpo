@@ -17,7 +17,7 @@ const RUNNING_FRAMES = [
 
 export default function SplashScreen() {
   const { navigate } = useNav();
-  const { age, lang } = useContext(AppContext);
+  const { lang } = useContext(AppContext);
   const { width, height } = useWindowDimensions();
   const isFa = lang === 'fa' || lang === 'ar';
   const landscape = width > height;
@@ -58,13 +58,13 @@ export default function SplashScreen() {
     });
 
     const timer = setTimeout(() => {
-      navigate(age === 0 ? { name: 'Age' } : age <= 2 ? { name: 'BabyWorld' } : { name: 'Main' });
+      navigate({ name: 'Main', tab: 'Games' });
     }, 3100);
     return () => {
       clearTimeout(timer);
       waveLoop.stop();
     };
-  }, [age, navigate, neliFloat, neliRunX, neliSize, titleOpacity, titleY, width]);
+  }, [navigate, neliFloat, neliRunX, neliSize, titleOpacity, titleY, width]);
 
   return (
     <ImageBackground source={splashSource} style={styles.root} resizeMode="cover">

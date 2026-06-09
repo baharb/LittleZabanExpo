@@ -14,10 +14,8 @@ type StageSize = { width: number; height: number };
 type Rect = { x: number; y: number; w: number; h: number };
 const TTS = (l: string) => ({ fa: 'fa-IR', ar: 'fa-IR', zh: 'zh-CN', ko: 'ko-KR', fr: 'fr-FR', es: 'es-ES' } as any)[l] ?? 'en-US';
 const RATE = (l: string) => (l === 'fa' || l === 'ar' ? 0.65 : 0.8);
-const CELEBRATION_STAR_GROUP_COUNT = 220;
-const CELEBRATION_BURST_MS = 5600;
-const STAR_VISIBLE_MS = 1300;
-const STAR_FADE_MS = 860;
+const CELEBRATION_STAR_GROUP_COUNT = 440;
+const CELEBRATION_BURST_MS = 10080;
 const SETTLE_MS = 980;
 const PLANET_NAME_EN: Record<string, string> = {
   mercury: 'Mercury',
@@ -83,6 +81,7 @@ function StarSparkle({
 type CelebrationStarSpec = {
   id: number;
   left: number;
+  top: number;
   size: number;
   delay: number;
   duration: number;
@@ -96,54 +95,46 @@ type CelebrationStarSpec = {
   twinLeft: number;
   twinTop: number;
   twinSize: number;
+  startsVisible: boolean;
 };
 
 function FallingCelebrationStar({
   star,
   stageHeight,
+  progress,
 }: {
   star: CelebrationStarSpec;
   stageHeight: number;
+  progress: Animated.Value;
 }) {
-  const progress = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const animation = Animated.sequence([
-      Animated.delay(star.delay),
-      Animated.timing(progress, {
-        toValue: 1,
-        duration: star.duration,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    ]);
-    animation.start();
-
-    return () => {
-      animation.stop();
-      progress.stopAnimation();
-    };
-  }, [progress, star.delay, star.duration]);
+  const start = star.delay / CELEBRATION_BURST_MS;
+  const end = Math.min(1, (star.delay + star.duration) / CELEBRATION_BURST_MS);
+  const at = (point: number) => start + (end - start) * point;
 
   const translateY = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-stageHeight * 0.24, stageHeight + 280],
+    inputRange: [start, end],
+    outputRange: [star.startsVisible ? 0 : -stageHeight * 0.2, stageHeight + 560 - star.top],
+    extrapolate: 'clamp',
   });
   const translateX = progress.interpolate({
-    inputRange: [0, 1],
+    inputRange: [start, end],
     outputRange: [0, star.drift],
+    extrapolate: 'clamp',
   });
   const opacity = progress.interpolate({
-    inputRange: [0, 0.1, 0.46, 0.64, 1],
-    outputRange: [0, 1, 1, 0, 0],
+    inputRange: [start, at(star.startsVisible ? 0.01 : 0.06), at(0.48), at(0.68), end],
+    outputRange: [star.startsVisible ? 1 : 0, 1, 1, 0, 0],
+    extrapolate: 'clamp',
   });
   const scale = progress.interpolate({
-    inputRange: [0, 0.12, 0.72, 1],
+    inputRange: [start, at(0.12), at(0.72), end],
     outputRange: [0.65, 1.08, 1.18, 0.78],
+    extrapolate: 'clamp',
   });
   const rotate = progress.interpolate({
-    inputRange: [0, 1],
+    inputRange: [start, end],
     outputRange: [`${star.spinStart}deg`, `${star.spinEnd}deg`],
+    extrapolate: 'clamp',
   });
 
   return (
@@ -153,7 +144,7 @@ function FallingCelebrationStar({
         styles.blinkStar,
         {
           left: star.left,
-          top: 0,
+          top: star.top,
           width: star.size * 1.45,
           height: star.size * 1.45,
           opacity,
@@ -328,6 +319,7 @@ function PlanetPiece({
               }),
             ]).start(() => {
               setSettling(false);
+              onPlaced(planet.id);
             });
           };
           if (!moved) {
@@ -335,7 +327,6 @@ function PlanetPiece({
             setSettling(true);
             setPlaced(true);
             setShowPressedLabel(false);
-            onPlaced(planet.id);
             setSize({ w: planet.target.w, h: planet.target.w });
             setImageH(planet.target.w);
             settleToTarget();
@@ -348,7 +339,6 @@ function PlanetPiece({
           void safeSuccess();
           setPlaced(true);
           setShowPressedLabel(false);
-          onPlaced(planet.id);
           setSize({ w: planet.target.w, h: planet.target.w });
           setImageH(planet.target.w);
           settleToTarget();
@@ -448,8 +438,10 @@ export default function SolarSystemPuzzleGame() {
   const [backgroundSparkles, setBackgroundSparkles] = useState<Array<{ id: number; left: number; top: number; size: number; boost: number }>>([]);
   const [showBackgroundSparkles, setShowBackgroundSparkles] = useState(false);
   const celebrationPlayedRef = useRef(false);
-  const celebrationClearRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const celebrationTransitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const placedIdsRef = useRef<string[]>([]);
+  const placedCountRef = useRef(0);
+  const celebrationProgress = useRef(new Animated.Value(0)).current;
+  const celebrationAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
   const celebrationSeqRef = useRef(0);
   const bgOpacity = useRef(new Animated.Value(0)).current;
   const bgScale = useRef(new Animated.Value(0.72)).current;
@@ -473,26 +465,9 @@ export default function SolarSystemPuzzleGame() {
     return Math.max(84, Math.max(...draggableLayout.map(item => item.start.h)) + 10);
   }, [draggableLayout]);
 
-  const handlePlaced = () => {
-    setActiveId(null);
-    setPlacedCount(prev => Math.min(draggableLayout.length, prev + 1));
-    void addStars(1);
-  };
-
-  const handlePlanetPlaced = (id: string) => {
-    setPlacedIds(prev => (prev.includes(id) ? prev : [...prev, id]));
-    handlePlaced();
-  };
-
-  useEffect(() => {
-    if (celebrationClearRef.current) {
-      clearTimeout(celebrationClearRef.current);
-      celebrationClearRef.current = null;
-    }
-    if (celebrationTransitionRef.current) {
-      clearTimeout(celebrationTransitionRef.current);
-      celebrationTransitionRef.current = null;
-    }
+  const startCelebration = () => {
+    if (celebrationPlayedRef.current || !stageSize.width || !stageSize.height) return;
+    celebrationPlayedRef.current = true;
     if (bgTimeoutRef.current) {
       clearTimeout(bgTimeoutRef.current);
       bgTimeoutRef.current = null;
@@ -503,17 +478,10 @@ export default function SolarSystemPuzzleGame() {
     }
     bgLoopRef.current?.stop();
     bgLoopRef.current = null;
-
-    if (!allPlaced || !stageSize.width || !stageSize.height) {
-      setCelebrationStars([]);
-      setBackgroundSparkles([]);
-      setShowBackgroundSparkles(false);
-      celebrationPlayedRef.current = false;
-      return;
-    }
-
-    if (celebrationPlayedRef.current) return;
-    celebrationPlayedRef.current = true;
+    celebrationAnimationRef.current?.stop();
+    celebrationAnimationRef.current = null;
+    setShowBackgroundSparkles(false);
+    setBackgroundSparkles([]);
 
     const palette = [
       { primaryColor: '#FFE875', innerColor: '#FFF8D0', coreColor: '#FFFDF2', glowColor: '#FFEFB0' },
@@ -526,49 +494,99 @@ export default function SolarSystemPuzzleGame() {
 
     const next: CelebrationStarSpec[] = Array.from({ length: CELEBRATION_STAR_GROUP_COUNT }, (_, index) => {
       const tone = palette[index % palette.length];
-      const size = 10 + Math.round(Math.random() * 6);
+      const size = 9 + Math.round(Math.random() * 8);
+      const startsVisible = index < 120;
       return {
-        id: celebrationSeqRef.current * 100 + index,
+        id: celebrationSeqRef.current * 1000 + index,
         left: clamp(
-          Math.round(Math.random() * (stageSize.width - 18)),
-          4,
-          Math.max(4, stageSize.width - 18),
+          Math.round(-stageSize.width * 0.12 + Math.random() * (stageSize.width * 1.24)),
+          -Math.round(stageSize.width * 0.12),
+          Math.max(4, Math.round(stageSize.width * 1.12)),
         ),
+        top: startsVisible
+          ? Math.round(stageSize.height * 0.08 + Math.random() * stageSize.height * 0.66)
+          : 0,
         size,
-        delay: Math.round(Math.random() * 360),
-        duration: 1800 + Math.round(Math.random() * 900),
-        drift: Math.round((Math.random() - 0.5) * 160),
+        delay: startsVisible ? 0 : 120 + Math.round(Math.random() * 2100),
+        duration: 3240 + Math.round(Math.random() * 1620),
+        drift: Math.round((Math.random() - 0.5) * 320),
         glowColor: tone.glowColor,
         primaryColor: tone.primaryColor,
         innerColor: tone.innerColor,
         coreColor: tone.coreColor,
         spinStart: -20 + Math.round(Math.random() * 40),
         spinEnd: 120 + Math.round(Math.random() * 120),
-        twinLeft: Math.round((Math.random() - 0.5) * 42),
-        twinTop: Math.round(24 + Math.random() * 42),
+        twinLeft: Math.round((Math.random() - 0.5) * 84),
+        twinTop: Math.round(18 + Math.random() * 84),
         twinSize: Math.round(size * (0.74 + Math.random() * 0.34)),
+        startsVisible,
       };
     });
 
     celebrationSeqRef.current += 1;
     setCelebrationStars(next);
+    celebrationProgress.setValue(0);
+    celebrationAnimationRef.current = Animated.timing(celebrationProgress, {
+      toValue: 1,
+      duration: CELEBRATION_BURST_MS,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    });
+    requestAnimationFrame(() => {
+      celebrationAnimationRef.current?.start(({ finished }) => {
+        celebrationAnimationRef.current = null;
+        if (!finished) return;
+        setCelebrationStars([]);
+        setShowBackgroundSparkles(true);
+      });
+    });
+  };
 
-    celebrationTransitionRef.current = setTimeout(() => {
-      setCelebrationStars([]);
-      setShowBackgroundSparkles(true);
-    }, CELEBRATION_BURST_MS);
+  const handlePlaced = () => {
+    setActiveId(null);
+    const nextCount = Math.min(draggableLayout.length, placedCountRef.current + 1);
+    placedCountRef.current = nextCount;
+    setPlacedCount(nextCount);
+    void addStars(1);
+    if (nextCount >= draggableLayout.length) {
+      startCelebration();
+    }
+  };
 
+  const handlePlanetPlaced = (id: string) => {
+    if (placedIdsRef.current.includes(id)) return;
+    placedIdsRef.current = [...placedIdsRef.current, id];
+    setPlacedIds(placedIdsRef.current);
+    handlePlaced();
+  };
+
+  useEffect(() => {
+    if (allPlaced) return;
+    celebrationAnimationRef.current?.stop();
+    celebrationAnimationRef.current = null;
+    celebrationProgress.setValue(0);
+    setCelebrationStars([]);
+    setBackgroundSparkles([]);
+    setShowBackgroundSparkles(false);
+    celebrationPlayedRef.current = false;
+  }, [allPlaced, celebrationProgress]);
+
+  useEffect(() => {
     return () => {
-      if (celebrationClearRef.current) {
-        clearTimeout(celebrationClearRef.current);
-        celebrationClearRef.current = null;
+      celebrationAnimationRef.current?.stop();
+      celebrationAnimationRef.current = null;
+      if (bgTimeoutRef.current) {
+        clearTimeout(bgTimeoutRef.current);
+        bgTimeoutRef.current = null;
       }
-      if (celebrationTransitionRef.current) {
-        clearTimeout(celebrationTransitionRef.current);
-        celebrationTransitionRef.current = null;
+      if (bgNextTimeoutRef.current) {
+        clearTimeout(bgNextTimeoutRef.current);
+        bgNextTimeoutRef.current = null;
       }
+      bgLoopRef.current?.stop();
+      bgLoopRef.current = null;
     };
-  }, [allPlaced, stageSize.height, stageSize.width]);
+  }, []);
 
   useEffect(() => {
     if (!showBackgroundSparkles || !stageSize.width || !stageSize.height) {
@@ -590,8 +608,12 @@ export default function SolarSystemPuzzleGame() {
       const quadrants = [
         { leftMin: 12, leftMax: stageSize.width * 0.42, topMin: 24, topMax: stageSize.height * 0.30 },
         { leftMin: stageSize.width * 0.58, leftMax: Math.max(stageSize.width - 18, stageSize.width * 0.58), topMin: 24, topMax: stageSize.height * 0.30 },
+        { leftMin: stageSize.width * 0.30, leftMax: stageSize.width * 0.70, topMin: stageSize.height * 0.20, topMax: stageSize.height * 0.42 },
+        { leftMin: 18, leftMax: stageSize.width * 0.48, topMin: stageSize.height * 0.34, topMax: stageSize.height * 0.58 },
+        { leftMin: stageSize.width * 0.52, leftMax: Math.max(stageSize.width - 18, stageSize.width * 0.52), topMin: stageSize.height * 0.34, topMax: stageSize.height * 0.58 },
         { leftMin: 12, leftMax: stageSize.width * 0.42, topMin: stageSize.height * 0.56, topMax: Math.max(stageSize.height - 110, stageSize.height * 0.56) },
         { leftMin: stageSize.width * 0.58, leftMax: Math.max(stageSize.width - 18, stageSize.width * 0.58), topMin: stageSize.height * 0.56, topMax: Math.max(stageSize.height - 110, stageSize.height * 0.56) },
+        { leftMin: stageSize.width * 0.30, leftMax: stageSize.width * 0.70, topMin: stageSize.height * 0.62, topMax: Math.max(stageSize.height - 90, stageSize.height * 0.62) },
       ].sort(() => Math.random() - 0.5);
 
       const next = quadrants.map((zone, index) => ({
@@ -631,8 +653,8 @@ export default function SolarSystemPuzzleGame() {
         bgLoopRef.current?.stop();
         bgLoopRef.current = null;
         Animated.parallel([
-          Animated.timing(bgOpacity, { toValue: 0, duration: 820, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
-          Animated.timing(bgScale, { toValue: 0.74, duration: 820, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+          Animated.timing(bgOpacity, { toValue: 0, duration: 1640, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+          Animated.timing(bgScale, { toValue: 0.74, duration: 1640, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
         ]).start(() => {
           setBackgroundSparkles([]);
           bgNextTimeoutRef.current = setTimeout(() => {
@@ -641,7 +663,7 @@ export default function SolarSystemPuzzleGame() {
             }
           }, 1500);
         });
-      }, 1200);
+      }, 2400);
     };
 
     spawnCluster();
@@ -666,7 +688,7 @@ export default function SolarSystemPuzzleGame() {
         <View style={styles.bgWash} />
       </ImageBackground>
 
-      <TopBar title="Solar System" titleFa="منظومه خورشیدی" showBack dark />
+      <TopBar title="Solar System" titleFa="منظومه خورشیدی" showClose dark />
 
       <View style={styles.stage} onLayout={event => setStageSize(event.nativeEvent.layout)}>
         {layout.length ? (
@@ -712,6 +734,7 @@ export default function SolarSystemPuzzleGame() {
                 key={star.id}
                 star={star}
                 stageHeight={stageSize.height}
+                progress={celebrationProgress}
               />
             ))}
             <View style={styles.trackLayer} pointerEvents="none">
@@ -808,6 +831,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 40,
   },
   starGlow: {
     width: '100%',

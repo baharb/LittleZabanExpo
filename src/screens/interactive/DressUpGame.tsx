@@ -220,8 +220,9 @@ const SUNGLASSES_ART_FIX: Partial<Record<Slot, { scale: number; translateY: numb
 };
 
 function ClothingArt({ slot, size, tintColor }: { slot: Slot; size: number; tintColor?: string }) {
-    const source = CLOTHING_IMAGES[slot];
-  if (source) {
+  const source = CLOTHING_IMAGES[slot];
+  const hasValidSource = !!source && !Array.isArray(source);
+  if (hasValidSource) {
     const sunglassesFix = SUNGLASSES_ART_FIX[slot];
     return (
       <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center', overflow: 'visible' }}>
@@ -573,6 +574,8 @@ function DraggableClothing({
   const pan = useRef(new Animated.ValueXY()).current;
   const itemRef = useRef<View>(null);
   const isWornRef = useRef(isWorn);
+  const transitionLockRef = useRef(false);
+  const transitionLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dragging, setDragging] = useState(false);
   const [flying, setFlying] = useState(false);
     const isHat = isHatSlot(item.slot);
@@ -587,7 +590,12 @@ function DraggableClothing({
   }, [isWorn, pan]);
 
   const animateToBody = (gesture?: { dx: number; dy: number }) => {
-    if (isWornRef.current || flying) return;
+    if (isWornRef.current || flying || transitionLockRef.current) return;
+    transitionLockRef.current = true;
+    if (transitionLockTimerRef.current) {
+      clearTimeout(transitionLockTimerRef.current);
+      transitionLockTimerRef.current = null;
+    }
     setDragging(true);
     onDraggingChange(true);
     Haptics.selectionAsync();
@@ -613,15 +621,28 @@ function DraggableClothing({
           toY: targetY,
           targetScale: getFlightScale(item.slot, targetRef.current ? targetRef.current.w : size, size * (isDressSlot(item.slot) ? 1.104 : 0.92)),
         });
+        transitionLockTimerRef.current = setTimeout(() => {
+          transitionLockRef.current = false;
+          transitionLockTimerRef.current = null;
+        }, 250);
       });
     });
   };
 
+  React.useEffect(() => {
+    return () => {
+      if (transitionLockTimerRef.current) {
+        clearTimeout(transitionLockTimerRef.current);
+        transitionLockTimerRef.current = null;
+      }
+    };
+  }, []);
+
   const responder = useRef(PanResponder.create({
-    onStartShouldSetPanResponder: () => !isWornRef.current,
-    onMoveShouldSetPanResponder: (_e, gesture) => !isWornRef.current && Math.abs(gesture.dx) + Math.abs(gesture.dy) > 4,
+    onStartShouldSetPanResponder: () => !isWornRef.current && !transitionLockRef.current,
+    onMoveShouldSetPanResponder: (_e, gesture) => !isWornRef.current && !transitionLockRef.current && Math.abs(gesture.dx) + Math.abs(gesture.dy) > 4,
     onPanResponderGrant: () => {
-      if (isWornRef.current) return;
+      if (isWornRef.current || transitionLockRef.current) return;
       setDragging(true);
       onDraggingChange(true);
       pan.setValue({ x: 0, y: 0 });
@@ -887,7 +908,7 @@ export default function DressUpGame() {
 
   return (
     <View style={styles.root}>
-      <TopBar title="Dress Up" titleFa="لباس پوشیدن" showBack dark topInset={10} />
+      <TopBar title="Dress Up" titleFa="لباس پوشیدن" showClose dark topInset={10} />
 
       <ImageBackground source={roomBackgroundPickers.bedroom(width, height)} style={styles.main} imageStyle={styles.roomImage} resizeMode="cover">
           <View style={styles.tabShell}>

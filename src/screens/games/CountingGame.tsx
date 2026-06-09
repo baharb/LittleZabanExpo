@@ -91,7 +91,7 @@ export default function CountingGame() {
       <ImageBackground source={neliWorldAssets.rooms.garden} style={styles.scene} imageStyle={styles.sceneImage}>
         <View style={styles.sceneWash} />
         <View style={styles.skyGlow} />
-        <TopBar title="Counting" titleFa="شمارش" showBack dark={false} rightContent={<Text style={styles.score}>{toFaDigits(score)}</Text>} />
+        <TopBar title="Counting" titleFa="شمارش" showClose dark={false} rightContent={<Text style={styles.score}>{toFaDigits(score)}</Text>} />
 
         <View style={styles.content}>
           <View style={styles.questionPill}>

@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Image, View, Text, TouchableOpacity, StyleSheet, Platform, StatusBar, PixelRatio, useWindowDimensions } from 'react-native';
-import { AppContext } from '../store/AppContext';
+import { AppContext, Lang } from '../store/AppContext';
 import { useNav } from '../store/NavContext';
 import LangBar from './LangBar';
 import { ff } from '../theme/fonts';
@@ -18,13 +18,16 @@ interface Props {
   topInset?: number;
   onBack?: () => void;
   rightContent?: React.ReactNode;
+  displayLang?: Lang;
 }
 
 export default function TopBar({
   title = '', titleFa, titleFr, titleEs, titleZh, titleKo, titleAr,
   showBack = false, showClose = false, dark = true, compactTitle = false, topInset = 0, onBack, rightContent,
+  displayLang,
 }: Props) {
-  const { lang } = useContext(AppContext);
+  const { lang: appLang } = useContext(AppContext);
+  const lang = displayLang ?? appLang;
   const { goBack } = useNav();
   const { width } = useWindowDimensions();
 
@@ -46,22 +49,22 @@ export default function TopBar({
     <View style={[styles.bar, { backgroundColor: bg, paddingTop: (Platform.OS === 'ios' ? 6 : 0) + topInset, paddingHorizontal: Math.max(12, Math.min(width * 0.022, 18)) }]}>
       {/* Back button — Lingokids style: large, bold, pill-shaped */}
       <View style={styles.side}>
-        {(showBack || showClose) && (
+        {showClose ? (
           <TouchableOpacity
             onPress={onBack ?? goBack}
-            style={[styles.backBtn, { width: buttonSize, height: buttonSize, marginLeft: 6 }]}
+            style={[styles.backBtn, { width: buttonSize, height: buttonSize, marginLeft: -4 }]}
             activeOpacity={0.7}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
           >
             <Image
-              source={showClose ? neliWorldAssets.ui.close : neliWorldAssets.ui.back}
+              source={neliWorldAssets.ui.close}
               style={[styles.navIcon, { width: iconSize, height: iconSize }]}
               resizeMode="contain"
               resizeMethod="resize"
               fadeDuration={0}
             />
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
 
       {/* Title */}
@@ -89,7 +92,10 @@ export default function TopBar({
       </View>
 
       <View style={[styles.side, { alignItems: 'flex-end' }]}>
-        {rightContent ?? <LangBar dark={dark} />}
+        <View style={styles.rightRow}>
+          {rightContent}
+          <LangBar dark={dark} buttonSize={buttonSize} iconSize={iconSize} />
+        </View>
       </View>
     </View>
   );
@@ -101,6 +107,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8, gap: 6,
   },
   side:      { width: 84, justifyContent: 'center' },
+  rightRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6 },
   titleWrap: { flex: 1, alignItems: 'center' },
   titleFa:   { fontSize: 18, textAlign: 'center' },
   titleEnSub:{ fontSize: 11, textAlign: 'center', opacity: 0.55 },
@@ -109,6 +116,7 @@ const styles = StyleSheet.create({
   /* Lingokids-style back: large pill, bold chevron */
   backBtn: {
     alignItems: 'center', justifyContent: 'center',
+    zIndex: 5,
   },
   navIcon: { },
 });

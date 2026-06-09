@@ -81,7 +81,7 @@ export default function ColorMatchGame() {
   return (
     <View style={styles.root}>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: '#E9F7FF' }]} />
-      <TopBar title="Color Match" titleFa="بازی رنگ‌ها" showBack dark={false} rightContent={<Text style={styles.score}>{score}</Text>} />
+      <TopBar title="Color Match" titleFa="بازی رنگ‌ها" showClose dark={false} rightContent={<Text style={styles.score}>{score}</Text>} />
 
       <View style={styles.content}>
         <View style={styles.promptCard}>

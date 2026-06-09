@@ -103,7 +103,7 @@ export default function QuizGame() {
       <TopBar
         title="Word Quiz"
         titleFa="مسابقه کلمه"
-        showBack
+        showClose
         dark={false}
         rightContent={<Text style={styles.score}>{score}/{total}</Text>}
       />

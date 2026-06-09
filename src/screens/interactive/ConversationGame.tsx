@@ -17,7 +17,7 @@ type Choice = {
   en: string;
   es: string;
   fr: string;
-  kind: 'water' | 'bread' | 'book' | 'hat' | 'shoe' | 'apple' | 'fish' | 'moon' | 'bed' | 'sabzeh';
+  kind: 'water' | 'bread' | 'book' | 'hat' | 'shoe' | 'apple' | 'orange' | 'fish' | 'moon' | 'cucumber' | 'bed' | 'backpack' | 'sabzeh';
   color: string;
 };
 
@@ -96,7 +96,7 @@ const SCENES: Scene[] = [
     choices: [
       { id: 'apple', fa: 'سیب', en: 'Apple', es: 'Manzana', fr: 'Pomme', kind: 'apple', color: '#EF4444' },
       { id: 'fish', fa: 'ماهی', en: 'Fish', es: 'Pez', fr: 'Poisson', kind: 'fish', color: '#38BDF8' },
-      { id: 'moon', fa: 'ماه', en: 'Moon', es: 'Luna', fr: 'Lune', kind: 'moon', color: '#A78BFA' },
+      { id: 'orange', fa: 'پرتقال', en: 'Orange', es: 'Naranja', fr: 'Orange', kind: 'orange', color: '#FB923C' },
     ],
   },
   {
@@ -104,18 +104,18 @@ const SCENES: Scene[] = [
     place: 'night',
     character: 'لونا',
     color: '#A855F7',
-    promptFa: 'شب شد. من خوابم می‌آید.',
-    promptEn: 'It is night. I am sleepy.',
-    promptEs: 'Es de noche. Tengo sueño.',
-    promptFr: "C'est la nuit. J'ai sommeil.",
-    helperFa: 'برای خواب چه می‌خواهیم؟',
-    helperEn: 'What do we need for sleep?',
-    helperEs: 'Que necesitamos para dormir?',
-    helperFr: 'De quoi avons-nous besoin pour dormir?',
-    answer: 'bed',
+    promptFa: 'من می‌خواهم کتاب بخوانم. کتاب را به من بده.',
+    promptEn: "I'd like to read a book. Give me the book.",
+    promptEs: 'Quiero leer un libro. Dame el libro.',
+    promptFr: "J'aimerais lire un livre. Donne-moi le livre.",
+    helperFa: 'کدام یک کتاب است؟',
+    helperEn: 'Which one is the book?',
+    helperEs: 'Cual es el libro?',
+    helperFr: 'Lequel est le livre?',
+    answer: 'book',
     choices: [
       { id: 'book', fa: 'کتاب', en: 'Book', es: 'Libro', fr: 'Livre', kind: 'book', color: '#EC4899' },
-      { id: 'bed', fa: 'تخت', en: 'Bed', es: 'Cama', fr: 'Lit', kind: 'bed', color: '#6C4EFF' },
+      { id: 'cucumber', fa: 'خیار', en: 'Cucumber', es: 'Pepino', fr: 'Concombre', kind: 'cucumber', color: '#22C55E' },
       { id: 'fish', fa: 'ماهی', en: 'Fish', es: 'Pez', fr: 'Poisson', kind: 'fish', color: '#38BDF8' },
     ],
   },
@@ -124,19 +124,19 @@ const SCENES: Scene[] = [
     place: 'nowruz',
     character: 'گلناز',
     color: '#22C55E',
-    promptFa: 'نوروز مبارک! سبزه را روی سفره بگذار.',
-    promptEn: 'Happy Nowruz! Put sabzeh on the table.',
-    promptEs: 'Feliz Nowruz. Pon el sabzeh en la mesa.',
-    promptFr: 'Joyeux Nowruz. Mets le sabzeh sur la table.',
-    helperFa: 'سبزه کدام است؟',
-    helperEn: 'Which one is sabzeh?',
-    helperEs: 'Cual es sabzeh?',
-    helperFr: 'Lequel est le sabzeh?',
-    answer: 'sabzeh',
+    promptFa: 'من می‌خواهم به مدرسه بروم. کیفم را می‌خواهم.',
+    promptEn: "I wanna go to school. I want my backpack.",
+    promptEs: 'Quiero ir a la escuela. Quiero mi mochila.',
+    promptFr: "Je veux aller à l'école. Je veux mon sac à dos.",
+    helperFa: 'کدام یک کیف مدرسه است؟',
+    helperEn: 'Which one is the backpack?',
+    helperEs: 'Cual es la mochila?',
+    helperFr: 'Lequel est le sac à dos?',
+    answer: 'backpack',
     choices: [
-      { id: 'sabzeh', fa: 'سبزه', en: 'Sabzeh', es: 'Sabzeh', fr: 'Sabzeh', kind: 'sabzeh', color: '#22C55E' },
+      { id: 'backpack', fa: 'کیف مدرسه', en: 'Backpack', es: 'Mochila', fr: 'Sac à dos', kind: 'backpack', color: '#3B82F6' },
       { id: 'hat', fa: 'کلاه', en: 'Hat', es: 'Gorro', fr: 'Bonnet', kind: 'hat', color: '#A855F7' },
-      { id: 'moon', fa: 'ماه', en: 'Moon', es: 'Luna', fr: 'Lune', kind: 'moon', color: '#A78BFA' },
+      { id: 'orange', fa: 'پرتقال', en: 'Orange', es: 'Naranja', fr: 'Orange', kind: 'orange', color: '#FB923C' },
     ],
   },
 ];
@@ -162,10 +162,13 @@ function shuffle<T>(items: T[]) {
 const CHOICE_IMAGES: Partial<Record<Choice['kind'], any>> = {
   apple: neliWorldAssets.foods.apple,
   bread: neliWorldAssets.foods.bread,
-  book: neliWorldAssets.ui.book,
+  book: neliWorldAssets.ingredients.book,
   fish: neliWorldAssets.foods.fish,
-  hat: neliWorldAssets.clothes.beanie,
+  hat: neliWorldAssets.clothes.sunhat,
+  backpack: neliWorldAssets.clothes.backpack,
   shoe: neliWorldAssets.clothes.boots,
+  cucumber: neliWorldAssets.foods.cucumber,
+  orange: neliWorldAssets.foods.orange,
   water: neliWorldAssets.foods.water,
 };
 
@@ -178,20 +181,24 @@ function NeliTalkCharacter({ size }: { size: number }) {
 }
 
 function ChoiceArt({ choice, size = 92 }: { choice: Choice; size?: number }) {
+  const innerSize = size * 0.82;
   const asset = CHOICE_IMAGES[choice.kind];
-  if (asset) return <Image source={asset} style={[styles.choiceImage, { width: size, height: size }]} resizeMode="contain" />;
+  if (asset) return <Image source={asset} style={[styles.choiceImage, { width: innerSize, height: innerSize }]} resizeMode="contain" />;
   const color = choice.color;
-  const scaled = { transform: [{ scale: size / 70 }] };
+  const scaled = { transform: [{ scale: innerSize / 70 }] };
   if (choice.kind === 'water') return <View style={[styles.waterDrop, { backgroundColor: color }, scaled]} />;
   if (choice.kind === 'bread') return <View style={[styles.bread, { backgroundColor: color }, scaled]} />;
-  if (choice.kind === 'book') return <View style={[styles.book, { backgroundColor: color }, scaled]}><View style={styles.bookPage} /></View>;
-  if (choice.kind === 'hat') return <View style={[styles.artMini, { width: size, height: size }]}><View style={[styles.hatTop, { backgroundColor: color }, scaled]} /><View style={[styles.hatBrim, { backgroundColor: color }, scaled]} /></View>;
+  if (choice.kind === 'book') return <View style={[styles.artMini, { width: innerSize, height: innerSize }]}><View style={[styles.book, { backgroundColor: color }, scaled]}><View style={styles.bookPage} /></View></View>;
+  if (choice.kind === 'hat') return <View style={[styles.artMini, { width: innerSize, height: innerSize }]}><View style={[styles.hatTop, { backgroundColor: color }, scaled]} /><View style={[styles.hatBrim, { backgroundColor: color }, scaled]} /></View>;
   if (choice.kind === 'shoe') return <View style={[styles.shoe, { backgroundColor: color }, scaled]} />;
-  if (choice.kind === 'apple') return <View style={[styles.artMini, { width: size, height: size }]}><View style={[styles.apple, { backgroundColor: color }, scaled]} /><View style={[styles.appleLeaf, scaled]} /></View>;
-  if (choice.kind === 'fish') return <View style={[styles.artMini, { width: size, height: size }]}><View style={[styles.fishBody, { backgroundColor: color }, scaled]} /><View style={[styles.fishTail, { borderLeftColor: '#0EA5E9' }, scaled]} /></View>;
-  if (choice.kind === 'moon') return <View style={[styles.moonChoice, { backgroundColor: color, width: size * 0.72, height: size * 0.72, borderRadius: size * 0.36 }]} />;
-  if (choice.kind === 'bed') return <View style={[styles.artMini, { width: size, height: size }]}><View style={[styles.bed, { backgroundColor: color }, scaled]} /><View style={[styles.pillow, scaled]} /></View>;
-  return <View style={[styles.artMini, { width: size, height: size }]}><View style={[styles.sabzehCup, { backgroundColor: color }, scaled]} /><View style={[styles.sabzehLeafA, scaled]} /><View style={[styles.sabzehLeafB, scaled]} /></View>;
+  if (choice.kind === 'apple') return <View style={[styles.artMini, { width: innerSize, height: innerSize }]}><View style={[styles.apple, { backgroundColor: color }, scaled]} /><View style={[styles.appleLeaf, scaled]} /></View>;
+  if (choice.kind === 'fish') return <View style={[styles.artMini, { width: innerSize, height: innerSize }]}><View style={[styles.fishBody, { backgroundColor: color }, scaled]} /><View style={[styles.fishTail, { borderLeftColor: '#0EA5E9' }, scaled]} /></View>;
+  if (choice.kind === 'moon') return <View style={[styles.moonChoice, { backgroundColor: color, width: innerSize * 0.72, height: innerSize * 0.72, borderRadius: innerSize * 0.36 }]} />;
+  if (choice.kind === 'cucumber') return <Image source={asset} style={[styles.choiceImage, { width: innerSize, height: innerSize }]} resizeMode="contain" />;
+  if (choice.kind === 'orange') return <Image source={asset} style={[styles.choiceImage, { width: innerSize, height: innerSize }]} resizeMode="contain" />;
+  if (choice.kind === 'backpack') return <Image source={asset} style={[styles.choiceImage, { width: innerSize, height: innerSize }]} resizeMode="contain" />;
+  if (choice.kind === 'bed') return <View style={[styles.artMini, { width: innerSize, height: innerSize }]}><View style={[styles.bed, { backgroundColor: color }, scaled]} /><View style={[styles.pillow, scaled]} /></View>;
+  return <View style={[styles.artMini, { width: innerSize, height: innerSize }]}><View style={[styles.sabzehCup, { backgroundColor: color }, scaled]} /><View style={[styles.sabzehLeafA, scaled]} /><View style={[styles.sabzehLeafB, scaled]} /></View>;
 }
 
 export default function ConversationGame() {
@@ -264,7 +271,7 @@ export default function ConversationGame() {
     return (
       <View style={styles.root}>
         <View style={[StyleSheet.absoluteFill, { backgroundColor: '#35217E' }]} />
-        <TopBar title="Talk & Play" titleFa="گفت‌وگو و بازی" showBack dark topInset={10} />
+        <TopBar title="Talk & Play" titleFa="گفت‌وگو و بازی" showClose dark topInset={10} />
         <View style={styles.finishWrap}>
           <View style={styles.finishBadge}>
             <Image source={neliWorldAssets.ui.ok} style={styles.finishIcon} resizeMode="contain" />
@@ -299,7 +306,7 @@ export default function ConversationGame() {
 
   return (
     <View style={styles.root}>
-      <TopBar title="Talk & Play" titleFa="گفت‌وگو و بازی" showBack dark topInset={10} />
+      <TopBar title="Talk & Play" titleFa="گفت‌وگو و بازی" showClose dark topInset={10} />
       <View style={styles.sceneBackground}>
         <ImageBackground source={backgroundSource} style={styles.sceneBackdrop} resizeMode="cover">
           <View style={styles.sceneWash} />
@@ -430,7 +437,7 @@ const styles = StyleSheet.create({
   },
   choiceCardCorrect: { backgroundColor: 'rgba(240, 255, 244, 0.98)' },
   choiceCardWrong: { backgroundColor: 'rgba(255, 241, 242, 0.98)' },
-  choiceArtWrap: { width: 102, alignItems: 'center', justifyContent: 'center' },
+  choiceArtWrap: { width: 102, padding: 10, alignItems: 'center', justifyContent: 'center' },
   choiceTextWrap: { flex: 1, alignItems: 'flex-end', justifyContent: 'center' },
   choiceLabel: { color: C.textDark, fontSize: 18, lineHeight: 24, textAlign: 'right', flexShrink: 1, paddingHorizontal: 10 },
   choiceImage: { width: 92, height: 92 },

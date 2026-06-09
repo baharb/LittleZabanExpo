@@ -92,7 +92,7 @@ export default function BuildSceneGame() {
   return (
     <View style={styles.root}>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: '#E9F7FF' }]} />
-      <TopBar title="Build a Room" titleFa="اتاق بساز" showBack dark={false} topInset={10} />
+      <TopBar title="Build a Room" titleFa="اتاق بساز" showClose dark={false} topInset={10} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.roomTabs}>
           {(Object.keys(ROOMS) as RoomId[]).map(id => (

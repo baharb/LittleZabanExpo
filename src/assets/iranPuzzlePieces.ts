@@ -1,12 +1,17 @@
-import { ImageSourcePropType } from 'react-native';
+﻿import { ImageSourcePropType } from 'react-native';
 
-export const IRAN_PUZZLE_SOURCE_WIDTH = 3840;
-export const IRAN_PUZZLE_SOURCE_HEIGHT = 2160;
+const IRAN_PUZZLE_CROP_X = 897;
+const IRAN_PUZZLE_CROP_Y = 40;
 
-export const IRAN_PUZZLE_OUTLINE: ImageSourcePropType = require('../../assets/neli-world/puzzle/Iran/generated/iran_outline_landscape_3840x2160.png');
+export const IRAN_PUZZLE_SOURCE_WIDTH = 2063;
+export const IRAN_PUZZLE_SOURCE_HEIGHT = 2042;
+
+export const IRAN_PUZZLE_OUTLINE: ImageSourcePropType = require('../../assets/neli-world/puzzle/Iran/generated/iran_kids_placeholder_cropped_labeled.png');
 
 export type IranPuzzlePiece = {
   id: string;
+  nameFa: string;
+  nameEn: string;
   source: ImageSourcePropType;
   side: 'left' | 'right';
   sourceBox: [number, number, number, number];
@@ -14,253 +19,95 @@ export type IranPuzzlePiece = {
   area: number;
 };
 
-export const IRAN_PUZZLE_PIECES: IranPuzzlePiece[] = [
-  {
-    id: 'piece_01',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_01.png'),
-    side: 'left',
-    sourceBox: [926, 118, 1078, 990],
-    centroid: [0.257879, 0.248315],
-    area: 532,
-  },
-  {
-    id: 'piece_02',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_02.png'),
-    side: 'left',
-    sourceBox: [994, 702, 1270, 962],
-    centroid: [0.291424, 0.381357],
-    area: 2479,
-  },
-  {
-    id: 'piece_03',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_03.png'),
-    side: 'left',
-    sourceBox: [1030, 546, 1294, 774],
-    centroid: [0.303915, 0.300723],
-    area: 2277,
-  },
-  {
-    id: 'piece_04',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_04.png'),
-    side: 'left',
-    sourceBox: [1066, 926, 1274, 1126],
-    centroid: [0.306238, 0.472192],
-    area: 1059,
-  },
-  {
-    id: 'piece_05',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_05.png'),
-    side: 'left',
-    sourceBox: [1050, 234, 1330, 570],
-    centroid: [0.306397, 0.183067],
-    area: 3260,
-  },
-  {
-    id: 'piece_06',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_06.png'),
-    side: 'left',
-    sourceBox: [1210, 150, 1402, 490],
-    centroid: [0.342569, 0.139351],
-    area: 1946,
-  },
-  {
-    id: 'piece_07',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_07.png'),
-    side: 'left',
-    sourceBox: [1290, 570, 1410, 646],
-    centroid: [0.350751, 0.284278],
-    area: 251,
-  },
-  {
-    id: 'piece_08',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_08.png'),
-    side: 'left',
-    sourceBox: [1226, 1038, 1490, 1398],
-    centroid: [0.353252, 0.565299],
-    area: 4069,
-  },
-  {
-    id: 'piece_09',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_09.png'),
-    side: 'left',
-    sourceBox: [1250, 662, 1478, 942],
-    centroid: [0.353938, 0.368733],
-    area: 2574,
-  },
-  {
-    id: 'piece_10',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_10.png'),
-    side: 'left',
-    sourceBox: [1366, 322, 1574, 558],
-    centroid: [0.381921, 0.212043],
-    area: 1328,
-  },
-  {
-    id: 'piece_11',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_11.png'),
-    side: 'left',
-    sourceBox: [1426, 1670, 1538, 1778],
-    centroid: [0.385030, 0.802618],
-    area: 261,
-  },
-  {
-    id: 'piece_12',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_12.png'),
-    side: 'left',
-    sourceBox: [1422, 690, 1630, 954],
-    centroid: [0.396994, 0.377790],
-    area: 1550,
-  },
-  {
-    id: 'piece_13',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_13.png'),
-    side: 'left',
-    sourceBox: [1430, 1050, 1642, 1278],
-    centroid: [0.400070, 0.538940],
-    area: 1878,
-  },
-  {
-    id: 'piece_14',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_14.png'),
-    side: 'left',
-    sourceBox: [1462, 1242, 1670, 1434],
-    centroid: [0.409522, 0.618162],
-    area: 1315,
-  },
-  {
-    id: 'piece_15',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_15.png'),
-    side: 'left',
-    sourceBox: [1258, 134, 2026, 534],
-    centroid: [0.419670, 0.179400],
-    area: 549,
-  },
-  {
-    id: 'piece_16',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_16.png'),
-    side: 'left',
-    sourceBox: [1578, 582, 1678, 722],
-    centroid: [0.422389, 0.297854],
-    area: 454,
-  },
-  {
-    id: 'piece_17',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_17.png'),
-    side: 'left',
-    sourceBox: [1574, 1546, 1698, 1650],
-    centroid: [0.424019, 0.744430],
-    area: 376,
-  },
-  {
-    id: 'piece_18',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_18.png'),
-    side: 'left',
-    sourceBox: [1570, 742, 1714, 922],
-    centroid: [0.427879, 0.381275],
-    area: 827,
-  },
-  {
-    id: 'piece_19',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_19.png'),
-    side: 'left',
-    sourceBox: [1558, 490, 1958, 650],
-    centroid: [0.460208, 0.263553],
-    area: 2189,
-  },
-  {
-    id: 'piece_20',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_20.png'),
-    side: 'left',
-    sourceBox: [1714, 1042, 1910, 1130],
-    centroid: [0.471619, 0.500038],
-    area: 493,
-  },
-  {
-    id: 'piece_21',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_21.png'),
-    side: 'left',
-    sourceBox: [1594, 1202, 2110, 1786],
-    centroid: [0.483133, 0.687980],
-    area: 11061,
-  },
-  {
-    id: 'piece_22',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_22.png'),
-    side: 'left',
-    sourceBox: [1826, 1910, 1954, 2014],
-    centroid: [0.493381, 0.905038],
-    area: 347,
-  },
-  {
-    id: 'piece_23',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_23.png'),
-    side: 'right',
-    sourceBox: [1946, 750, 2066, 822],
-    centroid: [0.522578, 0.366277],
-    area: 271,
-  },
-  {
-    id: 'piece_24',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_24.png'),
-    side: 'right',
-    sourceBox: [1930, 354, 2166, 578],
-    centroid: [0.531495, 0.210895],
-    area: 1648,
-  },
-  {
-    id: 'piece_25',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_25.png'),
-    side: 'right',
-    sourceBox: [2010, 1722, 2138, 1818],
-    centroid: [0.542087, 0.824697],
-    area: 315,
-  },
-  {
-    id: 'piece_26',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_26.png'),
-    side: 'right',
-    sourceBox: [1898, 822, 2342, 1370],
-    centroid: [0.556572, 0.517908],
-    area: 8171,
-  },
-  {
-    id: 'piece_27',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_27.png'),
-    side: 'right',
-    sourceBox: [2142, 334, 2358, 594],
-    centroid: [0.583923, 0.211454],
-    area: 2144,
-  },
-  {
-    id: 'piece_28',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_28.png'),
-    side: 'right',
-    sourceBox: [2186, 1454, 2390, 1582],
-    centroid: [0.591850, 0.709044],
-    area: 672,
-  },
-  {
-    id: 'piece_29',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_29.png'),
-    side: 'right',
-    sourceBox: [2406, 742, 2522, 846],
-    centroid: [0.641229, 0.367169],
-    area: 424,
-  },
-  {
-    id: 'piece_30',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_30.png'),
-    side: 'right',
-    sourceBox: [2022, 322, 2750, 1346],
-    centroid: [0.654848, 0.332006],
-    area: 812,
-  },
-  {
-    id: 'piece_31',
-    source: require('../../assets/neli-world/puzzle/Iran/generated/iran_piece_31.png'),
-    side: 'right',
-    sourceBox: [2538, 1818, 2710, 1934],
-    centroid: [0.678642, 0.871247],
-    area: 526,
-  },
+type IranPuzzleShapeMeta = Omit<IranPuzzlePiece, 'source'> & {
+  file?: string;
+  normalizedBox?: [number, number, number, number];
+  shapeFile?: string;
+};
+
+const SHAPE_META = require('../../assets/neli-world/puzzle/Iran/generated/iran_puzzle_shapes_meta.json') as IranPuzzleShapeMeta[];
+
+const SHAPE_SOURCES: ImageSourcePropType[] = [
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_01.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_02.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_03.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_04.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_05.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_06.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_07.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_08.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_09.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_10.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_11.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_12.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_13.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_14.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_15.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_16.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_17.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_18.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_19.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_20.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_21.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_22.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_23.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_24.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_25.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_26.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_27.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_28.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_29.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_30.png'),
+  require('../../assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_31.png'),
 ];
+
+const PROVINCE_NAMES_FA: Record<string, string> = {
+  west_azerbaijan: 'آذربایجان غربی',
+  east_azerbaijan: 'آذربایجان شرقی',
+  ardabil: 'اردبیل',
+  gilan: 'گیلان',
+  zanjan: 'زنجان',
+  kurdistan: 'کردستان',
+  kermanshah: 'کرمانشاه',
+  ilam: 'ایلام',
+  hamadan: 'همدان',
+  qazvin: 'قزوین',
+  alborz: 'البرز',
+  tehran: 'تهران',
+  qom: 'قم',
+  markazi: 'مرکزی',
+  lorestan: 'لرستان',
+  khuzestan: 'خوزستان',
+  chaharmahal: 'چهارمحال و بختیاری',
+  kohgiluyeh: 'کهگیلویه و بویراحمد',
+  bushehr: 'بوشهر',
+  fars: 'فارس',
+  isfahan: 'اصفهان',
+  yazd: 'یزد',
+  kerman: 'کرمان',
+  hormozgan: 'هرمزگان',
+  sistan: 'سیستان و بلوچستان',
+  south_khorasan: 'خراسان جنوبی',
+  razavi_khorasan: 'خراسان رضوی',
+  north_khorasan: 'خراسان شمالی',
+  semnan: 'سمنان',
+  mazandaran: 'مازندران',
+  golestan: 'گلستان',
+};
+
+export const IRAN_PUZZLE_PIECES: IranPuzzlePiece[] = SHAPE_META.map((piece, index) => ({
+  id: piece.id,
+  nameFa: PROVINCE_NAMES_FA[piece.id] ?? piece.nameFa ?? piece.id,
+  nameEn: piece.nameEn ?? piece.id,
+  source: SHAPE_SOURCES[index],
+  side: piece.side,
+  sourceBox: [
+    piece.sourceBox[0] - IRAN_PUZZLE_CROP_X,
+    piece.sourceBox[1] - IRAN_PUZZLE_CROP_Y,
+    piece.sourceBox[2] - IRAN_PUZZLE_CROP_X,
+    piece.sourceBox[3] - IRAN_PUZZLE_CROP_Y,
+  ],
+  centroid: piece.centroid,
+  area: piece.area,
+}));
+

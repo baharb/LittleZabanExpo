@@ -3,29 +3,53 @@ import { Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity,
 import TopBar from '../components/TopBar';
 import CharacterAvatar from '../components/CharacterAvatar';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
-import { AppContext, Lang } from '../store/AppContext';
+import { AppContext, LANGUAGES } from '../store/AppContext';
+import { useNav } from '../store/NavContext';
 import { dir, ff } from '../theme/fonts';
 
-const LANGS: { code: Lang; label: string; labelEn: string; color: string }[] = [
-  { code: 'fa', label: 'فارسی', labelEn: 'Persian', color: '#7C3AED' },
-  { code: 'en', label: 'English', labelEn: 'English', color: '#078BFF' },
-  { code: 'fr', label: 'Français', labelEn: 'French', color: '#16A36A' },
-  { code: 'es', label: 'Español', labelEn: 'Spanish', color: '#F97316' },
-  { code: 'zh', label: '中文', labelEn: 'Chinese', color: '#D946A6' },
-  { code: 'ko', label: '한국어', labelEn: 'Korean', color: '#D89400' },
-  { code: 'ar', label: 'عربي', labelEn: 'Arabic', color: '#12A59B' },
-];
-
 export default function ProfileScreen() {
-  const { lang, setLang, stars, streak, badges, completedSections, age, selectedCharacterId } = useContext(AppContext);
+  const { settingsLang, setSettingsLang, stars, streak, badges, completedSections, age, setAge, selectedCharacterId } = useContext(AppContext);
+  const { navigate } = useNav();
   const { width, height } = useWindowDimensions();
   const ui = Math.min(width / 390, height / 844);
-  const isFa = lang === 'fa' || lang === 'ar';
+  const lang = settingsLang;
+  const isFa = lang === 'fa';
 
   return (
     <View style={styles.root}>
-      <TopBar title="Me" titleFa="من" dark />
+      <TopBar title="Settings" titleFa="تنظیمات" displayLang={lang} showClose onBack={() => navigate({ name: 'Main', tab: 'Games' })} dark />
       <ScrollView contentContainerStyle={[styles.scroll, { paddingHorizontal: Math.max(12, Math.round(14 * ui)), paddingBottom: Math.max(28, Math.round(34 * ui)), gap: Math.max(12, Math.round(14 * ui)) }]} showsVerticalScrollIndicator={false}>
+        <View style={[styles.panel, { borderRadius: Math.max(22, Math.round(26 * ui)), padding: Math.max(14, Math.round(16 * ui)) }]}>
+          <Text style={[styles.sectionTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(16, Math.round(18 * ui)) }, dir(lang)]}>
+            {isFa ? 'زبان تنظیمات و راهنما' : 'Settings and help language'}
+          </Text>
+          <View style={[styles.languageRow, isFa && styles.languageRowRtl]}>
+            {LANGUAGES.map(language => (
+              <TouchableOpacity
+                key={language.code}
+                style={[styles.languageButton, settingsLang === language.code && styles.languageButtonActive]}
+                onPress={() => setSettingsLang(language.code)}
+                activeOpacity={0.82}
+              >
+                <Text style={styles.languageFlag}>{language.flag}</Text>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.languageText,
+                    settingsLang === language.code && styles.languageTextActive,
+                    { fontFamily: ff(language.code, 'bold') },
+                  ]}
+                >
+                  {language.nativeLabel}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={[styles.languageNote, { fontFamily: ff(lang, 'regular') }, dir(lang)]}>
+            {isFa ? 'این انتخاب فقط زبان صفحه‌های تنظیمات و راهنما را تغییر می‌دهد. بازی‌ها همیشه فارسی هستند.' : 'This only changes Settings and Help pages. Games always stay in Persian.'}
+          </Text>
+        </View>
+
         <ImageBackground source={neliWorldAssets.rooms.bedroom} style={[styles.hero, { height: Math.max(200, Math.round(220 * ui)), borderRadius: Math.max(26, Math.round(30 * ui)), padding: Math.max(12, Math.round(16 * ui)) }]} imageStyle={styles.heroImage}>
           <View style={styles.heroShade} />
           <CharacterAvatar characterId={selectedCharacterId} size={Math.max(138, Math.round(156 * ui))} />
@@ -62,25 +86,43 @@ export default function ProfileScreen() {
 
         <View style={[styles.panel, { borderRadius: Math.max(22, Math.round(26 * ui)), padding: Math.max(14, Math.round(16 * ui)) }]}>
           <Text style={[styles.sectionTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(16, Math.round(18 * ui)), marginBottom: Math.max(10, Math.round(12 * ui)) }, dir(lang)]}>
-            {isFa ? 'زبان برنامه' : 'App Language'}
+            {isFa ? 'تنظیمات' : 'Settings'}
           </Text>
-          <View style={[styles.langGrid, { gap: Math.max(7, Math.round(9 * ui)) }]}>
-            {LANGS.map(item => {
-              const active = lang === item.code;
-              return (
-                <TouchableOpacity key={item.code} style={[styles.langBtn, active && { backgroundColor: item.color }]} onPress={() => setLang(item.code)} activeOpacity={0.82}>
-                  <View style={[styles.langDot, { backgroundColor: active ? '#FFFFFF' : item.color, width: Math.max(12, Math.round(14 * ui)), height: Math.max(12, Math.round(14 * ui)), borderRadius: Math.max(6, Math.round(7 * ui)) }]} />
-                  <View>
-                    <Text style={[styles.langLbl, { fontFamily: ff(item.code, 'bold'), color: active ? '#FFFFFF' : '#25105C' }]}>
-                      {item.label}
+          <View style={styles.settingsGrid}>
+            <View style={[styles.settingsButton, styles.ageSettings, { backgroundColor: '#E8F7FF' }]}>
+              <View style={styles.settingsCopy}>
+                <Text style={[styles.settingsTitle, { fontFamily: ff(lang, 'black') }]}>{isFa ? 'سن کودک' : 'Child age'}</Text>
+                <Text style={[styles.settingsSub, { fontFamily: ff(lang, 'regular') }]}>{isFa ? 'سن را انتخاب کن تا فعالیت‌ها مناسب‌تر شوند' : 'Choose an age to personalize activities'}</Text>
+              </View>
+              <View style={styles.ageRow}>
+                {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(value => (
+                  <TouchableOpacity
+                    key={value}
+                    style={[styles.ageButton, age === value && styles.ageButtonActive]}
+                    onPress={() => setAge(value)}
+                    activeOpacity={0.82}
+                  >
+                    <Text style={[styles.ageButtonText, age === value && styles.ageButtonTextActive, { fontFamily: ff('fa', 'black') }]}>
+                      {value}
                     </Text>
-                    <Text style={[styles.langSub, { color: active ? 'rgba(255,255,255,0.78)' : '#746684' }]}>
-                      {item.labelEn}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+            <TouchableOpacity style={[styles.settingsButton, { backgroundColor: '#F1E8FF' }]} onPress={() => navigate({ name: 'Parent' })} activeOpacity={0.82}>
+              <Image source={neliWorldAssets.ui.settings} style={styles.settingsIcon} resizeMode="contain" />
+              <View style={styles.settingsCopy}>
+                <Text style={[styles.settingsTitle, { fontFamily: ff(lang, 'black') }]}>{isFa ? 'تنظیمات والدین' : 'Parent settings'}</Text>
+                <Text style={[styles.settingsSub, { fontFamily: ff(lang, 'regular') }]}>{isFa ? 'سن کودک، گزارش پیشرفت و کد ورود' : 'Child age, progress report, and PIN'}</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.settingsButton, { backgroundColor: '#FFF2C7' }]} onPress={() => navigate({ name: 'Characters' })} activeOpacity={0.82}>
+              <Image source={neliWorldAssets.ui.heart} style={styles.settingsIcon} resizeMode="contain" />
+              <View style={styles.settingsCopy}>
+                <Text style={[styles.settingsTitle, { fontFamily: ff(lang, 'black') }]}>{isFa ? 'انتخاب شخصیت' : 'Choose character'}</Text>
+                <Text style={[styles.settingsSub, { fontFamily: ff(lang, 'regular') }]}>{isFa ? 'شخصیت همراه کودک را تغییر بده' : "Change the child's companion"}</Text>
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -122,11 +164,26 @@ const styles = StyleSheet.create({
   statLbl: { color: '#493C63', fontSize: 11, fontWeight: '900' },
   panel: { backgroundColor: 'rgba(255,255,255,0.95)' },
   sectionTitle: { color: '#221044', fontWeight: '900', marginBottom: 12 },
-  langGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  langBtn: { width: '48%', flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: '#F1ECFF', borderRadius: 18, paddingHorizontal: 11, paddingVertical: 10 },
-  langDot: { width: 14, height: 14, borderRadius: 7 },
-  langLbl: { fontSize: 13, fontWeight: '900' },
-  langSub: { fontFamily: ff('fa', 'regular'), fontSize: 10, marginTop: 1 },
+  languageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  languageRowRtl: { flexDirection: 'row-reverse' },
+  languageButton: { minWidth: 92, flexGrow: 1, flexBasis: '29%', minHeight: 58, borderRadius: 18, paddingHorizontal: 9, paddingVertical: 8, backgroundColor: '#F0EBFF', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: 'transparent' },
+  languageButtonActive: { backgroundColor: '#FFF2C7', borderColor: '#F5B800' },
+  languageFlag: { fontSize: 21 },
+  languageText: { color: '#5C4B78', fontSize: 11, marginTop: 2, textAlign: 'center' },
+  languageTextActive: { color: '#221044' },
+  languageNote: { color: '#6B5A89', fontSize: 11.5, lineHeight: 18, marginTop: 10 },
+  settingsGrid: { gap: 10 },
+  settingsButton: { minHeight: 76, borderRadius: 20, padding: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
+  ageSettings: { flexDirection: 'column', alignItems: 'stretch' },
+  ageRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 7, justifyContent: 'flex-start' },
+  ageButton: { width: 40, height: 40, borderRadius: 14, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  ageButtonActive: { backgroundColor: '#078BFF' },
+  ageButtonText: { color: '#221044', fontSize: 14 },
+  ageButtonTextActive: { color: '#FFFFFF' },
+  settingsIcon: { width: 52, height: 52 },
+  settingsCopy: { flex: 1, alignItems: 'flex-end' },
+  settingsTitle: { color: '#221044', fontSize: 15, textAlign: 'right' },
+  settingsSub: { color: '#6B5A89', fontSize: 11, lineHeight: 17, marginTop: 2, textAlign: 'right' },
   rewardRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   reward: { width: 62, height: 62, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF2C7', borderWidth: 4.5, borderColor: '#FFFFFF' },
   rewardIcon: { width: 52, height: 52 },

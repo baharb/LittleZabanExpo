@@ -13,7 +13,8 @@ import * as Haptics from 'expo-haptics';
 import Svg, { Path } from 'react-native-svg';
 import TopBar from '../components/TopBar';
 import { AppContext } from '../store/AppContext';
-import { dir, ff } from '../theme/fonts';
+import { useNav } from '../store/NavContext';
+import { ff } from '../theme/fonts';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
 
 type Point = { x: number; y: number };
@@ -26,6 +27,7 @@ type PaintingScene = {
   bg: string;
   thumb: any;
   image: any;
+  outline: any;
 };
 
 type Crayon = {
@@ -53,11 +55,11 @@ const CRAYONS: Crayon[] = [
   { color: '#263238', label: 'Black', sprite: require('../../assets/neli-world/painting/crayons/crayon_black.png') },
 ];
 
-const BRUSH_SIZES = [14, 22, 30] as const;
+const BRUSH_SIZES = [17, 26, 36] as const;
 const BRUSH_ICONS = {
-  14: require('../../assets/neli-world/painting/brushes/1.png'),
-  22: require('../../assets/neli-world/painting/brushes/2.png'),
-  30: require('../../assets/neli-world/painting/brushes/3.png'),
+  17: require('../../assets/neli-world/painting/brushes/1.png'),
+  26: require('../../assets/neli-world/painting/brushes/2.png'),
+  36: require('../../assets/neli-world/painting/brushes/3.png'),
 } as const;
 
 const PAINT_CARD_BORDERS = [
@@ -79,6 +81,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#BFE6FF',
     thumb: require('../../assets/neli-world/painting/thumbs/01_puppy_cycling_in_the_park.png'),
     image: require('../../assets/neli-world/painting/01_puppy_cycling_in_the_park.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/01_puppy_cycling_in_the_park_outline.png'),
   },
   {
     id: '02',
@@ -87,6 +90,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#FFE3F0',
     thumb: require('../../assets/neli-world/painting/thumbs/02_playful_mouse_in_a_park_playground.png'),
     image: require('../../assets/neli-world/painting/02_playful_mouse_in_a_park_playground.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/02_playful_mouse_in_a_park_playground_outline.png'),
   },
   {
     id: '03',
@@ -95,6 +99,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#D8FBFF',
     thumb: require('../../assets/neli-world/painting/thumbs/03_cheerful_underwater_world_with_a_turtle.png'),
     image: require('../../assets/neli-world/painting/03_cheerful_underwater_world_with_a_turtle.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/03_cheerful_underwater_world_with_a_turtle_outline.png'),
   },
   {
     id: '04',
@@ -103,6 +108,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#D6F0FF',
     thumb: require('../../assets/neli-world/painting/thumbs/04_dolphin_and_sailboat_on_the_waves.png'),
     image: require('../../assets/neli-world/painting/04_dolphin_and_sailboat_on_the_waves.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/04_dolphin_and_sailboat_on_the_waves_outline.png'),
   },
   {
     id: '05',
@@ -111,6 +117,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#DFF7D8',
     thumb: require('../../assets/neli-world/painting/thumbs/05_jungle_friends_in_the_sunshine.png'),
     image: require('../../assets/neli-world/painting/05_jungle_friends_in_the_sunshine.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/05_jungle_friends_in_the_sunshine_outline.png'),
   },
   {
     id: '07',
@@ -119,6 +126,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#E9F4FF',
     thumb: require('../../assets/neli-world/painting/thumbs/07_smiling_dinosaur_in_a_prehistoric_landscape.png'),
     image: require('../../assets/neli-world/painting/07_smiling_dinosaur_in_a_prehistoric_landscape.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/07_smiling_dinosaur_in_a_prehistoric_landscape_outline.png'),
   },
   {
     id: '08',
@@ -127,6 +135,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#E8E6FF',
     thumb: require('../../assets/neli-world/painting/thumbs/08_astronaut_waving_in_outer_space.png'),
     image: require('../../assets/neli-world/painting/08_astronaut_waving_in_outer_space.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/08_astronaut_waving_in_outer_space_outline.png'),
   },
   {
     id: '09',
@@ -135,6 +144,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#FFE5F3',
     thumb: require('../../assets/neli-world/painting/thumbs/09_princess_waving_in_a_fairy_tale_landscape.png'),
     image: require('../../assets/neli-world/painting/09_princess_waving_in_a_fairy_tale_landscape.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/09_princess_waving_in_a_fairy_tale_landscape_outline.png'),
   },
   {
     id: '10',
@@ -143,6 +153,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#F2F0C6',
     thumb: require('../../assets/neli-world/painting/thumbs/10_playful_monkey_in_the_jungle.png'),
     image: require('../../assets/neli-world/painting/10_playful_monkey_in_the_jungle.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/10_playful_monkey_in_the_jungle_outline.png'),
   },
   {
     id: '11',
@@ -151,6 +162,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#FFF1D9',
     thumb: require('../../assets/neli-world/painting/thumbs/11_lamb_s_sunny_day_picnic_reading.png'),
     image: require('../../assets/neli-world/painting/11_lamb_s_sunny_day_picnic_reading.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/11_lamb_s_sunny_day_picnic_reading_outline.png'),
   },
   {
     id: '12',
@@ -159,6 +171,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#FFF0FB',
     thumb: require('../../assets/neli-world/painting/thumbs/12_cute_kitten_in_candy_playground.png'),
     image: require('../../assets/neli-world/painting/12_cute_kitten_in_candy_playground.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/12_cute_kitten_in_candy_playground_outline.png'),
   },
   {
     id: '13',
@@ -167,6 +180,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#F2F4FF',
     thumb: require('../../assets/neli-world/painting/thumbs/13_owl_teacher_in_a_classroom_setting.png'),
     image: require('../../assets/neli-world/painting/13_owl_teacher_in_a_classroom_setting.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/13_owl_teacher_in_a_classroom_setting_outline.png'),
   },
   {
     id: '14',
@@ -175,6 +189,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#FFF2D2',
     thumb: require('../../assets/neli-world/painting/thumbs/14_joyful_giraffe_in_a_sunny_savanna.png'),
     image: require('../../assets/neli-world/painting/14_joyful_giraffe_in_a_sunny_savanna.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/14_joyful_giraffe_in_a_sunny_savanna_outline.png'),
   },
   {
     id: '15',
@@ -183,6 +198,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#EAF9FF',
     thumb: require('../../assets/neli-world/painting/thumbs/15_animal_friends_in_the_park.png'),
     image: require('../../assets/neli-world/painting/15_animal_friends_in_the_park.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/15_animal_friends_in_the_park_outline.png'),
   },
   {
     id: '16',
@@ -191,6 +207,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#DDFBFF',
     thumb: require('../../assets/neli-world/painting/thumbs/16_happy_octopus_and_underwater_friends.png'),
     image: require('../../assets/neli-world/painting/16_happy_octopus_and_underwater_friends.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/16_happy_octopus_and_underwater_friends_outline.png'),
   },
   {
     id: '17',
@@ -199,6 +216,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#E4F8D7',
     thumb: require('../../assets/neli-world/painting/thumbs/17_jungle_friends_in_a_playful_swing.png'),
     image: require('../../assets/neli-world/painting/17_jungle_friends_in_a_playful_swing.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/17_jungle_friends_in_a_playful_swing_outline.png'),
   },
   {
     id: '18',
@@ -207,6 +225,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#FFF6D8',
     thumb: require('../../assets/neli-world/painting/thumbs/18_cheerful_farm_animals_in_a_playful_scene.png'),
     image: require('../../assets/neli-world/painting/18_cheerful_farm_animals_in_a_playful_scene.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/18_cheerful_farm_animals_in_a_playful_scene_outline.png'),
   },
   {
     id: '19',
@@ -215,6 +234,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#EAE6FF',
     thumb: require('../../assets/neli-world/painting/thumbs/19_owl_astronaut_explores_outer_space.png'),
     image: require('../../assets/neli-world/painting/19_owl_astronaut_explores_outer_space.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/19_owl_astronaut_explores_outer_space_outline.png'),
   },
   {
     id: '20',
@@ -223,6 +243,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#FFE8F2',
     thumb: require('../../assets/neli-world/painting/thumbs/20_princess_and_friends_in_the_castle_garden.png'),
     image: require('../../assets/neli-world/painting/20_princess_and_friends_in_the_castle_garden.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/20_princess_and_friends_in_the_castle_garden_outline.png'),
   },
   {
     id: '21',
@@ -231,6 +252,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#F4FCE8',
     thumb: require('../../assets/neli-world/painting/thumbs/01_lamb_reading_in_sunny_meadow.png'),
     image: require('../../assets/neli-world/painting/01_lamb_reading_in_sunny_meadow.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/01_lamb_reading_in_sunny_meadow_outline.png'),
   },
   {
     id: '22',
@@ -239,6 +261,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#FFF0F8',
     thumb: require('../../assets/neli-world/painting/thumbs/02_cheerful_kitty_candy_playground.png'),
     image: require('../../assets/neli-world/painting/02_cheerful_kitty_candy_playground.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/02_cheerful_kitty_candy_playground_outline.png'),
   },
   {
     id: '23',
@@ -247,6 +270,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#EEF3FF',
     thumb: require('../../assets/neli-world/painting/thumbs/03_owl_teacher_classroom.png'),
     image: require('../../assets/neli-world/painting/03_owl_teacher_classroom.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/03_owl_teacher_classroom_outline.png'),
   },
   {
     id: '24',
@@ -255,6 +279,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#FFF4D8',
     thumb: require('../../assets/neli-world/painting/thumbs/04_cheerful_giraffe_savanna.png'),
     image: require('../../assets/neli-world/painting/04_cheerful_giraffe_savanna.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/04_cheerful_giraffe_savanna_outline.png'),
   },
   {
     id: '25',
@@ -263,6 +288,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#FFF0E0',
     thumb: require('../../assets/neli-world/painting/thumbs/05_teddy_bear_in_park.png'),
     image: require('../../assets/neli-world/painting/05_teddy_bear_in_park.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/05_teddy_bear_in_park_outline.png'),
   },
   {
     id: '26',
@@ -271,6 +297,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#E3FBFF',
     thumb: require('../../assets/neli-world/painting/thumbs/06_smiling_fish_underwater.png'),
     image: require('../../assets/neli-world/painting/06_smiling_fish_underwater.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/06_smiling_fish_underwater_outline.png'),
   },
   {
     id: '27',
@@ -279,6 +306,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#F5FFE8',
     thumb: require('../../assets/neli-world/painting/thumbs/07_happy_bunny_garden.png'),
     image: require('../../assets/neli-world/painting/07_happy_bunny_garden.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/07_happy_bunny_garden_outline.png'),
   },
   {
     id: '28',
@@ -287,6 +315,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#E8FFF5',
     thumb: require('../../assets/neli-world/painting/thumbs/08_cute_dinosaur_tropical.png'),
     image: require('../../assets/neli-world/painting/08_cute_dinosaur_tropical.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/08_cute_dinosaur_tropical_outline.png'),
   },
   {
     id: '29',
@@ -295,6 +324,7 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#ECEBFF',
     thumb: require('../../assets/neli-world/painting/thumbs/09_rocket_in_space.png'),
     image: require('../../assets/neli-world/painting/09_rocket_in_space.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/09_rocket_in_space_outline.png'),
   },
   {
     id: '30',
@@ -303,8 +333,17 @@ const PAINTINGS: PaintingScene[] = [
     bg: '#E9FFF3',
     thumb: require('../../assets/neli-world/painting/thumbs/10_animal_friends_in_park.png'),
     image: require('../../assets/neli-world/painting/10_animal_friends_in_park.png'),
+    outline: require('../../assets/neli-world/painting/line-overlays/10_animal_friends_in_park_outline.png'),
   },
 ];
+
+const SIMPLE_PAINTING_IDS = new Set(['21', '25', '26', '27', '29', '24', '28', '22', '23', '30']);
+const ORDERED_PAINTINGS = [...PAINTINGS].sort((a, b) => {
+  const aSimple = SIMPLE_PAINTING_IDS.has(a.id);
+  const bSimple = SIMPLE_PAINTING_IDS.has(b.id);
+  if (aSimple !== bSimple) return aSimple ? -1 : 1;
+  return Number(a.id) - Number(b.id);
+});
 
 function pathFromPoints(points: Point[]) {
   if (!points.length) return '';
@@ -361,8 +400,8 @@ function BrushSizeButton({
   onPress: () => void;
   iconSource: any;
 }) {
-  const iconScale = size === 14 ? 1.0 : size === 22 ? 1.24 : 1.16;
-  const iconRightMargin = size === 30 ? 12 : 0;
+  const iconScale = size === 17 ? 1.0 : size === 26 ? 1.24 : 1.16;
+  const iconRightMargin = size === 36 ? 12 : 0;
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -401,6 +440,7 @@ function CuteActionButton({
 
 export default function ColoringScreen() {
   const { lang } = useContext(AppContext);
+  const { reset } = useNav();
   const { width, height } = useWindowDimensions();
   const isFa = lang === 'fa' || lang === 'ar';
 
@@ -418,7 +458,7 @@ export default function ColoringScreen() {
   const selectedColorRef = useRef(selectedColor);
   const brushSizeRef = useRef(brushSize);
 
-  const scene = PAINTINGS[sceneIdx];
+  const scene = ORDERED_PAINTINGS[sceneIdx];
   const canvasWidth = stageSize.w;
   const canvasHeight = stageSize.h;
   const sceneSource = Image.resolveAssetSource(scene.image);
@@ -481,6 +521,16 @@ export default function ColoringScreen() {
     },
     [clearPainting],
   );
+
+  const closeGallery = useCallback(() => {
+    reset({ name: 'Main', tab: 'Games' });
+  }, [reset]);
+
+  const closePainting = useCallback(() => {
+    currentStroke.current = null;
+    setPointer(prev => ({ ...prev, visible: false }));
+    setMode('pick');
+  }, []);
 
   const isControlArea = useCallback(
     (x: number, y: number) => {
@@ -588,18 +638,9 @@ export default function ColoringScreen() {
   if (mode === 'pick') {
     return (
       <View style={[styles.root, { backgroundColor: '#18D8CE' }]}>
-        <TopBar title="Painting" titleFa="نقاشی" showBack dark />
-        <View style={styles.pickHeader}>
-          <Text style={[styles.pickTitle, { fontFamily: ff(lang, 'black') }, dir(lang)]}>
-            {isFa ? 'یک نقاشی را انتخاب کن' : 'Pick a painting'}
-          </Text>
-          <Text style={[styles.pickSub, { fontFamily: ff(lang, 'regular') }, dir(lang)]}>
-            {isFa ? 'روی یکی از تصویرها بزن تا با انگشت رنگ کنی' : 'Tap a page and paint with your finger'}
-          </Text>
-        </View>
-
+        <TopBar title="Painting" titleFa="نقاشی" showClose dark onBack={closeGallery} />
         <ScrollView contentContainerStyle={styles.gallery} showsVerticalScrollIndicator={false}>
-          {PAINTINGS.map((item, index) => (
+          {ORDERED_PAINTINGS.map((item, index) => (
             <TouchableOpacity
               key={item.id}
               activeOpacity={0.9}
@@ -622,7 +663,7 @@ export default function ColoringScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: '#18D8CE' }]}>
-      <TopBar title="Painting" titleFa="نقاشی" showBack dark onBack={() => setMode('pick')} />
+      <TopBar title="Painting" titleFa="نقاشی" showClose dark onBack={closePainting} />
 
       <View style={styles.paintStageOuter}>
         <View
@@ -635,8 +676,19 @@ export default function ColoringScreen() {
             }
           }}
         >
-          <View pointerEvents="none" style={styles.paintImageWrap}>
-            <Image source={scene.image} style={styles.paintImage} resizeMode="contain" />
+          <View
+            pointerEvents="none"
+            style={[
+              styles.paintPaperWrap,
+              {
+                left: paintBounds.left,
+                top: paintBounds.top,
+                width: paintBounds.right - paintBounds.left,
+                height: paintBounds.bottom - paintBounds.top,
+              },
+            ]}
+          >
+            <View style={styles.paintPaper} />
           </View>
 
           <View
@@ -683,6 +735,21 @@ export default function ColoringScreen() {
             })}
           </Svg>
 
+          <View
+            pointerEvents="none"
+            style={[
+              styles.paintOutlineWrap,
+              {
+                left: paintBounds.left,
+                top: paintBounds.top,
+                width: paintBounds.right - paintBounds.left,
+                height: paintBounds.bottom - paintBounds.top,
+              },
+            ]}
+          >
+            <Image source={scene.outline} style={styles.paintOutlineImage} resizeMode="contain" />
+          </View>
+
           {pointer.visible ? (
             <View
               pointerEvents="none"
@@ -691,8 +758,8 @@ export default function ColoringScreen() {
                 {
                   left: pointer.x - brushSize * 0.42,
                   top: pointer.y - brushSize * 0.9,
-                  width: brushSize * 1.45,
-                  height: brushSize * 1.45,
+                  width: brushSize * 1.74,
+                  height: brushSize * 1.74,
                 },
               ]}
             >
@@ -708,13 +775,6 @@ export default function ColoringScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  pickHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 8,
-  },
-  pickTitle: { color: '#173A6E', fontSize: 24, textAlign: 'center' },
-  pickSub: { color: '#355C85', fontSize: 13, textAlign: 'center', marginTop: 4 },
   gallery: {
     paddingHorizontal: 10,
     paddingBottom: 22,
@@ -764,19 +824,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
   },
-  paintImage: {
+  paintPaperWrap: {
     position: 'absolute',
+    zIndex: 0,
+  },
+  paintPaper: {
     width: '100%',
     height: '100%',
-    zIndex: 0,
+    backgroundColor: '#FFFFFF',
   },
-  paintImageWrap: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 0,
+  paintOutlineWrap: {
+    position: 'absolute',
+    zIndex: 3,
   },
-  paintTouchLayer: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
+  paintOutlineImage: {
+    width: '100%',
+    height: '100%',
   },
   brushSizeRail: {
     flexDirection: 'column',

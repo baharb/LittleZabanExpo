@@ -146,7 +146,7 @@ export default function InteractiveGamesHub() {
   return (
     <View style={styles.root}>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: '#35217E' }]} />
-      <TopBar title="Play Worlds" titleFa="دنیای بازی" showBack dark />
+      <TopBar title="Play Worlds" titleFa="دنیای بازی" showClose dark />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingHorizontal: responsive.horizontalPadding }]} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>

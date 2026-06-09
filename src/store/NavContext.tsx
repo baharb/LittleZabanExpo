@@ -11,7 +11,10 @@ export type Screen =
   | { name: 'StickerReward'; sticker: string; message: string }
   | { name: 'Coloring' }
   | { name: 'VideoShows' }
-  | { name: 'LetterTracing' }
+  | { name: 'AlphabetShow' }
+  | { name: 'AlphabetTrain' }
+  | { name: 'InteractiveFarsiTrace' }
+  | { name: 'FirstLettersTracing' }
   | { name: 'LearningPath' }
   | { name: 'Audiobooks' }
   | { name: 'PhysicalActivity' }

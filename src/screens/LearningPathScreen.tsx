@@ -23,7 +23,7 @@ type PathStep = {
 const PATH: PathStep[] = [
   { id: 'alphabet', label: 'Letters', labelFa: 'حروف', type: 'section', stars: 10, color: '#5E8CFF', soft: '#EAF0FF', art: 'letters' },
   { id: 'numbers', label: 'Numbers', labelFa: 'اعداد', type: 'section', stars: 10, color: '#F6B800', soft: '#FFF4C7', art: 'numbers' },
-  { id: 'tracing', label: 'Letter Tracing', labelFa: 'تمرین حروف', type: 'tracing', stars: 15, color: '#10B981', soft: '#DCFCE7', art: 'pencil' },
+  { id: 'tracing', label: 'Trace a Letter', labelFa: 'شکل‌کشی حرف', type: 'tracing', stars: 15, color: '#10B981', soft: '#DCFCE7', art: 'pencil' },
   { id: 'quiz', label: 'Word Quiz', labelFa: 'مسابقه کلمه', type: 'game', stars: 20, color: '#0EA5E9', soft: '#E0F2FE', art: 'quiz' },
   { id: 'counting', label: 'Counting', labelFa: 'شمارش', type: 'game', stars: 20, color: '#F59E0B', soft: '#FEF3C7', art: 'counting' },
   { id: 'memory', label: 'Memory Match', labelFa: 'بازی حافظه', type: 'game', stars: 20, color: '#7C3AED', soft: '#F1E8FF', art: 'memory' },
@@ -148,7 +148,7 @@ export default function LearningPathScreen() {
     switch (step.type) {
       case 'section': navigate({ name: 'Section', id: step.id }); break;
       case 'game': navigate({ name: 'Game', gameId: step.id }); break;
-      case 'tracing': navigate({ name: 'LetterTracing' }); break;
+      case 'tracing': navigate({ name: 'InteractiveFarsiTrace' }); break;
       case 'coloring': navigate({ name: 'Coloring' }); break;
       case 'video': navigate({ name: 'VideoShows' }); break;
       case 'sel': navigate({ name: 'SEL' }); break;

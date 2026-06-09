@@ -5,6 +5,7 @@ import {
   Image,
   ImageBackground,
   PanResponder,
+  PanResponderGestureState,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -46,18 +47,18 @@ const ANIMALS: Animal[] = [
   { id: 'monkey', fa: 'میمون', en: 'Monkey', foodId: 'banana', foodFa: 'موز', foodEn: 'Banana', color: '#7C3AED' },
   { id: 'rabbit', fa: 'خرگوش', en: 'Rabbit', foodId: 'carrot', foodFa: 'هویج', foodEn: 'Carrot', color: '#FF8E3C' },
   { id: 'cat', fa: 'گربه', en: 'Cat', foodId: 'fish', foodFa: 'ماهی', foodEn: 'Fish', color: '#FDBA74' },
-  { id: 'panda', fa: 'پاندا', en: 'Panda', foodId: 'apple', foodFa: 'سیب', foodEn: 'Apple', color: '#111827' },
+  { id: 'panda', fa: 'پاندا', en: 'Panda', foodId: 'bamboo', foodFa: 'بامبو', foodEn: 'Bamboo', color: '#111827' },
   { id: 'bear', fa: 'خرس', en: 'Bear', foodId: 'honey', foodFa: 'عسل', foodEn: 'Honey', color: '#8B5E3C' },
-  { id: 'giraffe', fa: 'زرافه', en: 'Giraffe', foodId: 'bamboo', foodFa: 'بامبو', foodEn: 'Bamboo', color: '#84CC16' },
+  { id: 'giraffe', fa: 'زرافه', en: 'Giraffe', foodId: 'apple', foodFa: 'برگ', foodEn: 'Leaves', color: '#84CC16' },
 ];
 
 const FOODS: Food[] = [
   { id: 'carrot', fa: 'هویج', en: 'Carrot', source: neliWorldAssets.foods.carrot, color: '#F97316' },
   { id: 'fish', fa: 'ماهی', en: 'Fish', source: neliWorldAssets.foods.fish, color: '#38BDF8' },
   { id: 'banana', fa: 'موز', en: 'Banana', source: neliWorldAssets.foods.banana, color: '#FACC15' },
-  { id: 'apple', fa: 'سیب', en: 'Apple', source: neliWorldAssets.foods.herbs, color: '#EF4444' },
+  { id: 'apple', fa: 'برگ', en: 'Leaves', source: neliWorldAssets.ingredients.leaves, color: '#EF4444' },
   { id: 'honey', fa: 'عسل', en: 'Honey', source: neliWorldAssets.foods.honey, color: '#EAB308' },
-  { id: 'bamboo', fa: 'بامبو', en: 'Bamboo', source: neliWorldAssets.foods.celery, color: '#22C55E' },
+  { id: 'bamboo', fa: 'بامبو', en: 'Bamboo', source: neliWorldAssets.ingredients.bamboo, color: '#22C55E' },
 ];
 
 const TRAY_ORDER: FoodId[] = ['banana', 'apple', 'carrot', 'honey', 'fish', 'bamboo'];
@@ -71,12 +72,12 @@ function hit(rect: Rect, x: number, y: number) {
 
 function getFedPlacement(target: Rect, foodSize: number, animalId: AnimalId): Rect {
   const offsets: Record<AnimalId, { x: number; y: number; scale: number }> = {
-    monkey: { x: 1.22, y: 1.15, scale: 0.96 },
-    rabbit: { x: 0.54, y: 0.54, scale: 0.98 },
-    cat: { x: 0.56, y: 0.56, scale: 0.98 },
-    panda: { x: 0.52, y: 0.48, scale: 0.98 },
-    bear: { x: 0.55, y: 0.53, scale: 1.00 },
-    giraffe: { x: 0.52, y: 0.54, scale: 0.98 },
+    monkey: { x: 1.22, y: 1.65, scale: 1.152 },
+    rabbit: { x: 0.54, y: 1.24, scale: 1.078 },
+    cat: { x: 0.46, y: 0.66, scale: 1.553 },
+    panda: { x: 0.52, y: 0.78, scale: 1.078 },
+    bear: { x: 0.45, y: 1.23, scale: 1.00 },
+    giraffe: { x: 0.35, y: 0.96, scale: 1.10 },
   };
   const offset = offsets[animalId];
   const size = Math.max(42, Math.round(foodSize * offset.scale));
@@ -90,12 +91,12 @@ function getFedPlacement(target: Rect, foodSize: number, animalId: AnimalId): Re
 
 function getFedAnchor(animalId: AnimalId, foodSize: number) {
   const anchors: Record<AnimalId, { x: number; y: number; scale: number }> = {
-    monkey: { x: 1.20, y: 1.14, scale: 0.96 },
-    rabbit: { x: 0.54, y: 0.53, scale: 0.98 },
-    cat: { x: 0.56, y: 0.55, scale: 0.98 },
-    panda: { x: 0.52, y: 0.47, scale: 0.98 },
-    bear: { x: 0.55, y: 0.52, scale: 1.00 },
-    giraffe: { x: 0.52, y: 0.53, scale: 0.98 },
+    monkey: { x: 1.20, y: 1.44, scale: 1.152 },
+    rabbit: { x: 0.54, y: 0.93, scale: 1.078 },
+    cat: { x: 0.46, y: 0.65, scale: 1.553 },
+    panda: { x: 0.52, y: 0.77, scale: 1.078 },
+    bear: { x: 0.45, y: 0.92, scale: 1.00 },
+    giraffe: { x: 0.35, y: 0.94, scale: 1.10 },
   };
   const anchor = anchors[animalId];
   const size = Math.max(42, Math.round(foodSize * anchor.scale));
@@ -105,6 +106,35 @@ function getFedAnchor(animalId: AnimalId, foodSize: number) {
     width: size,
     height: size,
   };
+}
+
+function getFoodArtStyle(food: Food, size: number) {
+  const width =
+    (food.id === 'carrot'
+      ? size * 1.2
+      : food.id === 'banana'
+        ? size * 1.2
+        : food.id === 'fish'
+          ? size * 1.56
+          : food.id === 'apple'
+            ? size * 1.2
+            : food.id === 'bamboo'
+              ? size * 1.584
+              : size) + 8;
+  const height =
+    (food.id === 'carrot'
+      ? size * 1.2
+      : food.id === 'banana'
+        ? size * 1.05
+        : food.id === 'fish'
+          ? size * 1.56
+          : food.id === 'apple'
+            ? size * 1.2
+            : food.id === 'bamboo'
+              ? size * 1.584
+              : size) + 8;
+  const transform = food.id === 'fish' ? [{ translateY: size * 0.4 }] : undefined;
+  return { width, height, transform };
 }
 
 function animalSlots(width: number, height: number) {
@@ -148,7 +178,7 @@ function animalSlots(width: number, height: number) {
   ];
 }
 
-function sceneFoodSlots(width: number, height: number, seed: number) {
+function sceneFoodSlots(width: number, height: number, seed: number, bearRect?: Rect) {
   const isLandscape = width > height;
   const cardW = Math.min(isLandscape ? 88 : 82, Math.max(62, Math.round(Math.min(width, height) * 0.13)));
   const cardH = Math.round(cardW * 1.08);
@@ -181,7 +211,7 @@ function sceneFoodSlots(width: number, height: number, seed: number) {
         { x: 0.47, y: 0.15 },
       ];
 
-  return TRAY_ORDER.map((_foodId, index) => {
+  const slots = TRAY_ORDER.map((_foodId, index) => {
     const slot = surfaceSlots[index];
     const driftX = ((seed + index) % 3 - 1) * 6 + (index === 1 ? appleRight : 0) + (index === 0 ? bananaRight : 0);
     const driftY = index === 1 ? -appleUp : index === 0 ? -bananaUp : 0;
@@ -199,6 +229,53 @@ function sceneFoodSlots(width: number, height: number, seed: number) {
       h: cardH,
     };
   });
+
+  if (slots[2] && slots[4] && slots[5]) {
+    slots[5] = {
+      ...slots[5],
+      x: slots[4].x,
+      y: Math.min(height - cardH - 8, slots[4].y + slots[4].h + 12 + slots[5].h * 1.0),
+    };
+  }
+
+  if (slots[0]) {
+    slots[0] = {
+      ...slots[0],
+      x: Math.min(width - cardW - 8, slots[0].x + slots[0].w * 0.5),
+      y: Math.max(0, slots[0].y - slots[0].h * 0.1),
+    };
+  }
+
+  if (slots[1]) {
+    slots[1] = {
+      ...slots[1],
+      y: Math.max(8, slots[1].y - slots[1].h * 0.2),
+    };
+  }
+
+  if (slots[3]) {
+    slots[3] = {
+      ...slots[3],
+      y: Math.max(8, slots[3].y - slots[3].h * 0.3),
+    };
+  }
+
+  if (slots[2]) {
+    slots[2] = {
+      ...slots[2],
+      y: Math.max(8, slots[2].y - slots[2].h * 0.5),
+    };
+  }
+
+  if (slots[4] && bearRect) {
+    slots[4] = {
+      ...slots[4],
+      x: Math.max(8, Math.min(width - cardW - 8, bearRect.x + bearRect.w * 0.5 - cardW * 0.5)),
+      y: Math.max(8, Math.min(height - cardH - 8, bearRect.y + bearRect.h + 12)),
+    };
+  }
+
+  return slots;
 }
 
 function AnimalSpot({
@@ -258,18 +335,16 @@ function FoodTile({
   slot: Rect;
   size: number;
   disabled: boolean;
-  onAttempt: (food: Food, point: Point) => void;
+  onAttempt: (food: Food, point: Point, from: Point) => void;
   resetToken: number;
 }) {
   const drag = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
-  const scale = useRef(new Animated.Value(1)).current;
   const [pressed, setPressed] = useState(false);
 
   useEffect(() => {
     drag.setValue({ x: 0, y: 0 });
-    scale.setValue(1);
     setPressed(false);
-  }, [resetToken, drag, scale]);
+  }, [resetToken, drag]);
 
   const pan = useMemo(
     () =>
@@ -278,28 +353,28 @@ function FoodTile({
         onMoveShouldSetPanResponder: () => !disabled,
         onPanResponderGrant: () => {
           setPressed(true);
-          Animated.spring(scale, { toValue: 1.08, useNativeDriver: true }).start();
         },
-        onPanResponderMove: Animated.event([null, { dx: drag.x, dy: drag.y }], {
-          useNativeDriver: false,
-        }),
-        onPanResponderRelease: (_evt, gestureState) => {
+        onPanResponderMove: (_evt: any, gestureState: PanResponderGestureState) => {
+          drag.setValue({ x: gestureState.dx, y: gestureState.dy });
+        },
+        onPanResponderRelease: (_evt: any, gestureState: PanResponderGestureState) => {
           setPressed(false);
-          onAttempt(food, { x: gestureState.moveX, y: gestureState.moveY });
-          Animated.parallel([
-            Animated.spring(drag, { toValue: { x: 0, y: 0 }, useNativeDriver: true }),
-            Animated.spring(scale, { toValue: 1, useNativeDriver: true }),
-          ]).start();
+          onAttempt(
+            food,
+            { x: gestureState.moveX, y: gestureState.moveY },
+            {
+              x: slot.x + gestureState.dx + slot.w * 0.5 - size * 0.5,
+              y: slot.y + gestureState.dy + slot.h * 0.5 - size * 0.5,
+            },
+          );
+          Animated.spring(drag, { toValue: { x: 0, y: 0 }, useNativeDriver: true }).start();
         },
         onPanResponderTerminate: () => {
           setPressed(false);
-          Animated.parallel([
-            Animated.spring(drag, { toValue: { x: 0, y: 0 }, useNativeDriver: true }),
-            Animated.spring(scale, { toValue: 1, useNativeDriver: true }),
-          ]).start();
+          Animated.spring(drag, { toValue: { x: 0, y: 0 }, useNativeDriver: true }).start();
         },
       }),
-    [disabled, drag, food, onAttempt, scale],
+    [disabled, drag, food, onAttempt, size, slot.h, slot.w, slot.x, slot.y],
   );
 
   return (
@@ -314,36 +389,46 @@ function FoodTile({
           width: slot.w,
           height: slot.h,
           opacity: disabled ? 0.34 : pressed ? 0.96 : 1,
-          transform: [{ translateX: drag.x }, { translateY: drag.y }, { scale }],
+          transform: [
+            { translateX: drag.x },
+            { translateY: drag.y },
+          ],
         },
       ]}
     >
-      <Image
-        source={food.source}
-        style={[
-          styles.foodImage,
-          {
-            width:
-              (food.id === 'carrot'
-                ? size * 1.1
-                : food.id === 'banana'
-                  ? size * 1.05
-                  : food.id === 'fish'
-                    ? size * 1.2
-                    : size) + 8,
-            height:
-              (food.id === 'carrot'
-                ? size * 1.1
-                : food.id === 'banana'
-                  ? size * 1.05
-                  : food.id === 'fish'
-                    ? size * 1.2
-                    : size) + 8,
-          },
-        ]}
-        resizeMode="contain"
-      />
-      <Text style={[styles.foodLabel, { fontFamily: ff('fa', 'bold') }]}>{food.fa}</Text>
+      {food.id === 'bamboo' ? (
+        <View style={styles.foodArtBox}>
+          <Image
+            source={food.source}
+            style={[styles.foodImage, getFoodArtStyle(food, size)]}
+            resizeMode="contain"
+          />
+          <Text style={[styles.foodLabel, { fontFamily: ff('fa', 'bold') }]}>{food.fa}</Text>
+        </View>
+      ) : (
+        <>
+          <View style={styles.foodArtBox}>
+            <Image
+              source={food.source}
+              style={[styles.foodImage, getFoodArtStyle(food, size)]}
+              resizeMode="contain"
+            />
+          </View>
+          <Text
+            style={[
+              styles.foodLabel,
+              food.id === 'banana' ? styles.bananaLabel : null,
+              food.id === 'apple' ? styles.leavesLabel : null,
+              food.id === 'carrot' ? styles.carrotLabel : null,
+              food.id === 'honey' ? styles.honeyLabel : null,
+              food.id === 'fish' ? styles.fishLabel : null,
+              { fontFamily: ff('fa', 'bold') },
+            ]}
+          >
+            {food.fa}
+          </Text>
+        </>
+      )}
     </Animated.View>
   );
 }
@@ -388,7 +473,7 @@ function FlyingFood({
         },
       ]}
     >
-      <Image source={food.source} style={{ width: size, height: size }} resizeMode="contain" />
+      <Image source={food.source} style={[{ width: size, height: size }, getFoodArtStyle(food, size)]} resizeMode="contain" />
     </Animated.View>
   );
 }
@@ -411,6 +496,7 @@ export default function FeedAnimalsGame() {
   const [done, setDone] = useState(false);
   const [wrong, setWrong] = useState(false);
   const [resetToken, setResetToken] = useState(0);
+  const [inspectedAnimalId, setInspectedAnimalId] = useState<AnimalId | null>(null);
   const [stageOrigin, setStageOrigin] = useState({ x: 0, y: 0 });
   const [animalRects, setAnimalRects] = useState<Record<AnimalId, Rect>>({
     monkey: { x: 0, y: 0, w: 1, h: 1 },
@@ -421,6 +507,7 @@ export default function FeedAnimalsGame() {
     giraffe: { x: 0, y: 0, w: 1, h: 1 },
   });
   const [fly, setFly] = useState<{ food: Food; from: Point; to: Point } | null>(null);
+  const inspectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [fedFoodByAnimal, setFedFoodByAnimal] = useState<Record<AnimalId, FoodId | null>>({
     monkey: null,
     rabbit: null,
@@ -433,7 +520,7 @@ export default function FeedAnimalsGame() {
   const currentAnimal = useMemo(() => ANIMALS.find(animal => !fedIds.includes(animal.foodId)) ?? ANIMALS[ANIMALS.length - 1], [fedIds]);
   const currentFood = FOOD_BY_ID[currentAnimal.foodId];
   const animalLayout = useMemo(() => animalSlots(width, height), [height, width]);
-  const foodLayout = useMemo(() => sceneFoodSlots(width, height, resetToken), [height, resetToken, width]);
+  const foodLayout = useMemo(() => sceneFoodSlots(width, height, resetToken, animalLayout[4]), [animalLayout, height, resetToken, width]);
   const foodSize = Math.max(48, Math.min(78, Math.round(Math.min(width, height) * 0.085)));
 
   const say = (fa: string, en: string) => {
@@ -442,6 +529,12 @@ export default function FeedAnimalsGame() {
       if (!isFa) setTimeout(() => speakInLang(en, lang), 220);
     });
   };
+
+  useEffect(() => {
+    return () => {
+      if (inspectTimer.current) clearTimeout(inspectTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!done) {
@@ -462,7 +555,7 @@ export default function FeedAnimalsGame() {
     });
   };
 
-  const handleAttempt = (food: Food, point: Point) => {
+  const handleAttempt = (food: Food, point: Point, from: Point) => {
     if (done) return;
     const matchedAnimal = ANIMAL_BY_FOOD_ID[food.id];
     const target = animalRects[matchedAnimal.id];
@@ -474,13 +567,20 @@ export default function FeedAnimalsGame() {
             w: target.w * 1.72,
             h: target.h * 1.95,
           }
+        : matchedAnimal.id === 'giraffe'
+          ? {
+              x: target.x - target.w * 0.18,
+              y: target.y - target.h * 0.08,
+              w: target.w * 1.36,
+              h: target.h * 1.38,
+            }
         : target;
     const localPoint = {
       x: point.x - stageOrigin.x,
       y: point.y - stageOrigin.y,
     };
-    const marginX = matchedAnimal.id === 'monkey' ? 0 : Math.max(36, target.w * 0.52);
-    const marginY = matchedAnimal.id === 'monkey' ? 0 : Math.max(30, target.h * 0.38);
+    const marginX = matchedAnimal.id === 'monkey' ? 0 : matchedAnimal.id === 'giraffe' ? Math.max(54, target.w * 0.62) : Math.max(36, target.w * 0.52);
+    const marginY = matchedAnimal.id === 'monkey' ? 0 : matchedAnimal.id === 'giraffe' ? Math.max(42, target.h * 0.52) : Math.max(30, target.h * 0.38);
     const nearTarget =
       matchedAnimal.id === 'monkey'
         ? hit(hitRect, localPoint.x, localPoint.y)
@@ -507,10 +607,7 @@ export default function FeedAnimalsGame() {
     }));
     setFly({
       food,
-      from: {
-        x: Math.max(0, point.x - foodSize / 2),
-        y: Math.max(0, point.y - foodSize / 2),
-      },
+      from,
       to: { x: fedPlacement.x, y: fedPlacement.y },
     });
     say(`${food.fa} برای ${matchedAnimal.fa}.`, `${food.en} for the ${matchedAnimal.en}.`);
@@ -518,6 +615,21 @@ export default function FeedAnimalsGame() {
 
   const handleFlyDone = () => {
     setFly(null);
+  };
+
+  const inspectFedAnimal = (animalId: AnimalId) => {
+    const foodId = fedFoodByAnimal[animalId];
+    if (!foodId) return;
+
+    const food = FOOD_BY_ID[foodId];
+    setInspectedAnimalId(animalId);
+    if (inspectTimer.current) clearTimeout(inspectTimer.current);
+    inspectTimer.current = setTimeout(() => {
+      setInspectedAnimalId(prev => (prev === animalId ? null : prev));
+    }, 1200);
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    say(food.fa, food.en);
   };
 
   const resetGame = () => {
@@ -541,7 +653,7 @@ export default function FeedAnimalsGame() {
     <View style={styles.root}>
       <ImageBackground source={sceneSource} style={styles.scene} resizeMode="cover">
         <View style={styles.sceneWash} />
-        <TopBar title="Feed Animals" titleFa="غذا دادن به حیوان‌ها" showBack dark topInset={10} />
+        <TopBar title="Feed Animals" titleFa="غذا دادن به حیوان‌ها" showClose dark topInset={10} />
 
         <View style={styles.header}>
           <Text style={[styles.kicker, { fontFamily: ff(isFa ? 'fa' : lang, 'bold') }, dir(lang)]}>
@@ -553,12 +665,14 @@ export default function FeedAnimalsGame() {
           {animalLayout.map((slot, index) => {
             const animal = ANIMALS[index];
             const active = animal.id === currentAnimal.id;
-            const fed = fedIds.includes(animal.foodId);
             const fedFoodId = fedFoodByAnimal[animal.id];
             return (
-              <View
+              <TouchableOpacity
                 key={animal.id}
+                activeOpacity={fedFoodId ? 0.92 : 1}
+                disabled={!fedFoodId}
                 style={[styles.animalWrap, { left: slot.x, top: slot.y, width: slot.w, height: slot.h }]}
+                onPress={() => inspectFedAnimal(animal.id)}
                 onLayout={event => {
                   const { x, y, width: w, height: h } = event.nativeEvent.layout;
                   setAnimalRects(prev => ({ ...prev, [animal.id]: { x, y, w, h } }));
@@ -570,17 +684,43 @@ export default function FeedAnimalsGame() {
                     pointerEvents="none"
                     style={[
                       styles.animalFoodOverlay,
+                      inspectedAnimalId === animal.id ? styles.animalFoodOverlayActive : null,
                       getFedAnchor(animal.id, foodSize),
                     ]}
                   >
-                    <Image
-                      source={FOOD_BY_ID[fedFoodId].source}
-                      style={styles.animalFoodImage}
-                      resizeMode="contain"
-                    />
+                    {inspectedAnimalId === animal.id ? (
+                      <View style={styles.animalFoodBubble}>
+                      <Text style={styles.animalFoodBubbleText}>
+                          {FOOD_BY_ID[fedFoodId].fa}
+                        </Text>
+                      </View>
+                    ) : null}
+                    <Image source={FOOD_BY_ID[fedFoodId].source} style={styles.animalFoodImage} resizeMode="contain" />
                   </View>
                 ) : null}
-              </View>
+              </TouchableOpacity>
+            );
+          })}
+
+          {animalLayout.map((slot, index) => {
+            const animal = ANIMALS[index];
+            if (!fedFoodByAnimal[animal.id]) return null;
+            const anchor = getFedAnchor(animal.id, foodSize);
+            return (
+              <TouchableOpacity
+                key={`${animal.id}-food-touch`}
+                style={[
+                  styles.attachedFoodTouch,
+                  {
+                    left: slot.x + anchor.left,
+                    top: slot.y + anchor.top,
+                    width: anchor.width,
+                    height: anchor.height,
+                  },
+                ]}
+                activeOpacity={1}
+                onPress={() => inspectFedAnimal(animal.id)}
+              />
             );
           })}
 
@@ -704,11 +844,32 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
   },
+  foodArtBox: {
+    width: 120,
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   foodLabel: {
-    marginTop: 2,
+    marginTop: 12,
     color: '#2F2F2F',
     fontSize: 13,
     textAlign: 'center',
+  },
+  bananaLabel: {
+    marginTop: -8,
+  },
+  leavesLabel: {
+    marginTop: -8,
+  },
+  carrotLabel: {
+    marginTop: 2,
+  },
+  honeyLabel: {
+    marginTop: -12,
+  },
+  fishLabel: {
+    marginTop: 7,
   },
   fedOverlay: {
     position: 'absolute',
@@ -718,9 +879,36 @@ const styles = StyleSheet.create({
     zIndex: 40,
     elevation: 40,
   },
+  animalFoodOverlayActive: {
+    zIndex: 44,
+    elevation: 44,
+    transform: [{ scale: 1.18 }],
+  },
   animalFoodImage: {
     width: '100%',
     height: '100%',
+  },
+  animalFoodBubble: {
+    position: 'absolute',
+    top: -30,
+    alignSelf: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.98)',
+  },
+  animalFoodBubbleText: {
+    fontFamily: ff('fa', 'bold'),
+    color: '#0F172A',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  attachedFoodTouch: {
+    position: 'absolute',
+    zIndex: 50,
+    elevation: 50,
   },
   fedFoodImage: {
     width: '100%',
@@ -729,6 +917,33 @@ const styles = StyleSheet.create({
   foodTileActive: {
     zIndex: 20,
     elevation: 20,
+  },
+  foodTileSelected: {
+    zIndex: 24,
+    elevation: 24,
+  },
+  foodTitleBubble: {
+    position: 'absolute',
+    top: -28,
+    alignSelf: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.95)',
+    opacity: 0,
+    transform: [{ scale: 0.92 }],
+  },
+  foodTitleBubbleVisible: {
+    opacity: 1,
+    transform: [{ scale: 1 }],
+  },
+  foodTitleBubbleText: {
+    color: '#0F172A',
+    fontSize: 12,
+    fontWeight: '900',
+    textAlign: 'center',
   },
   flyingFood: {
     position: 'absolute',

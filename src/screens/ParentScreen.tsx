@@ -7,13 +7,13 @@ import { dir, ff } from '../theme/fonts';
 
 export default function ParentScreen() {
   const { goBack } = useNav();
-  const { lang, stars, streak, completedSections, badges, parentPin, setParentPin, setAge, age } = useContext(AppContext);
+  const { settingsLang: lang, stars, streak, completedSections, badges, parentPin, setParentPin, setAge, age } = useContext(AppContext);
   const [pin, setPin] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const [newPin, setNewPin] = useState('');
   const { width, height } = useWindowDimensions();
   const ui = Math.min(width / 390, height / 844);
-  const isFa = lang === 'fa' || lang === 'ar';
+  const isFa = lang === 'fa';
 
   if (!unlocked) {
     return (

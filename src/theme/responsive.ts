@@ -8,7 +8,7 @@ export function useResponsive() {
   const isTablet = shortest >= 700;
   const isSmall = shortest < 380;
   const isWide = width >= 760;
-  const sideRail = isLandscape && width >= 760;
+  const sideRail = false;
   const horizontalPadding = isTablet ? 28 : isSmall ? 12 : 16;
   const contentWidth = sideRail ? width - 92 : width;
   const maxContentWidth = Math.min(contentWidth - horizontalPadding * 2, isTablet ? 1080 : 720);

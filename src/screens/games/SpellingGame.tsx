@@ -78,7 +78,7 @@ export default function SpellingGame() {
   return (
     <View style={styles.root}>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFF6D8' }]} />
-      <TopBar title="Spelling" titleFa="هجی کردن" showBack dark={false} rightContent={<Text style={styles.score}>{score}</Text>} />
+      <TopBar title="Spelling" titleFa="هجی کردن" showClose dark={false} rightContent={<Text style={styles.score}>{score}</Text>} />
       <View style={styles.content}>
         <TouchableOpacity style={styles.wordCard} onPress={speak} activeOpacity={0.9}>
           <WordArt color={round.item.color} />

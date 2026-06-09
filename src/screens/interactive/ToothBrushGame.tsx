@@ -6,12 +6,11 @@ import TopBar from '../../components/TopBar';
 import { AppContext } from '../../store/AppContext';
 import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
 import { dir, ff } from '../../theme/fonts';
-import { characterAssets } from '../../assets/characterAssets';
 import { neliWorldAssets, roomBackgroundPickers } from '../../assets/neliWorldAssets';
 
 const TTS = (l: string) => ({ fa: 'fa-IR', ar: 'fa-IR', zh: 'zh-CN', ko: 'ko-KR', fr: 'fr-FR', es: 'es-ES' } as any)[l] ?? 'en-US';
 const RATE = (l: string) => (l === 'fa' || l === 'ar' ? 0.65 : 0.8);
-const NUM = 12;
+const NUM = 10;
 
 const FOAM_POINTS = [
   { left: 0.16, top: 0.02, size: 15 },
@@ -36,7 +35,7 @@ const FOAM_POINTS = [
   { left: 0.74, top: 0.28, size: 8 },
 ] as const;
 
-const LILA_BRUSHING = characterAssets.lila.poses.bigSmile ?? characterAssets.lila.poses.brushing ?? characterAssets.lila.base;
+const LILA_BRUSHING = require('../../../assets/neli-world/characters/Lila/lila_big_smile_640.png');
 const BUBBLE_IMAGE = require('../../../assets/neli-world/characters/bubbles_512.png');
 const BRUSH_RENDER_WIDTH = 168;
 const BRUSH_RENDER_HEIGHT = Math.round(BRUSH_RENDER_WIDTH * (889 / 512));
@@ -159,11 +158,7 @@ export default function ToothBrushGame() {
   const cleanCount = cleaned.filter(Boolean).length;
   const completed = cleanCount === NUM;
   const showFoodBits = !done && !showSparkles;
-  const showBrushTip = started && !completed;
   const foodAreaOffsetY = (mouthFrame.h || faceSize * 0.12) * 0.5;
-  const brushTipText = isFa
-    ? `${cleanCount}/${NUM} - بیشتر تلاش کن تا همه دندان‌ها تمیز شود`
-    : `${cleanCount}/${NUM} - Try more so all the teeth will be clean`;
   const sceneSource = roomBackgroundPickers.brushTeethBathroom(width, height);
   const isPhysicalPortrait = screenHeight > screenWidth;
 
@@ -436,18 +431,13 @@ export default function ToothBrushGame() {
   return (
     <View style={styles.root}>
       <ImageBackground source={sceneSource} style={styles.scene} resizeMode="cover">
-        <TopBar title="Brush Teeth" titleFa="مسواک زدن" showBack dark topInset={10} />
+        <TopBar title="Brush Teeth" titleFa="مسواک زدن" showClose dark topInset={10} />
 
         {!showSparkles ? (
           <View style={styles.promptPill}>
             <Text style={[styles.progressTitle, dir(lang), { fontFamily: isFa ? ff('fa', 'black') : ff(lang, 'black') }]}>
               {done ? (isFa ? 'همه دندان‌ها تمیز شد' : 'All teeth are clean') : (isFa ? 'دندان‌های لیلا را مسواک بزن' : 'Brush Lila’s teeth')}
             </Text>
-            {showBrushTip ? (
-              <Text style={[styles.progressSubTitle, dir(lang), { fontFamily: isFa ? ff('fa', 'bold') : ff(lang, 'bold') }]}>
-                {brushTipText}
-              </Text>
-            ) : null}
           </View>
         ) : null}
 
@@ -655,7 +645,6 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
   progressTitle: { color: '#112B4C', fontSize: 16, marginBottom: 9 },
-  progressSubTitle: { color: '#2A7F46', fontSize: 15 },
   gameArea: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', position: 'relative', paddingBottom: 10 },
   lilaWrap: { zIndex: 3, marginBottom: 0 },
   brushOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 20 },

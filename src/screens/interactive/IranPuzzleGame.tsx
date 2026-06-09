@@ -1,11 +1,11 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Image, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+﻿import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Image, PanResponder, Platform, StyleSheet, Text, TouchableOpacity, UIManager, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import TopBar from '../../components/TopBar';
 import { AppContext } from '../../store/AppContext';
 import { useNav } from '../../store/NavContext';
 import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
-import { dir, ff } from '../../theme/fonts';
+import { ff } from '../../theme/fonts';
+import { neliWorldAssets } from '../../assets/neliWorldAssets';
 import {
   IRAN_PUZZLE_OUTLINE,
   IRAN_PUZZLE_PIECES,
@@ -25,6 +25,12 @@ type LayoutPiece = IranPuzzlePiece & {
   startScale: number;
   zIndex: number;
 };
+
+if (Platform.OS === 'android') {
+  UIManager.setLayoutAnimationEnabledExperimental?.(true);
+}
+
+const SETTLE_MS = 430;
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
@@ -50,10 +56,10 @@ function buildStartLayout(pieces: IranPuzzlePiece[], stage: StageSize, mapRect: 
   const leftPieces = pieces.filter(piece => piece.side === 'left').sort((a, b) => b.area - a.area);
   const rightPieces = pieces.filter(piece => piece.side === 'right').sort((a, b) => b.area - a.area);
 
-  const mapGap = 20;
-  const sidePadding = 14;
-  const leftShelf = Math.max(120, mapRect.x - mapGap);
-  const rightShelf = Math.max(120, stage.width - (mapRect.x + mapRect.w) - mapGap);
+  const mapGap = 4;
+  const sidePadding = 8;
+  const leftShelf = Math.max(190, mapRect.x + mapRect.w * 0.12);
+  const rightShelf = Math.max(190, stage.width - mapRect.x - mapRect.w * 0.88);
 
   const targetFor = (piece: IranPuzzlePiece): Rect => {
     const [x0, y0, x1, y1] = piece.sourceBox;
@@ -67,29 +73,28 @@ function buildStartLayout(pieces: IranPuzzlePiece[], stage: StageSize, mapRect: 
   };
 
   const layoutSide = (list: IranPuzzlePiece[], side: 'left' | 'right'): LayoutPiece[] => {
-    const cols = 2;
+    const cols = 3;
     const rows = Math.max(1, Math.ceil(list.length / cols));
     const shelf = side === 'left' ? leftShelf : rightShelf;
-    const columnGap = 8;
+    const columnGap = 4;
     const columnWidth = (shelf - sidePadding * 2 - columnGap) / cols;
-    const rowStep = (stage.height - 28) / rows;
-    const topOffset = 14;
-    const verticalGap = clamp(rowStep * 0.12, 6, 14);
+    const rowStep = (stage.height - 18) / rows;
+    const topOffset = 7;
 
     return list.map((piece, index) => {
       const target = targetFor(piece);
       const col = index % cols;
       const row = Math.floor(index / cols);
       const cellW = columnWidth;
-      const cellH = rowStep - verticalGap;
-      const slotSize = clamp(Math.min(cellW, cellH) * 0.92, 56, 96);
-      const visualW = slotSize;
-      const visualH = slotSize;
+      const cellH = rowStep;
+      const scale = Math.min((cellW * 1.59) / target.w, (cellH * 1.62) / target.h, 3.68);
+      const visualW = clamp(target.w * scale, 51, Math.max(63, cellW * 1.62));
+      const visualH = clamp(target.h * scale, 45, Math.max(57, cellH * 1.62));
       const columnCenter = side === 'left'
         ? sidePadding + col * (columnWidth + columnGap) + columnWidth / 2
-        : mapRect.x + mapRect.w + mapGap + sidePadding + col * (columnWidth + columnGap) + columnWidth / 2;
+        : stage.width - shelf + sidePadding + col * (columnWidth + columnGap) + columnWidth / 2;
       const left = clamp(columnCenter - visualW / 2, 8, Math.max(8, stage.width - visualW - 8));
-      const top = clamp(topOffset + row * rowStep + (rowStep - visualH) / 2, 10, Math.max(10, stage.height - visualH - 10));
+      const top = clamp(topOffset + row * rowStep + (rowStep - visualH) / 2, 4, Math.max(4, stage.height - visualH - 4));
 
       return {
         ...piece,
@@ -111,120 +116,148 @@ function ProvincePiece({
   piece,
   onPlaced,
   onActivate,
-  mapRect,
   isActive,
 }: {
   piece: LayoutPiece;
   onPlaced: (id: string) => void;
   onActivate: (id: string | null) => void;
-  mapRect: Rect;
   isActive: boolean;
 }) {
   const draggedRef = useRef(false);
-  const [position, setPosition] = useState({ x: piece.startLeft, y: piece.startTop });
-  const [size, setSize] = useState({ w: piece.startWidth, h: piece.startHeight });
-  const [drag, setDrag] = useState({ x: 0, y: 0 });
+  const xAnim = useRef(new Animated.Value(piece.startLeft)).current;
+  const yAnim = useRef(new Animated.Value(piece.startTop)).current;
+  const wAnim = useRef(new Animated.Value(piece.startWidth)).current;
+  const hAnim = useRef(new Animated.Value(piece.startHeight)).current;
+  const startRef = useRef({ x: piece.startLeft, y: piece.startTop });
   const [placed, setPlaced] = useState(false);
   const [pressed, setPressed] = useState(false);
+  const [settling, setSettling] = useState(false);
 
   useEffect(() => {
-    setPosition({ x: piece.startLeft, y: piece.startTop });
-    setSize({ w: piece.startWidth, h: piece.startHeight });
-    setDrag({ x: 0, y: 0 });
+    xAnim.setValue(piece.startLeft);
+    yAnim.setValue(piece.startTop);
+    wAnim.setValue(piece.startWidth);
+    hAnim.setValue(piece.startHeight);
+    startRef.current = { x: piece.startLeft, y: piece.startTop };
     draggedRef.current = false;
     setPlaced(false);
     setPressed(false);
-  }, [piece.id, piece.startHeight, piece.startLeft, piece.startTop, piece.startWidth]);
+    setSettling(false);
+  }, [hAnim, piece.id, piece.startHeight, piece.startLeft, piece.startTop, piece.startWidth, wAnim, xAnim, yAnim]);
 
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => !placed,
-        onMoveShouldSetPanResponder: () => !placed,
+        onStartShouldSetPanResponder: () => !placed && !settling,
+        onMoveShouldSetPanResponder: () => !placed && !settling,
         onPanResponderGrant: () => {
-          if (placed) return;
+          if (placed || settling) return;
           setPressed(true);
           draggedRef.current = false;
           onActivate(piece.id);
+          xAnim.stopAnimation(value => {
+            startRef.current.x = value;
+          });
+          yAnim.stopAnimation(value => {
+            startRef.current.y = value;
+          });
           void safeImpact();
         },
         onPanResponderMove: (_evt, gestureState) => {
-          if (placed) return;
-          setDrag({ x: gestureState.dx, y: gestureState.dy });
+          if (placed || settling) return;
+          xAnim.setValue(startRef.current.x + gestureState.dx);
+          yAnim.setValue(startRef.current.y + gestureState.dy);
           if (Math.abs(gestureState.dx) + Math.abs(gestureState.dy) > 8) {
             draggedRef.current = true;
           }
         },
         onPanResponderRelease: (_evt, gestureState) => {
-          if (placed) return;
+          if (placed || settling) return;
           setPressed(false);
           const moved = draggedRef.current || Math.abs(gestureState.dx) + Math.abs(gestureState.dy) > 8;
           if (!moved) {
-            setDrag({ x: 0, y: 0 });
-            onActivate(null);
-            return;
-          }
-
-          const currentX = position.x + gestureState.dx;
-          const currentY = position.y + gestureState.dy;
-          const currentW = size.w;
-          const currentH = size.h;
-          const centerX = currentX + currentW / 2;
-          const centerY = currentY + currentH / 2;
-          const margin = Math.max(18, Math.min(piece.target.w, piece.target.h) * 0.25);
-          const inside =
-            centerX >= mapRect.x - margin &&
-            centerX <= mapRect.x + mapRect.w + margin &&
-            centerY >= mapRect.y - margin &&
-            centerY <= mapRect.y + mapRect.h + margin;
-
-          if (!inside) {
-            setDrag({ x: 0, y: 0 });
+            Animated.parallel([
+              Animated.timing(xAnim, { toValue: piece.startLeft, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+              Animated.timing(yAnim, { toValue: piece.startTop, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+            ]).start(() => {
+              startRef.current = { x: piece.startLeft, y: piece.startTop };
+            });
             onActivate(null);
             return;
           }
 
           void safeNotify(Haptics.NotificationFeedbackType.Success);
-          setPosition({ x: piece.target.x, y: piece.target.y });
-          setSize({ w: piece.target.w, h: piece.target.h });
-          setDrag({ x: 0, y: 0 });
-          setPlaced(true);
+          setSettling(true);
+          Animated.parallel([
+            Animated.timing(xAnim, {
+              toValue: piece.target.x,
+              duration: SETTLE_MS,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: false,
+            }),
+            Animated.timing(yAnim, {
+              toValue: piece.target.y,
+              duration: SETTLE_MS,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: false,
+            }),
+            Animated.timing(wAnim, {
+              toValue: piece.target.w,
+              duration: SETTLE_MS,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: false,
+            }),
+            Animated.timing(hAnim, {
+              toValue: piece.target.h,
+              duration: SETTLE_MS,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: false,
+            }),
+          ]).start(() => {
+            startRef.current = { x: piece.target.x, y: piece.target.y };
+            setSettling(false);
+            setPlaced(true);
+          });
           onActivate(null);
           onPlaced(piece.id);
         },
         onPanResponderTerminate: () => {
-          if (placed) return;
+          if (placed || settling) return;
           setPressed(false);
-          setDrag({ x: 0, y: 0 });
+          Animated.parallel([
+            Animated.timing(xAnim, { toValue: startRef.current.x, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+            Animated.timing(yAnim, { toValue: startRef.current.y, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+          ]).start();
           onActivate(null);
         },
       }),
-    [mapRect.h, mapRect.w, mapRect.x, mapRect.y, onActivate, onPlaced, piece.id, piece.target.h, piece.target.w, piece.target.x, piece.target.y, placed, position.x, position.y, size.h, size.w],
+    [hAnim, onActivate, onPlaced, piece.id, piece.startLeft, piece.startTop, piece.target.h, piece.target.w, piece.target.x, piece.target.y, placed, settling, wAnim, xAnim, yAnim],
   );
 
   return (
-    <View
+    <Animated.View
       {...panResponder.panHandlers}
       style={[
         styles.piece,
         {
-          left: position.x + drag.x,
-          top: position.y + drag.y,
-          width: size.w,
-          height: size.h,
+          left: 0,
+          top: 0,
+          width: wAnim,
+          height: hAnim,
           zIndex: placed ? 1000 + piece.zIndex : isActive ? 900 + piece.zIndex : piece.zIndex,
-          opacity: pressed ? 0.995 : 1,
+          opacity: pressed || settling ? 0.995 : 1,
+          transform: [{ translateX: xAnim }, { translateY: yAnim }],
         },
       ]}
     >
       <Image source={piece.source} style={styles.pieceImage} resizeMode="contain" />
-    </View>
+    </Animated.View>
   );
 }
 
 export default function IranPuzzleGame() {
   const { lang, addStars } = useContext(AppContext);
-  const { reset } = useNav();
+  const { goBack, reset } = useNav();
   const { width, height } = useLandscapeDimensions();
   const [stageSize, setStageSize] = useState<StageSize>({ width: 0, height: 0 });
   const [placedCount, setPlacedCount] = useState(0);
@@ -234,13 +267,12 @@ export default function IranPuzzleGame() {
 
   const mapRect = useMemo(() => {
     if (!stageSize.width || !stageSize.height) return null;
-    const sideReserve = Math.round(Math.max(28, stageSize.width * 0.04));
-    const marginY = 10;
-    let mapH = Math.round(stageSize.height - marginY * 2);
+    const sideReserve = Math.round(Math.max(18, stageSize.width * 0.01));
+    let mapH = Math.round(stageSize.height * 1.28);
     let mapW = Math.round((mapH * IRAN_PUZZLE_SOURCE_WIDTH) / IRAN_PUZZLE_SOURCE_HEIGHT);
     const maxW = Math.min(
       Math.round(stageSize.width - sideReserve * 2),
-      Math.round((stageSize.height - marginY * 2) * (IRAN_PUZZLE_SOURCE_WIDTH / IRAN_PUZZLE_SOURCE_HEIGHT)),
+      Math.round(stageSize.height * 1.28 * (IRAN_PUZZLE_SOURCE_WIDTH / IRAN_PUZZLE_SOURCE_HEIGHT)),
     );
     if (mapW > maxW) {
       mapW = maxW;
@@ -272,9 +304,17 @@ export default function IranPuzzleGame() {
 
   return (
     <View style={styles.root}>
-      <TopBar title="Iran Puzzle" titleFa="پازل ایران" showBack dark={false} />
-
       <View style={styles.stage} ref={stageRef} onLayout={event => setStageSize(event.nativeEvent.layout)}>
+        <View style={styles.bgGlowTop} pointerEvents="none" />
+        <View style={styles.bgGlowBottom} pointerEvents="none" />
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={goBack}
+          activeOpacity={0.75}
+          hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+        >
+          <Image source={neliWorldAssets.ui.close} style={styles.closeIcon} resizeMode="contain" />
+        </TouchableOpacity>
         {mapRect ? (
           <>
             <View
@@ -297,7 +337,6 @@ export default function IranPuzzleGame() {
                 <ProvincePiece
                   key={piece.id}
                   piece={piece}
-                  mapRect={mapRect}
                   isActive={activeId === piece.id}
                   onActivate={setActiveId}
                   onPlaced={handlePlaced}
@@ -307,18 +346,11 @@ export default function IranPuzzleGame() {
           </>
         ) : null}
 
-        <View style={styles.footerRow} pointerEvents="box-none">
-          <View style={styles.progressPill}>
-            <Text style={[styles.progressText, { fontFamily: ff(isFa ? 'fa' : 'en', 'bold') }, dir(lang)]}>
-              {placedCount}/{IRAN_PUZZLE_PIECES.length}
-            </Text>
-          </View>
-          {allPlaced ? (
-            <TouchableOpacity style={styles.doneBtn} onPress={() => reset({ name: 'Main', tab: 'Games' })}>
-              <Text style={[styles.doneText, { fontFamily: ff(isFa ? 'fa' : 'en', 'bold') }]}>{isFa ? 'بازی‌ها' : 'Games'}</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        {allPlaced ? (
+          <TouchableOpacity style={styles.doneBtn} onPress={() => reset({ name: 'Main', tab: 'Games' })}>
+            <Text style={[styles.doneText, { fontFamily: ff(isFa ? 'fa' : 'en', 'bold') }]}>{isFa ? 'بازی‌ها' : 'Games'}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </View>
   );
@@ -332,7 +364,40 @@ const styles = StyleSheet.create({
   stage: {
     flex: 1,
     position: 'relative',
-    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    backgroundColor: '#F7FBF3',
+  },
+  bgGlowTop: {
+    position: 'absolute',
+    top: -120,
+    right: -70,
+    width: 420,
+    height: 420,
+    borderRadius: 210,
+    backgroundColor: 'rgba(125, 211, 252, 0.22)',
+  },
+  bgGlowBottom: {
+    position: 'absolute',
+    left: -90,
+    bottom: -140,
+    width: 460,
+    height: 460,
+    borderRadius: 230,
+    backgroundColor: 'rgba(253, 186, 116, 0.18)',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 64,
+    height: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 5000,
+  },
+  closeIcon: {
+    width: 58,
+    height: 58,
   },
   mapWrap: {
     position: 'absolute',
@@ -345,42 +410,20 @@ const styles = StyleSheet.create({
   },
   piece: {
     position: 'absolute',
-    backgroundColor: 'transparent',
-    borderRadius: 12,
     shadowColor: '#111827',
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.11,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
   pieceImage: {
     width: '100%',
     height: '100%',
   },
-  footerRow: {
-    position: 'absolute',
-    left: 14,
-    right: 14,
-    bottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  progressPill: {
-    minWidth: 76,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  progressText: {
-    color: '#0F766E',
-    fontSize: 14,
-    textAlign: 'center',
-  },
   doneBtn: {
+    position: 'absolute',
+    right: 18,
+    bottom: 18,
     height: 52,
     minWidth: 112,
     paddingHorizontal: 18,

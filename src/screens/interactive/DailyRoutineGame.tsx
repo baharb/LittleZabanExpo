@@ -71,7 +71,7 @@ export default function DailyRoutineGame() {
   return (
     <View style={styles.root}>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFF6D8' }]} />
-      <TopBar title="Daily Routine" titleFa="کارهای روزانه" showBack dark={false} topInset={10} />
+      <TopBar title="Daily Routine" titleFa="کارهای روزانه" showClose dark={false} topInset={10} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <Text style={[styles.title, { fontFamily: ff(lang, 'black') }, dir(lang)]}>{isFa ? step.fa : step.en}</Text>

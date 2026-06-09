@@ -13,7 +13,6 @@ import {
 import * as Haptics from 'expo-haptics';
 import { AppContext, Lang } from '../store/AppContext';
 import { useSpeech } from '../hooks/useSpeech';
-import TopBar from '../components/TopBar';
 import CharacterAvatar from '../components/CharacterAvatar';
 import { C } from '../theme/colors';
 import { ff } from '../theme/fonts';
@@ -69,14 +68,21 @@ function ProgressDots({ total, current, color }: { total: number; current: numbe
 
 function TracePad({ letter, lang, onComplete }: { letter: Letter; lang: Lang; onComplete: () => void }) {
   const { width, height } = useWindowDimensions();
-  const size = Math.max(285, Math.min(430, Math.min(width * 0.38, height * 0.7)));
+  const size = Math.max(330, Math.min(510, Math.min(width * 0.44, height * 0.76)));
   const [strokes, setStrokes] = useState<Point[][]>([]);
   const [complete, setComplete] = useState(false);
   const current = useRef<Point[]>([]);
   const padRef = useRef<View | null>(null);
   const origin = useRef({ x: 0, y: 0 });
-  const touchedZones = useRef([false, false, false]);
+  const visitedCells = useRef(new Set<string>());
+  const visitedRows = useRef(new Set<number>());
+  const visitedCols = useRef(new Set<number>());
   const tracedDistance = useRef(0);
+  const isCheckingComplete = useRef(false);
+  const traceMargin = size * 0.12;
+  const innerSize = size - traceMargin * 2;
+  const gridCols = 5;
+  const gridRows = 5;
 
   const syncOrigin = () => {
     requestAnimationFrame(() => {
@@ -90,8 +96,11 @@ function TracePad({ letter, lang, onComplete }: { letter: Letter; lang: Lang; on
     setStrokes([]);
     setComplete(false);
     current.current = [];
-    touchedZones.current = [false, false, false];
+    visitedCells.current = new Set();
+    visitedRows.current = new Set();
+    visitedCols.current = new Set();
     tracedDistance.current = 0;
+    isCheckingComplete.current = false;
     syncOrigin();
   };
 
@@ -99,16 +108,26 @@ function TracePad({ letter, lang, onComplete }: { letter: Letter; lang: Lang; on
     reset();
   }, [letter.char]);
 
-  const markZone = (pt: Point) => {
-    const index = pt.y < size * 0.34 ? 0 : pt.y < size * 0.67 ? 1 : 2;
-    touchedZones.current[index] = true;
+  const markCoverage = (pt: Point) => {
+    if (pt.x < traceMargin || pt.x > size - traceMargin || pt.y < traceMargin || pt.y > size - traceMargin) return;
+    const localX = (pt.x - traceMargin) / innerSize;
+    const localY = (pt.y - traceMargin) / innerSize;
+    const col = Math.min(gridCols - 1, Math.max(0, Math.floor(localX * gridCols)));
+    const row = Math.min(gridRows - 1, Math.max(0, Math.floor(localY * gridRows)));
+    visitedCells.current.add(`${row}:${col}`);
+    visitedRows.current.add(row);
+    visitedCols.current.add(col);
   };
 
   const maybeComplete = () => {
-    if (complete) return;
-    const enoughZones = touchedZones.current.every(Boolean);
-    const enoughDrawing = tracedDistance.current > size * 0.95;
-    if (enoughZones && enoughDrawing) {
+    if (complete || isCheckingComplete.current) return;
+    const enoughDrawing = tracedDistance.current > size * 1.45;
+    const enoughCoverage =
+      visitedCells.current.size >= 9 &&
+      visitedRows.current.size >= 3 &&
+      visitedCols.current.size >= 3;
+    if (enoughDrawing && enoughCoverage) {
+      isCheckingComplete.current = true;
       setComplete(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onComplete();
@@ -122,7 +141,7 @@ function TracePad({ letter, lang, onComplete }: { letter: Letter; lang: Lang; on
       onPanResponderGrant: event => {
         const pt = { x: event.nativeEvent.pageX - origin.current.x, y: event.nativeEvent.pageY - origin.current.y };
         current.current = [pt];
-        markZone(pt);
+        markCoverage(pt);
         setStrokes(prev => [...prev, [pt]]);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       },
@@ -135,13 +154,12 @@ function TracePad({ letter, lang, onComplete }: { letter: Letter; lang: Lang; on
           tracedDistance.current += Math.sqrt(dx * dx + dy * dy);
         }
         current.current.push(pt);
-        markZone(pt);
+        markCoverage(pt);
         setStrokes(prev => {
           const next = [...prev];
           next[next.length - 1] = [...current.current];
           return next;
         });
-        maybeComplete();
       },
       onPanResponderRelease: () => {
         current.current = [];
@@ -193,8 +211,9 @@ function TracePad({ letter, lang, onComplete }: { letter: Letter; lang: Lang; on
             {
               color: letter.color,
               fontFamily: ff(lang, 'black'),
-              fontSize: size * 0.82,
-              lineHeight: size * 0.9,
+              fontSize: size * 0.94,
+              lineHeight: size * 0.98,
+              transform: [{ translateY: -size * 0.015 }],
             },
           ]}
         >
@@ -205,7 +224,7 @@ function TracePad({ letter, lang, onComplete }: { letter: Letter; lang: Lang; on
         </View>
         <View pointerEvents="none" style={styles.traceHint}>
           <Text style={[styles.traceHintText, { fontFamily: ff(lang, 'bold') }]}>
-            {lang === 'fa' || lang === 'ar' ? 'با انگشتت روی حرف بکش' : 'Trace with your finger'}
+            {lang === 'fa' || lang === 'ar' ? 'با انگشتت خودِ حرف را دنبال کن' : 'Trace the big letter with your finger'}
           </Text>
         </View>
         {complete ? (
@@ -251,8 +270,8 @@ export default function LetterTracingScreen() {
   const { width, height } = useWindowDimensions();
   const letter = LETTERS[idx];
   const isFa = lang === 'fa' || lang === 'ar';
-  const mascotSize = Math.max(165, Math.min(250, height * 0.34));
-  const railHeight = Math.max(72, Math.min(88, height * 0.13));
+  const mascotSize = Math.max(210, Math.min(320, height * 0.43));
+  const railHeight = Math.max(78, Math.min(96, height * 0.14));
 
   const wordCards = useMemo(() => [0, 1, 2], [letter.char]);
 
@@ -272,22 +291,16 @@ export default function LetterTracingScreen() {
       <View style={styles.skyGlow} />
       <View style={styles.lemonGlow} />
       <View style={styles.pinkGlow} />
-      <TopBar title="Letter Tracing" titleFa="تمرین حروف" showBack dark={false} compactTitle />
 
-      <View style={[styles.stage, { paddingHorizontal: Math.max(16, width * 0.025), paddingBottom: railHeight + 8 }]}>
+      <View style={[styles.stage, { paddingHorizontal: Math.max(16, width * 0.025), paddingTop: 14, paddingBottom: railHeight + 8 }]}>
         <View style={styles.leftPanel}>
           <View style={styles.mascotCard}>
             <CharacterAvatar characterId="dara" size={mascotSize} floating={false} />
-            <View style={[styles.speechBubble, { borderColor: letter.color }]}>
-              <Text style={[styles.speechText, { fontFamily: ff(lang, 'black') }]}>
-                {isFa ? 'آفرین! بکش و یاد بگیر' : 'Trace and learn!'}
-              </Text>
-            </View>
           </View>
         </View>
 
         <View style={styles.centerPanel}>
-          <View style={styles.headerCard}>
+          <View style={styles.headerRow}>
             <View style={[styles.bigLetterChip, { backgroundColor: letter.color }]}>
               <Text style={[styles.bigLetterText, { fontFamily: ff(lang, 'black') }]}>{letter.char}</Text>
             </View>
@@ -300,15 +313,15 @@ export default function LetterTracingScreen() {
               </Text>
               <ProgressDots total={LETTERS.length} current={idx} color={letter.color} />
             </View>
-            <TouchableOpacity style={[styles.soundButton, { borderColor: letter.color }]} onPress={speak} activeOpacity={0.88}>
-              <Image source={neliWorldAssets.ui.voice} style={styles.soundIcon} resizeMode="contain" />
-            </TouchableOpacity>
           </View>
 
           <TracePad letter={letter} lang={lang} onComplete={nextLetter} />
         </View>
 
         <View style={styles.rightPanel}>
+          <TouchableOpacity style={[styles.soundButton, styles.soundDock, { borderColor: letter.color }]} onPress={speak} activeOpacity={0.88}>
+            <Image source={neliWorldAssets.ui.voice} style={styles.soundIcon} resizeMode="contain" />
+          </TouchableOpacity>
           {wordCards.map(index => (
             <WordCard key={`${letter.char}-${index}`} letter={letter} index={index} lang={lang} />
           ))}
@@ -341,227 +354,207 @@ export default function LetterTracingScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#BFF3FF', overflow: 'hidden' },
+  root: { flex: 1, backgroundColor: '#A7ECFF', overflow: 'hidden' },
   skyGlow: {
     position: 'absolute',
-    left: -120,
-    top: 72,
-    width: 330,
-    height: 330,
-    borderRadius: 165,
-    backgroundColor: 'rgba(42, 201, 255, 0.34)',
+    left: -130,
+    top: 54,
+    width: 380,
+    height: 380,
+    borderRadius: 190,
+    backgroundColor: 'rgba(42, 201, 255, 0.42)',
   },
   lemonGlow: {
     position: 'absolute',
-    right: 60,
-    top: 88,
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-    backgroundColor: 'rgba(255, 242, 141, 0.75)',
+    right: 38,
+    top: 70,
+    width: 230,
+    height: 230,
+    borderRadius: 115,
+    backgroundColor: 'rgba(255, 244, 157, 0.84)',
   },
   pinkGlow: {
     position: 'absolute',
-    right: -95,
-    bottom: 70,
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: 'rgba(255, 143, 190, 0.5)',
+    right: -110,
+    bottom: 54,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(255, 143, 190, 0.56)',
   },
-  stage: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 16, paddingTop: 10 },
-  leftPanel: { width: '21%', minWidth: 170, alignItems: 'center', justifyContent: 'center' },
+  stage: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 18, paddingTop: 18 },
+  leftPanel: { width: '22%', minWidth: 190, alignItems: 'center', justifyContent: 'center' },
   centerPanel: { flex: 1, alignItems: 'stretch', justifyContent: 'center' },
-  rightPanel: { width: '26%', minWidth: 260, gap: 12, justifyContent: 'center' },
+  rightPanel: { width: '27%', minWidth: 280, gap: 14, justifyContent: 'center' },
   mascotCard: {
     width: '100%',
-    minHeight: 300,
-    borderRadius: 34,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
+    minHeight: 334,
+    borderRadius: 38,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingTop: 14,
-    paddingBottom: 18,
-    shadowColor: '#24648A',
-    shadowOpacity: 0.11,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
+    justifyContent: 'center',
+    paddingTop: 0,
+    paddingBottom: 0,
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
   },
-  speechBubble: {
-    marginTop: -14,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-  },
-  speechText: { color: '#24305E', fontSize: 13, textAlign: 'center' },
-  headerCard: {
-    minHeight: 94,
-    borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    marginBottom: 14,
-    shadowColor: '#24648A',
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
-  },
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   bigLetterChip: {
-    width: 74,
-    height: 74,
-    borderRadius: 24,
+    width: 88,
+    height: 88,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
+    marginRight: 16,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
   },
-  bigLetterText: { color: '#FFFFFF', fontSize: 45, lineHeight: 58 },
+  bigLetterText: { color: '#24305E', fontSize: 54, lineHeight: 64, textAlign: 'center', textAlignVertical: 'center' },
   headerCopy: { flex: 1 },
-  title: { color: '#1F2450', fontSize: 25, lineHeight: 32 },
-  subtitle: { color: '#626A8F', fontSize: 15, lineHeight: 22, marginTop: 1 },
-  progressDots: { flexDirection: 'row', gap: 4, marginTop: 8, alignItems: 'center' },
-  progressDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#D8E4F2' },
+  title: { color: '#1F2450', fontSize: 27, lineHeight: 34 },
+  subtitle: { color: '#626A8F', fontSize: 16, lineHeight: 22, marginTop: 2 },
+  progressDots: { flexDirection: 'row', gap: 6, marginTop: 10, alignItems: 'center' },
+  progressDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#D8E4F2' },
   soundButton: {
-    width: 62,
-    height: 62,
-    borderRadius: 22,
+    width: 68,
+    height: 68,
+    borderRadius: 24,
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  soundIcon: { width: 34, height: 34 },
+  soundDock: {
+    alignSelf: 'flex-end',
+    marginBottom: 8,
+  },
+  soundIcon: { width: 36, height: 36 },
   padShell: { alignItems: 'center' },
   pad: {
-    borderRadius: 42,
-    borderWidth: 6,
+    borderRadius: 48,
+    borderWidth: 7,
     borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     shadowColor: '#1D2B68',
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 14 },
-    elevation: 8,
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 16 },
+    elevation: 10,
   },
   letterAura: {
     position: 'absolute',
-    width: '78%',
-    height: '78%',
+    width: '82%',
+    height: '82%',
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: 'rgba(255,255,255,0.8)',
   },
   traceLetter: {
-    opacity: 0.22,
+    opacity: 0.18,
     includeFontPadding: false,
     textAlign: 'center',
     textShadowColor: 'rgba(255,255,255,0.95)',
     textShadowOffset: { width: 0, height: 8 },
     textShadowRadius: 14,
   },
-  stroke: { position: 'absolute', height: 20, borderRadius: 10, opacity: 0.93 },
+  stroke: { position: 'absolute', height: 22, borderRadius: 11, opacity: 0.93 },
   traceHint: {
     position: 'absolute',
-    bottom: 16,
+    bottom: 18,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.82)',
-    paddingHorizontal: 16,
-    paddingVertical: 7,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    paddingHorizontal: 18,
+    paddingVertical: 8,
   },
-  traceHintText: { color: '#5D668A', fontSize: 12 },
+  traceHintText: { color: '#5D668A', fontSize: 13 },
   doneBadge: {
     position: 'absolute',
-    right: 18,
-    top: 18,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    right: 20,
+    top: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#22C55E',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: '#FFFFFF',
   },
-  doneMark: { color: '#FFFFFF', fontFamily: ff('fa', 'black'), fontSize: 28 },
-  padActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 12 },
+  doneMark: { color: '#FFFFFF', fontFamily: ff('fa', 'black'), fontSize: 30 },
+  padActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 14 },
   clearButton: {
-    minWidth: 132,
-    height: 48,
-    borderRadius: 24,
+    minWidth: 146,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#EEF4FF',
   },
-  clearText: { color: C.purple, fontSize: 14 },
+  clearText: { color: C.purple, fontSize: 15 },
   wordCard: {
-    minHeight: 102,
-    borderRadius: 30,
+    minHeight: 112,
+    borderRadius: 32,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: 14,
     borderWidth: 3,
     borderColor: 'rgba(255,255,255,0.8)',
     shadowColor: '#1D2B68',
-    shadowOpacity: 0.13,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
+    shadowOpacity: 0.15,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
   wordImageBubble: {
-    width: 72,
-    height: 72,
-    borderRadius: 24,
+    width: 78,
+    height: 78,
+    borderRadius: 26,
     backgroundColor: 'rgba(255,255,255,0.88)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  wordIcon: { width: '78%', height: '78%' },
-  wordCopy: { flex: 1, marginLeft: 12 },
-  wordLabel: { color: '#FFFFFF', fontSize: 22, lineHeight: 30 },
-  wordCaption: { color: 'rgba(255,255,255,0.86)', fontSize: 12 },
+  wordIcon: { width: '76%', height: '76%' },
+  wordCopy: { flex: 1, marginLeft: 14 },
+  wordLabel: { color: '#FFFFFF', fontSize: 23, lineHeight: 31 },
+  wordCaption: { color: 'rgba(255,255,255,0.86)', fontSize: 13 },
   nextButton: {
-    height: 58,
-    borderRadius: 28,
+    height: 62,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: '#FFFFFF',
   },
-  nextText: { color: '#FFFFFF', fontSize: 16 },
+  nextText: { color: '#FFFFFF', fontSize: 17 },
   letterRailWrap: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.78)',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     borderTopWidth: 2,
-    borderTopColor: 'rgba(255,255,255,0.86)',
+    borderTopColor: 'rgba(255,255,255,0.95)',
     justifyContent: 'center',
   },
-  letterRail: { alignItems: 'center', gap: 9, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 8 },
+  letterRail: { alignItems: 'center', gap: 10, paddingHorizontal: 18, paddingTop: 11, paddingBottom: 10 },
   letterTile: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
+    width: 58,
+    height: 58,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#234A77',
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 3,
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
-  letterTileText: { fontSize: 27, lineHeight: 36 },
+  letterTileText: { fontSize: 28, lineHeight: 38 },
 });

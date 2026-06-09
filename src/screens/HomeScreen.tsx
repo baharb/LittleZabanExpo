@@ -26,6 +26,7 @@ const TODAY: Action[] = [
   { en: 'Brush', fa: 'مسواک', descEn: 'Move the brush', descFa: 'مسواک را حرکت بده', route: { name: 'ToothBrush' }, colors: ['#53C8FF', '#2D8CFF'], art: 'teeth' },
   { en: 'Painting', fa: 'نقاشی', descEn: 'Paint pictures', descFa: 'تصویرها را رنگ کن', route: { name: 'Coloring' }, colors: ['#B88CFF', '#7C3AED'], art: 'paint' },
   { en: 'Story', fa: 'قصه', descEn: 'Listen to a book', descFa: 'داستان گوش بده', route: { name: 'Audiobooks' }, colors: ['#FFD166', '#F59E0B'], art: 'story' },
+  { en: 'Alphabet', fa: 'الفبا', descEn: 'Learn letters with motion', descFa: 'حروف را با حرکت یاد بگیر', route: { name: 'AlphabetShow' }, colors: ['#8E6BFF', '#16C2E8'], art: 'video' },
   { en: 'Games', fa: 'بازی‌ها', descEn: 'Open game library', descFa: 'کتابخانه بازی‌ها', route: { name: 'Main', tab: 'Games' }, colors: ['#6D3DF4', '#20B8D7'], art: 'games' },
 ];
 
@@ -91,6 +92,32 @@ function ActionScene({
         <Image source={neliWorldAssets.ui.book} style={styles.storyBookBig} resizeMode="contain" />
         <HomeCharacterArt characterId={characterId} style={[styles.storyNeli, { width: BOX_CHARACTER_WIDTH, height: BOX_CHARACTER_HEIGHT }]} size={BOX_CHARACTER_WIDTH} />
       </ImageBackground>
+    );
+  }
+  if (type === 'games') {
+    return (
+      <View style={[styles.sceneFill, styles.gamesSceneMemory]}>
+        <View style={[styles.memoryCardBack, styles.memoryCardBackOne]} />
+        <View style={[styles.memoryCardBack, styles.memoryCardBackTwo]} />
+        <View style={[styles.memoryCardBack, styles.memoryCardBackThree]} />
+        <Image source={characterAssets.lila.poses.thinkingAlt} style={styles.memoryLila} resizeMode="contain" />
+      </View>
+    );
+  }
+  if (type === 'video') {
+    return (
+      <View style={[styles.sceneFill, styles.videoAlphabetScene]}>
+        <View style={[styles.alphaBubble, styles.alphaBubbleOne]}>
+          <Text style={styles.alphaBubbleText}>ا</Text>
+        </View>
+        <View style={[styles.alphaBubble, styles.alphaBubbleTwo]}>
+          <Text style={styles.alphaBubbleText}>ب</Text>
+        </View>
+        <View style={[styles.alphaBubble, styles.alphaBubbleThree]}>
+          <Text style={styles.alphaBubbleText}>پ</Text>
+        </View>
+        <Image source={characterAssets.lila.poses.thinkingAlt} style={styles.memoryLila} resizeMode="contain" />
+      </View>
     );
   }
   return (
@@ -210,6 +237,33 @@ const styles = StyleSheet.create({
   storyBookBig: { position: 'absolute', width: 110, height: 110, left: 14, bottom: 58 },
   storyNeli: { position: 'absolute', width: 98, height: 128, right: 10, bottom: 14 },
   gamesScene: { backgroundColor: '#53D5FF', alignItems: 'center', justifyContent: 'center' },
+  gamesSceneMemory: { backgroundColor: '#5E46D4', alignItems: 'center', justifyContent: 'center' },
+  memoryCardBack: {
+    position: 'absolute',
+    width: 74,
+    height: 74,
+    borderRadius: 18,
+    backgroundColor: '#FFF6B8',
+    borderWidth: 5,
+    borderColor: '#FFFFFF',
+    shadowColor: '#140A36',
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+  memoryCardBackOne: { left: 16, top: 24, transform: [{ rotate: '-10deg' }] },
+  memoryCardBackTwo: { right: 16, top: 34, transform: [{ rotate: '10deg' }] },
+  memoryCardBackThree: { left: '50%', marginLeft: -37, bottom: 24, transform: [{ rotate: '-2deg' }] },
+  memoryLila: { width: 152, height: 198, position: 'absolute', bottom: -8, alignSelf: 'center' },
+  videoPlayBadge: { position: 'absolute', top: 26, left: '50%', marginLeft: -24, width: 48, height: 48, borderRadius: 24, backgroundColor: '#FACC15', alignItems: 'center', justifyContent: 'center', shadowColor: '#140A36', shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
+  videoPlayText: { color: '#1A0050', fontSize: 18, marginLeft: 2 },
+  videoAlphabetScene: { backgroundColor: '#F5ECFF' },
+  alphaBubble: { position: 'absolute', width: 72, height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowColor: '#170736', shadowOpacity: 0.16, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+  alphaBubbleOne: { left: 24, top: 24, backgroundColor: '#8E6BFF' },
+  alphaBubbleTwo: { left: 88, top: 74, backgroundColor: '#16C2E8' },
+  alphaBubbleThree: { right: 28, top: 32, backgroundColor: '#F97316' },
+  alphaBubbleText: { fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: 30 },
   gamepadBig: { position: 'absolute', width: 118, height: 118, left: 20, bottom: 54 },
   gameStar: { position: 'absolute', width: 48, height: 48 },
   gameTrophy: { position: 'absolute', width: 80, height: 80, right: 18, top: 36 },

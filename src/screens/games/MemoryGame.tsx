@@ -1,94 +1,270 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
-import { Image, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Image, Platform, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import * as Speech from 'expo-speech';
 import { AppContext } from '../../store/AppContext';
-import { ff } from '../../theme/fonts';
+import { FA, ff } from '../../theme/fonts';
 import { C } from '../../theme/colors';
 import TopBar from '../../components/TopBar';
+import { characterAssets } from '../../assets/characterAssets';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
+import { useNav } from '../../store/NavContext';
 
-type MemoryItem = {
+const LILA_THINKING = characterAssets.lila.poses.thinkingAlt;
+const TOTAL_STEPS = 10;
+
+type AgeGroupId = 'baby' | 'tiny' | 'little' | 'super' | 'star';
+
+type LetterItem = {
   id: string;
-  fa: string;
-  en: string;
-  source: ImageSourcePropType;
+  char: string;
+  name: string;
   color: string;
-  soft: string;
 };
+
+const ALPHABET_POOL: LetterItem[] = [
+  { id: 'alef', char: 'ا', name: 'الف', color: '#1FB6FF' },
+  { id: 'be', char: 'ب', name: 'ب', color: '#6C4EFF' },
+  { id: 'pe', char: 'پ', name: 'پ', color: '#22C55E' },
+  { id: 'te', char: 'ت', name: 'ت', color: '#FACC15' },
+  { id: 'se', char: 'ث', name: 'ث', color: '#FB923C' },
+  { id: 'jim', char: 'ج', name: 'جیم', color: '#EC4899' },
+  { id: 'che', char: 'چ', name: 'چ', color: '#A855F7' },
+  { id: 'he', char: 'ح', name: 'ح', color: '#14B8A6' },
+  { id: 'khe', char: 'خ', name: 'خ', color: '#F97316' },
+  { id: 'dal', char: 'د', name: 'دال', color: '#38BDF8' },
+  { id: 'zal', char: 'ذ', name: 'ذال', color: '#EAB308' },
+  { id: 're', char: 'ر', name: 'ر', color: '#22C55E' },
+  { id: 'ze', char: 'ز', name: 'ز', color: '#FACC15' },
+  { id: 'sin', char: 'س', name: 'سین', color: '#EF4444' },
+  { id: 'shin', char: 'ش', name: 'شین', color: '#7C3AED' },
+  { id: 'sad', char: 'ص', name: 'صاد', color: '#06B6D4' },
+  { id: 'zad', char: 'ض', name: 'ضاد', color: '#EC4899' },
+  { id: 'ta', char: 'ط', name: 'طا', color: '#84CC16' },
+  { id: 'za', char: 'ظ', name: 'ظا', color: '#8B5CF6' },
+  { id: 'eyn', char: 'ع', name: 'عین', color: '#F97316' },
+  { id: 'gheyn', char: 'غ', name: 'غین', color: '#06B6D4' },
+  { id: 'fe', char: 'ف', name: 'فا', color: '#22C55E' },
+  { id: 'qaf', char: 'ق', name: 'قاف', color: '#A855F7' },
+  { id: 'kaf', char: 'ک', name: 'کاف', color: '#FACC15' },
+  { id: 'gaf', char: 'گ', name: 'گاف', color: '#EC4899' },
+  { id: 'lam', char: 'ل', name: 'لام', color: '#14B8A6' },
+  { id: 'mim', char: 'م', name: 'میم', color: '#3B82F6' },
+  { id: 'nun', char: 'ن', name: 'نون', color: '#F59E0B' },
+  { id: 'vav', char: 'و', name: 'واو', color: '#EF4444' },
+  { id: 'he2', char: 'ه', name: 'ها', color: '#8B5CF6' },
+  { id: 'ye', char: 'ی', name: 'یا', color: '#0EA5E9' },
+];
+
+const SIMPLE_LETTER_IDS = new Set(['alef', 'be', 'pe', 'te', 'dal', 're', 'sin', 'mim', 'nun', 'kaf', 'lam', 'vav']);
 
 type Card = {
   id: string;
   pairId: string;
-  item: MemoryItem;
+  item: LetterItem;
   flipped: boolean;
   matched: boolean;
 };
-
-const POOL: MemoryItem[] = [
-  { id: 'apple', fa: 'سیب', en: 'Apple', source: neliWorldAssets.foods.apple, color: '#EF4444', soft: '#FFE4E6' },
-  { id: 'banana', fa: 'موز', en: 'Banana', source: neliWorldAssets.foods.banana, color: '#FBBF24', soft: '#FEF3C7' },
-  { id: 'carrot', fa: 'هویج', en: 'Carrot', source: neliWorldAssets.foods.carrot, color: '#F97316', soft: '#FFEDD5' },
-  { id: 'strawberry', fa: 'توت فرنگی', en: 'Strawberry', source: neliWorldAssets.foods.strawberry, color: '#F43F5E', soft: '#FFE4E6' },
-  { id: 'broccoli', fa: 'کلم بروکلی', en: 'Broccoli', source: neliWorldAssets.foods.broccoli, color: '#22C55E', soft: '#DCFCE7' },
-  { id: 'corn', fa: 'ذرت', en: 'Corn', source: neliWorldAssets.foods.corn, color: '#EAB308', soft: '#FEF9C3' },
-];
 
 function shuffle<T>(arr: T[]) {
   return [...arr].sort(() => Math.random() - 0.5);
 }
 
-function makeDeck(): Card[] {
+function getAgeGroupId(age: number): AgeGroupId {
+  if (age <= 2) return 'baby';
+  if (age <= 4) return 'tiny';
+  if (age <= 6) return 'little';
+  if (age <= 9) return 'super';
+  return 'star';
+}
+
+/** 10 steps; step 1 = 2 pairs (4 cards), difficulty ramps by age. */
+function buildLevelPlan(group: AgeGroupId): number[] {
+  const caps: Record<AgeGroupId, { start: number; end: number }> = {
+    baby: { start: 2, end: 3 },
+    tiny: { start: 2, end: 4 },
+    little: { start: 2, end: 5 },
+    super: { start: 2, end: 6 },
+    star: { start: 2, end: 8 },
+  };
+  const { start, end } = caps[group];
+  return Array.from({ length: TOTAL_STEPS }, (_, step) => {
+    const t = step / Math.max(1, TOTAL_STEPS - 1);
+    return Math.round(start + (end - start) * t);
+  });
+}
+
+function letterPoolForAge(group: AgeGroupId): LetterItem[] {
+  if (group === 'baby' || group === 'tiny') {
+    return ALPHABET_POOL.filter(item => SIMPLE_LETTER_IDS.has(item.id));
+  }
+  if (group === 'little') {
+    return ALPHABET_POOL.slice(0, 20);
+  }
+  return ALPHABET_POOL;
+}
+
+function gridColumns(cardCount: number) {
+  if (cardCount <= 4) return 2;
+  if (cardCount <= 6) return 3;
+  if (cardCount <= 12) return 4;
+  return 4;
+}
+
+function makeDeck(pairCount: number, pool: LetterItem[]): Card[] {
+  const pairs = Math.min(pairCount, pool.length);
+  const picks = shuffle(pool).slice(0, pairs);
   return shuffle(
-    POOL.flatMap(item => [0, 1].map(copy => ({
-      id: `${item.id}-${copy}-${Math.random()}`,
-      pairId: item.id,
-      item,
-      flipped: false,
-      matched: false,
-    }))),
+    picks.flatMap(item =>
+      [0, 1].map(copy => ({
+        id: `${item.id}-${copy}-${Math.random()}`,
+        pairId: item.id,
+        item,
+        flipped: false,
+        matched: false,
+      })),
+    ),
   );
+}
+
+function makeFoundOrder(deck: Card[]): LetterItem[] {
+  return shuffle(
+    deck.reduce<LetterItem[]>((items, card) => {
+      if (!items.some(item => item.id === card.item.id)) items.push(card.item);
+      return items;
+    }, []),
+  );
+}
+
+function speakLetter(item: LetterItem) {
+  Speech.stop();
+  Speech.speak(item.name, { language: 'fa-IR', rate: 0.65, pitch: 1.18 });
 }
 
 function CardBack() {
+  return <View style={styles.cardBack} />;
+}
+
+function StepFlash({ side, onPress, disabled }: { side: 'left' | 'right'; onPress: () => void; disabled?: boolean }) {
+  const icon = side === 'left' ? neliWorldAssets.ui.back : neliWorldAssets.ui.next;
   return (
-    <View style={styles.cardBack}>
-      <View style={styles.backIcon}>
-        <Text style={styles.backIconText}>?</Text>
-      </View>
-      <View style={styles.backSmile} />
-    </View>
+    <TouchableOpacity
+      style={[
+        styles.stepFlash,
+        side === 'left' ? styles.stepFlashLeft : styles.stepFlashRight,
+        disabled ? styles.stepFlashDisabled : null,
+      ]}
+      onPress={disabled ? undefined : onPress}
+      activeOpacity={0.82}
+      disabled={disabled}
+      hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+    >
+      <Image source={icon} style={styles.stepFlashIcon} resizeMode="contain" />
+    </TouchableOpacity>
   );
 }
 
-function CardFace({ item }: { item: MemoryItem }) {
+function CardFace({ item, fontSize, cardSize }: { item: LetterItem; fontSize: number; cardSize: number }) {
   return (
-    <View style={[styles.cardFaceInner, { backgroundColor: item.soft }]}>
-      <View style={[styles.faceHalo, { backgroundColor: item.color }]} />
-      <Image source={item.source} style={styles.memoryAsset} resizeMode="contain" />
-      <Text style={[styles.cardLabel, { color: item.color }]} numberOfLines={1}>
-        {item.fa}
+    <View style={[styles.cardFaceInner, { width: cardSize, height: cardSize }]}>
+      <Text style={[styles.cardLetter, { color: item.color, fontSize }]}>
+        {item.char}
       </Text>
     </View>
   );
 }
 
 export default function MemoryGame() {
-  const { lang, addStars } = useContext(AppContext);
+  const { lang, addStars, age } = useContext(AppContext);
+  const { reset } = useNav();
   const { width, height } = useWindowDimensions();
-  const [cards, setCards] = useState<Card[]>(makeDeck);
+  const ageGroup = getAgeGroupId(age || 5);
+  const levelPlan = buildLevelPlan(ageGroup);
+  const letterPool = letterPoolForAge(ageGroup);
+  const initialDeck = useMemo(() => makeDeck(levelPlan[0], letterPool), []);
+
+  const [levelIndex, setLevelIndex] = useState(0);
+  const pairCount = levelPlan[levelIndex] ?? 2;
+  const [cards, setCards] = useState<Card[]>(() => initialDeck);
   const [selected, setSelected] = useState<number[]>([]);
-  const [moves, setMoves] = useState(0);
-  const [won, setWon] = useState(false);
+  const [lastMatched, setLastMatched] = useState<LetterItem | null>(null);
+  const [foundLetters, setFoundLetters] = useState<LetterItem[]>([]);
+  const [foundOrder, setFoundOrder] = useState<LetterItem[]>(() => makeFoundOrder(initialDeck));
+  const [allComplete, setAllComplete] = useState(false);
+  const [levelComplete, setLevelComplete] = useState(false);
+  const [busy, setBusy] = useState(false);
+
   const cardsRef = useRef(cards);
+  const levelIndexRef = useRef(0);
+  const levelPlanRef = useRef(levelPlan);
+  const letterPoolRef = useRef(letterPool);
   const awardedRef = useRef(false);
+  const isFa = lang === 'fa' || lang === 'ar';
+
+  levelIndexRef.current = levelIndex;
+  levelPlanRef.current = levelPlan;
+  letterPoolRef.current = letterPool;
+
+  const cardCount = cards.length;
+  const cols = gridColumns(cardCount);
+  const rows = Math.ceil(cardCount / cols);
+  const matchedCount = cards.filter(card => card.matched).length / 2;
+  const totalLevels = levelPlan.length;
+  const activePairGoal = Math.min(pairCount, Math.floor(cardCount / 2));
 
   const compactHeight = Math.max(0, height - 118);
-  const cardSize = Math.min(88, Math.max(66, Math.floor(Math.min((width - 360) / 4, (compactHeight - 74) / 3))));
-  const matchedCount = cards.filter(card => card.matched).length / 2;
+  const lilaWidth = Math.min(260, Math.max(180, Math.floor(width * 0.2)));
+  const lilaHeight = Math.min(340, Math.max(240, lilaWidth * 1.28));
+  const stageWidth = Math.min(width - 48, 720);
+  const gridInnerWidth = stageWidth - lilaWidth - 16;
+  const cardGap = 10;
+  const cardSize = Math.min(
+    92,
+    Math.max(
+      52,
+      Math.floor(
+        Math.min(
+          (gridInnerWidth - cardGap * (cols - 1)) / cols,
+          (compactHeight - 150) / rows,
+        ),
+      ),
+    ),
+  );
+  const letterFontSize = Math.max(26, Math.floor(cardSize * 0.5));
 
   useEffect(() => {
     cardsRef.current = cards;
   }, [cards]);
+
+  const loadLevel = (index: number) => {
+    const pairs = levelPlanRef.current[index] ?? 2;
+    const deck = makeDeck(pairs, letterPoolRef.current);
+    levelIndexRef.current = index;
+    setLevelIndex(index);
+    setCards(deck);
+    cardsRef.current = deck;
+    setSelected([]);
+    setLastMatched(null);
+    setFoundLetters([]);
+    setFoundOrder(makeFoundOrder(deck));
+    setLevelComplete(false);
+    setAllComplete(false);
+    setBusy(false);
+  };
+
+  const goNextStep = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const current = levelIndexRef.current;
+    if (current >= levelPlanRef.current.length - 1) return;
+    loadLevel(current + 1);
+  };
+
+  const goPrevStep = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const current = levelIndexRef.current;
+    if (current <= 0) return;
+    loadLevel(current - 1);
+  };
 
   useEffect(() => {
     if (selected.length !== 2) return;
@@ -101,116 +277,169 @@ export default function MemoryGame() {
       return;
     }
 
-    setMoves(prev => prev + 1);
-
     if (first.pairId === second.pairId) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const next = cardsRef.current.map((card, i) => (i === a || i === b ? { ...card, matched: true } : card));
-      const gameWon = next.every(card => card.matched);
+      setLastMatched(first.item);
+      setFoundLetters(prev => (prev.some(item => item.id === first.item.id) ? prev : [...prev, first.item]));
+      speakLetter(first.item);
+
+      const next = cardsRef.current.map((card, i) => (i === a || i === b ? { ...card, matched: true, flipped: true } : card));
+      const levelDone = next.every(card => card.matched);
       cardsRef.current = next;
       setCards(next);
-      if (gameWon && !awardedRef.current) {
-        awardedRef.current = true;
-        setWon(true);
-        addStars(10);
-      }
       setSelected([]);
+
+      if (levelDone) {
+        setBusy(true);
+        addStars(3);
+        const current = levelIndexRef.current;
+        if (current >= levelPlanRef.current.length - 1) {
+          if (!awardedRef.current) {
+            awardedRef.current = true;
+            addStars(6);
+          }
+          setAllComplete(true);
+          setLevelComplete(false);
+        } else {
+          setLevelComplete(true);
+        }
+      }
       return;
     }
 
+    setBusy(true);
     const timeout = setTimeout(() => {
-      setCards(prev => prev.map((card, i) => (i === a || i === b ? { ...card, flipped: false } : card)));
+      setCards(prev =>
+        prev.map((card, i) =>
+          i === a || i === b ? { ...card, flipped: false } : card,
+        ),
+      );
       setSelected([]);
-    }, 720);
+      setBusy(false);
+    }, 850);
 
     return () => clearTimeout(timeout);
   }, [addStars, selected]);
 
   const flip = (idx: number) => {
-    if (selected.length === 2 || cards[idx].flipped || cards[idx].matched) return;
+    if (busy || levelComplete || allComplete || selected.length === 2 || cards[idx].flipped || cards[idx].matched) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCards(prev => prev.map((card, i) => (i === idx ? { ...card, flipped: true } : card)));
     setSelected(prev => [...prev, idx]);
   };
 
-  const reset = () => {
-    setCards(makeDeck());
-    setSelected([]);
-    setMoves(0);
-    setWon(false);
+  const restart = () => {
+    setAllComplete(false);
     awardedRef.current = false;
+    loadLevel(0);
   };
+
+  const closeGame = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    reset({ name: 'Main', tab: 'Games' });
+  };
+
+  const showStepNav = !allComplete;
+  const showPrevFlash = showStepNav;
+  const showNextFlash = showStepNav;
+  const showRestartFlash = allComplete;
 
   return (
     <View style={styles.root}>
-      <View style={styles.bgMint} />
-      <View style={styles.bgSun} />
-      <View style={styles.bgBerry} />
-      <View style={styles.bgDotA} />
-      <View style={styles.bgDotB} />
       <TopBar
         title="Memory Match"
         titleFa="بازی حافظه"
-        showBack
-        dark={false}
-        rightContent={<Text style={styles.moves}>{moves}</Text>}
+        dark
+        showClose
+        onBack={closeGame}
       />
 
       <View style={styles.content}>
-        <View style={styles.sidePanel}>
-          <View style={styles.progressBadge}>
-            <Text style={[styles.progressNumber, { fontFamily: ff(lang, 'black') }]}>{matchedCount}/6</Text>
-            <Text style={[styles.progressLabel, { fontFamily: ff(lang, 'bold') }]}>
-              {lang === 'fa' ? 'جفت پیدا شد' : 'pairs found'}
-            </Text>
+        {showPrevFlash ? <StepFlash side="left" onPress={goPrevStep} disabled={levelIndex === 0} /> : null}
+        {showNextFlash ? <StepFlash side="right" onPress={goNextStep} disabled={!levelComplete} /> : null}
+        {showRestartFlash ? <StepFlash side="right" onPress={restart} /> : null}
+
+        <View style={styles.topProgressWrap}>
+          <View style={styles.progressRow}>
+            {levelPlan.map((_, i) => (
+              <View key={`dash-${i}`} style={[styles.stepDash, i <= levelIndex ? styles.stepDashActive : null]} />
+            ))}
           </View>
           <Text style={[styles.prompt, { fontFamily: ff(lang, 'black') }]}>
-            {lang === 'fa' ? 'میوه‌ها و سبزی‌های شبیه را پیدا کن' : 'Find the fruit and veggie pairs'}
+            {isFa ? 'حروف شبیه را پیدا کن' : 'Find the matching letters'}
           </Text>
-          <View style={styles.sampleStrip}>
-            <Image source={neliWorldAssets.foods.strawberry} style={styles.sampleFood} resizeMode="contain" />
-            <Image source={neliWorldAssets.foods.broccoli} style={styles.sampleFood} resizeMode="contain" />
-            <Image source={neliWorldAssets.foods.corn} style={styles.sampleFood} resizeMode="contain" />
-          </View>
         </View>
 
-        <View style={styles.boardWrap}>
-          {won ? (
-            <View style={styles.winBox}>
-              <View style={styles.winBadge}>
-                <Text style={styles.winMark}>✓</Text>
-              </View>
-              <Text style={[styles.winTitle, { fontFamily: ff(lang, 'black') }]}>
-                {lang === 'fa' ? 'همه را پیدا کردی!' : 'You found them all!'}
-              </Text>
-              <TouchableOpacity style={styles.playAgain} onPress={reset} activeOpacity={0.86}>
-                <Text style={[styles.playAgainText, { fontFamily: ff(lang, 'black') }]}>
-                  {lang === 'fa' ? 'دوباره بازی کن' : 'Play again'}
-                </Text>
-              </TouchableOpacity>
+        <View style={styles.mainArea}>
+        <View style={[styles.stage, { maxWidth: stageWidth }]}>
+          <Image
+            source={LILA_THINKING}
+            style={{ width: lilaWidth, height: lilaHeight }}
+            resizeMode="contain"
+          />
+
+          <View style={styles.gameColumn}>
+            <View style={styles.foundRow}>
+              {foundOrder.map(letter => {
+                const found = foundLetters.some(item => item.id === letter.id);
+                return (
+                  <View
+                    key={letter.id}
+                    style={[
+                      styles.foundChip,
+                      { borderColor: '#FACC15' },
+                      found ? styles.foundChipFound : styles.foundChipHidden,
+                    ]}
+                  >
+                    {found ? (
+                      <Text
+                        style={[
+                          styles.foundChipText,
+                          letter.id === 'alef' ? styles.foundChipAlef : null,
+                          { color: letter.color },
+                        ]}
+                      >
+                        {letter.char}
+                      </Text>
+                    ) : null}
+                  </View>
+                );
+              })}
             </View>
-          ) : (
-            <View style={[styles.grid, { width: cardSize * 4 + 30 }]}>
+
+            <View style={[styles.grid, { width: cols * cardSize + cardGap * (cols - 1) }]}>
               {cards.map((card, i) => {
-                const visible = card.flipped || card.matched;
+                const showFace = card.flipped || card.matched;
                 return (
                   <TouchableOpacity
                     key={card.id}
                     style={[
                       styles.card,
                       { width: cardSize, height: cardSize },
-                      visible && styles.cardFront,
+                      showFace ? styles.cardFront : styles.cardRear,
                       card.matched && styles.cardMatched,
                     ]}
                     onPress={() => flip(i)}
                     activeOpacity={0.9}
+                    disabled={levelComplete || allComplete}
                   >
-                    {visible ? <CardFace item={card.item} /> : <CardBack />}
+                    {showFace ? (
+                      <CardFace item={card.item} fontSize={letterFontSize} cardSize={cardSize} />
+                    ) : (
+                      <CardBack />
+                    )}
                   </TouchableOpacity>
                 );
               })}
             </View>
-          )}
+
+            {allComplete ? (
+              <Text style={[styles.winCaption, { fontFamily: ff(lang, 'black') }]}>
+                {isFa ? 'همه ۱۰ مرحله تمام شد!' : 'You finished all 10 steps!'}
+              </Text>
+            ) : null}
+          </View>
+        </View>
         </View>
       </View>
     </View>
@@ -218,117 +447,167 @@ export default function MemoryGame() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFDF4', overflow: 'hidden' },
-  bgMint: {
-    position: 'absolute',
-    left: -90,
-    top: 86,
-    width: 290,
-    height: 290,
-    borderRadius: 145,
-    backgroundColor: '#D9FBEA',
-  },
-  bgSun: {
-    position: 'absolute',
-    right: 42,
-    top: 76,
-    width: 176,
-    height: 176,
-    borderRadius: 88,
-    backgroundColor: '#FFF0A8',
-  },
-  bgBerry: {
-    position: 'absolute',
-    right: -80,
-    bottom: -60,
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: '#FFE0EA',
-  },
-  bgDotA: {
-    position: 'absolute',
-    left: '31%',
-    top: 106,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#7DD3FC',
-  },
-  bgDotB: {
-    position: 'absolute',
-    left: '82%',
-    bottom: 64,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#86EFAC',
-  },
-  moves: {
-    minWidth: 52,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#FFFFFF',
-    color: C.textDark,
-    fontFamily: ff('fa', 'black'),
-    fontSize: 17,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    paddingTop: 9,
-    borderWidth: 2,
-    borderColor: '#FFE08A',
-  },
+  root: { flex: 1, backgroundColor: C.purple, overflow: 'hidden' },
   content: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 30,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 16,
+    paddingTop: 10,
     paddingBottom: 18,
-    gap: 18,
+    position: 'relative',
   },
-  sidePanel: {
-    width: 230,
-    alignSelf: 'stretch',
+  stepFlash: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -56,
+    zIndex: 20,
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: 14,
   },
-  progressBadge: {
-    alignSelf: 'flex-start',
-    minWidth: 122,
-    borderRadius: 28,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#E8F7DB',
-    shadowColor: '#2D5B34',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 7 },
-    elevation: 2,
+  stepFlashDisabled: {
+    opacity: 0.35,
   },
-  progressNumber: { color: '#169B5B', fontSize: 24, lineHeight: 29, textAlign: 'center' },
-  progressLabel: { color: C.textMid, fontSize: 12, lineHeight: 16, textAlign: 'center' },
-  prompt: { color: C.textDark, fontSize: 25, lineHeight: 34 },
-  sampleStrip: {
+  stepFlashLeft: {
+    left: 20,
+  },
+  stepFlashRight: {
+    right: 20,
+  },
+  stepFlashIcon: {
+    width: 112,
+    height: 112,
+  },
+  stage: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 9,
-    borderRadius: 28,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 2,
-    borderColor: '#F7ECD3',
+    justifyContent: 'center',
+    gap: 8,
+    width: '100%',
+    marginTop: -36,
   },
-  sampleFood: { width: 40, height: 40 },
-  boardWrap: {
-    minWidth: 420,
-    minHeight: 300,
+  topProgressWrap: {
+    position: 'absolute',
+    top: 6,
+    left: 16,
+    right: 16,
+    width: 'auto',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
+  },
+  mainArea: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 0,
+  },
+  gameColumn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 280,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    width: '100%',
+    marginBottom: 10,
+    flexWrap: 'wrap',
+  },
+  stepDash: {
+    width: 28,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.24)',
+  },
+  stepDashActive: {
+    width: 42,
+    backgroundColor: C.yellow,
+  },
+  foundRow: {
+    minHeight: 52,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+    flexWrap: 'wrap',
+  },
+  foundChip: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    backgroundColor: 'rgba(255,255,255,0.90)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  foundChipHidden: {
+    opacity: 0.18,
+  },
+  foundChipFound: {
+    opacity: 1,
+  },
+  foundChipText: {
+    fontFamily: FA.black,
+    fontSize: 18,
+    lineHeight: 16,
+    marginTop: 0,
+    transform: [{ translateY: 3 }],
+    includeFontPadding: false,
+    textAlign: 'center',
+  },
+  foundChipAlef: {
+    transform: [{ translateY: 5 }],
+  },
+  levelLine: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 14,
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+  prompt: {
+    color: C.white,
+    fontSize: 22,
+    lineHeight: 30,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  matchedBanner: {
+    minHeight: 88,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 20,
+  },
+  matchedBannerPlaceholder: {
+    height: 88,
+    marginBottom: 12,
+  },
+  matchedLabel: {
+    color: C.yellow,
+    fontSize: 16,
+    lineHeight: 22,
+    marginBottom: 2,
+  },
+  matchedLetter: {
+    fontFamily: FA.black,
+    fontSize: 52,
+    lineHeight: 58,
+    textAlign: 'center',
+    ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
+  },
+  matchedName: {
+    color: C.white,
+    fontSize: 22,
+    lineHeight: 28,
+    textAlign: 'center',
+    marginTop: 2,
   },
   grid: {
     flexDirection: 'row',
@@ -338,108 +617,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    borderRadius: 24,
-    backgroundColor: '#FEF3C7',
+    borderRadius: 18,
+    backgroundColor: C.yellow,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#7C4A03',
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 7 },
-    elevation: 3,
+    overflow: 'hidden',
+    shadowColor: '#1A0050',
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 5,
+  },
+  cardRear: {
+    backgroundColor: C.yellow,
   },
   cardFront: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+    backgroundColor: C.white,
   },
   cardMatched: {
-    borderColor: '#8DE8A9',
-    shadowColor: '#15803D',
-    shadowOpacity: 0.15,
+    backgroundColor: C.white,
+    opacity: 0.85,
   },
   cardBack: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 24,
-    backgroundColor: '#FFE59D',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-  },
-  backIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#A16207',
-    shadowOpacity: 0.11,
-    shadowRadius: 7,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-  },
-  backIconText: {
-    color: '#F59E0B',
-    fontFamily: ff('fa', 'black'),
-    fontSize: 25,
-    lineHeight: 31,
-    marginTop: -1,
-  },
-  backSmile: {
-    position: 'absolute',
-    bottom: 15,
-    width: 22,
-    height: 10,
-    borderBottomWidth: 3,
-    borderBottomColor: 'rgba(161,98,7,0.42)',
-    borderRadius: 12,
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 18,
+    backgroundColor: C.yellow,
   },
   cardFaceInner: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 22,
+    borderRadius: 18,
+    backgroundColor: C.white,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  faceHalo: {
-    position: 'absolute',
-    width: '78%',
-    height: '78%',
-    borderRadius: 500,
-    opacity: 0.12,
-  },
-  memoryAsset: { width: '66%', height: '58%' },
-  cardLabel: {
-    fontFamily: ff('fa', 'black'),
-    fontSize: 11,
-    lineHeight: 15,
+  cardLetter: {
+    fontFamily: FA.black,
     textAlign: 'center',
-    marginTop: 1,
-    paddingHorizontal: 4,
+    ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
   },
-  winBox: {
-    width: 330,
-    borderRadius: 36,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 28,
-    borderWidth: 2,
-    borderColor: '#DBFBE7',
-    shadowColor: '#065F46',
-    shadowOpacity: 0.1,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 3,
+  winCaption: {
+    color: C.white,
+    fontSize: 22,
+    lineHeight: 30,
+    textAlign: 'center',
+    marginTop: 14,
   },
-  winBadge: { width: 92, height: 92, borderRadius: 46, backgroundColor: '#22C55E', alignItems: 'center', justifyContent: 'center' },
-  winMark: { fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: 50 },
-  winTitle: { color: C.textDark, fontSize: 25, marginTop: 16, textAlign: 'center' },
-  playAgain: { backgroundColor: C.yellow, borderRadius: 24, paddingHorizontal: 28, paddingVertical: 13, marginTop: 20 },
-  playAgainText: { color: C.textDark, fontSize: 16 },
 });
