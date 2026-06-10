@@ -621,16 +621,16 @@ export default function CookingGame() {
               resizeMode="contain"
             />
             <BlinkingNeliImage
-              size={chefWidth * 0.841}
-              height={chefHeight * 0.841}
+              size={chefWidth * 0.96}
+              height={chefHeight * 0.97}
               showBase={false}
               style={[
-                styles.chefNeliBlink,
-                {
-                  left: chefWidth * 0.058,
-                  top: chefHeight * 0.097,
-                },
-              ]}
+              styles.chefNeliBlink,
+              {
+                  left: chefWidth * 0.02048,
+                  top: chefHeight * 0.014,
+              },
+            ]}
               introVisibleMs={800}
               repeatMs={3000}
               blinkClosedMs={250}

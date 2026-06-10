@@ -34,7 +34,7 @@ const GAMES: Tile[] = [
   { id: 'coloring', route: { name: 'Coloring' }, en: 'Painting', fa: 'نقاشی', descEn: 'Paint picture pages', descFa: 'صفحه‌ها را رنگ کن', kind: 'paint', color: '#A855F7', accent: '#FF80C0', group: 'play' },
   { id: 'iranPuzzle', route: { name: 'IranPuzzle' }, en: 'Iran Puzzle', fa: 'پازل ایران', descEn: 'Drag the provinces', descFa: 'استان‌ها را جابجا کن', kind: 'iranPuzzle', color: '#F97316', accent: '#FFF0E2', group: 'learn' },
   { id: 'solarPuzzle', route: { name: 'SolarPuzzle' }, en: 'Solar System', fa: 'منظومه خورشیدی', descEn: 'Place each planet', descFa: 'هر سیاره را بگذار', kind: 'solarPuzzle', color: '#38BDF8', accent: '#EAF7FF', group: 'learn' },
-  { id: 'interactiveTracing', route: { name: 'InteractiveFarsiTrace' }, en: 'Trace a Letter', fa: 'شکل کشی حرف', descEn: 'Follow the stroke order', descFa: 'روی خط حرف برو', kind: 'firstTracing', color: '#19BDF2', accent: '#FFE66D', group: 'alphabet' },
+  { id: 'interactiveTracing', route: { name: 'InteractiveFarsiTrace' }, en: 'Farsi Tracing', fa: 'تمرین نوشتن', descEn: 'Trace Persian letters', descFa: 'حروف را قدم به قدم بکش', kind: 'firstTracing', color: '#19BDF2', accent: '#FFE66D', group: 'alphabet' },
   { id: 'alphabet', route: { name: 'AlphabetShow' }, en: 'Alphabet Show', fa: 'نمایش الفبا', descEn: 'Letters, words, and motion', descFa: 'حرف، واژه و حرکت', kind: 'alphabet', color: '#8B5CF6', accent: '#38BDF8', group: 'alphabet' },
   { id: 'alphabetTrain', route: { name: 'AlphabetTrain' }, en: 'Alphabet Train', fa: 'قطار الفبا', descEn: 'Ride the letters and words', descFa: 'سوار قطار حرف‌ها شو', kind: 'alphabetTrain', color: '#06B6D4', accent: '#FACC15', group: 'alphabet' },
   { id: 'memory', route: { name: 'Game', gameId: 'memory' }, en: 'Memory Match', fa: 'بازی حافظه', descEn: 'Find pairs', descFa: 'جفت‌ها را پیدا کن', kind: 'memory', color: '#6C4EFF', accent: '#FACC15', group: 'learn' },
@@ -126,10 +126,19 @@ function TileArt({ kind, color, accent, characterId, width, height }: { kind: Ki
   if (kind === 'tracing') return <View style={styles.art}><Image source={neliWorldAssets.ui.brush} style={styles.tileBrush} resizeMode="contain" /><Image source={neliWorldAssets.ui.book} style={styles.tileWater} resizeMode="contain" /></View>;
   if (kind === 'firstTracing') return (
     <View style={styles.firstTracingScene}>
-      <View style={[styles.firstTracingBubble, styles.firstTracingBubbleA]}><Text style={styles.firstTracingLetter}>ا</Text></View>
-      <View style={[styles.firstTracingBubble, styles.firstTracingBubbleB]}><Text style={styles.firstTracingLetter}>ب</Text></View>
-      <Image source={neliWorldAssets.ui.brush} style={styles.firstTracingBrush} resizeMode="contain" />
-      <Image source={require('../../assets/neli-world/fruits/orange.png')} style={styles.firstTracingOrange} resizeMode="contain" />
+      <View style={styles.firstTracingBoard}>
+        <View style={styles.firstTracingBoardInner}>
+          <View style={styles.firstTracingGuide} />
+          <View style={styles.firstTracingStartDot} />
+          <View style={styles.firstTracingPencil}>
+            <View style={styles.firstTracingPencilBody} />
+            <View style={styles.firstTracingPencilTip} />
+          </View>
+          <View style={styles.firstTracingStroke} />
+          <View style={styles.firstTracingArrow} />
+        </View>
+      </View>
+      <View style={styles.firstTracingLetterChip}><Text style={styles.firstTracingLetter}>ا</Text></View>
     </View>
   );
   if (kind === 'alphabet') return (
@@ -287,12 +296,122 @@ const styles = StyleSheet.create({
   tileBrush: { position: 'absolute', width: 54, height: 54, left: 12, bottom: 14, transform: [{ rotate: '-18deg' }] },
   tileWater: { position: 'absolute', width: 58, height: 58, left: 50, bottom: 0 },
   firstTracingScene: { flex: 1, width: '100%', height: '100%', backgroundColor: '#FFF0DE', alignItems: 'center', justifyContent: 'center' },
-  firstTracingBubble: { position: 'absolute', width: 82, height: 82, borderRadius: 28, alignItems: 'center', justifyContent: 'center', borderWidth: 5, borderColor: '#FFFFFF', shadowColor: '#170736', shadowOpacity: 0.14, shadowRadius: 9, shadowOffset: { width: 0, height: 5 }, elevation: 5 },
-  firstTracingBubbleA: { left: 20, top: 26, backgroundColor: '#19BDF2', transform: [{ rotate: '-8deg' }] },
-  firstTracingBubbleB: { right: 22, top: 46, backgroundColor: '#6C4EFF', transform: [{ rotate: '7deg' }] },
-  firstTracingLetter: { fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: 38, lineHeight: 50 },
-  firstTracingBrush: { position: 'absolute', width: 72, height: 72, left: 26, bottom: 20, transform: [{ rotate: '-18deg' }] },
-  firstTracingOrange: { position: 'absolute', width: 82, height: 82, right: 24, bottom: 18 },
+  firstTracingBoard: {
+    width: '78%',
+    aspectRatio: 1,
+    borderRadius: 20,
+    backgroundColor: '#FFFDF8',
+    borderWidth: 4,
+    borderColor: '#F4C6D5',
+    shadowColor: '#170736',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  firstTracingBoardInner: {
+    width: '82%',
+    height: '82%',
+    borderRadius: 18,
+    backgroundColor: '#FFFDF8',
+    borderWidth: 2,
+    borderColor: '#F3D7E2',
+    overflow: 'hidden',
+  },
+  firstTracingGuide: {
+    position: 'absolute',
+    left: '50%',
+    top: '13%',
+    bottom: '13%',
+    width: 20,
+    marginLeft: -10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(243, 162, 188, 0.28)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.86)',
+    borderStyle: 'dashed',
+  },
+  firstTracingStartDot: {
+    position: 'absolute',
+    left: '50%',
+    top: '12%',
+    width: 16,
+    height: 16,
+    marginLeft: -8,
+    borderRadius: 8,
+    backgroundColor: '#2ECC71',
+  },
+  firstTracingPencil: {
+    position: 'absolute',
+    left: '50%',
+    top: '22%',
+    width: 42,
+    height: 42,
+    marginLeft: -21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ rotate: '0deg' }],
+  },
+  firstTracingPencilBody: {
+    width: 22,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#FFE36E',
+    transform: [{ rotate: '90deg' }],
+  },
+  firstTracingPencilTip: {
+    position: 'absolute',
+    bottom: 8,
+    width: 8,
+    height: 10,
+    borderRadius: 3,
+    backgroundColor: '#F08A5D',
+  },
+  firstTracingStroke: {
+    position: 'absolute',
+    left: '50%',
+    top: '16%',
+    width: 22,
+    height: '62%',
+    marginLeft: -11,
+    borderRadius: 12,
+    backgroundColor: '#FF7AA7',
+  },
+  firstTracingArrow: {
+    position: 'absolute',
+    left: '50%',
+    top: '24%',
+    width: 0,
+    height: 0,
+    marginLeft: -8,
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderTopWidth: 13,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#49A6FF',
+  },
+  firstTracingLetterChip: {
+    position: 'absolute',
+    right: 16,
+    top: 18,
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    backgroundColor: '#6C4EFF',
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#170736',
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 4,
+  },
+  firstTracingLetter: { fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: 28, lineHeight: 34 },
   alphabetScene: { flex: 1, width: '100%', height: '100%', backgroundColor: '#F5ECFF', alignItems: 'center', justifyContent: 'center' },
   alphabetBubble: { position: 'absolute', width: 78, height: 78, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: 5, borderColor: '#FFFFFF', shadowColor: '#170736', shadowOpacity: 0.16, shadowRadius: 8, shadowOffset: { width: 0, height: 5 }, elevation: 5 },
   alphabetBubbleAlef: { left: 18, top: 20, backgroundColor: '#8B5CF6', transform: [{ rotate: '-8deg' }] },
@@ -405,4 +524,3 @@ const styles = StyleSheet.create({
   tileTalkCharacter: { position: 'absolute', right: 10, bottom: -10, width: 92, height: 120 },
   tileDressCharacter: { position: 'absolute', right: 10, bottom: 2, width: 92, height: 120 },
 });
-

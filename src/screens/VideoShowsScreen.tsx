@@ -236,16 +236,16 @@ function AlphabetShowPlayer({
   );
 }
 
-const EXAMPLE_IMAGE_BY_ID: Partial<Record<string, any>> = {
+export const EXAMPLE_IMAGE_BY_ID: Partial<Record<string, any>> = {
   alef: neliWorldAssets.foods.water,
-  be: require('../../assets/neli-world/alphabet-icons/kite.png'),
+  be: require('../../assets/neli-world/ingredients/leaves.webp'),
   pe: require('../../assets/neli-world/fruits/orange.png'),
   te: require('../../assets/neli-world/alphabet-icons/ball.png'),
   se: require('../../assets/neli-world/alphabet-icons/clock.png'),
   jim: require('../../assets/neli-world/alphabet-icons/chick.png'),
   che: require('../../assets/neli-world/alphabet-icons/umbrella.png'),
   'he-jimi': neliWorldAssets.bathroom.towel,
-  khe: neliWorldAssets.ui.home,
+  khe: require('../../assets/neli-world/animals/bear_kids_app_clean_transparent.webp'),
   dal: require('../../assets/neli-world/alphabet-icons/tree.png'),
   zal: neliWorldAssets.foods.corn,
   re: require('../../assets/neli-world/alphabet-icons/river.png'),
@@ -259,7 +259,7 @@ const EXAMPLE_IMAGE_BY_ID: Partial<Record<string, any>> = {
   za: neliWorldAssets.kitchen.plate,
   eyn: neliWorldAssets.clothes.sunglasses,
   gheyn: neliWorldAssets.persianFoods.ashReshteh,
-  fe: require('../../assets/neli-world/_before_clean_cutouts/animals/elephant.png'),
+  fe: require('../../assets/neli-world/alphabet-icons/elephant.png'),
   ghaf: require('../../assets/neli-world/alphabet-icons/boat.png'),
   kaf: neliWorldAssets.ingredients.book,
   gaf: require('../../assets/neli-world/alphabet-icons/flower.png'),
@@ -497,18 +497,13 @@ function SequentialAlphabetShowPlayer({
   const exampleSource = EXAMPLE_IMAGE_BY_ID[item.id];
   const characterSource = ALPHABET_PUSHERS[index % ALPHABET_PUSHERS.length];
   const isWide = width >= height;
-  const groupX = useRef(new Animated.Value(-900)).current;
-  const exampleOpacity = useRef(new Animated.Value(0)).current;
-  const exampleScale = useRef(new Animated.Value(0.72)).current;
-  const characterBounce = useRef(new Animated.Value(0)).current;
-  const letterPop = useRef(new Animated.Value(0.8)).current;
+  const motion = useRef(new Animated.Value(0)).current;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
-  const centerX = Math.round(width * (isWide ? 0.02 : 0));
-  const startX = -Math.max(520, Math.round(width * 0.9));
-  const exitX = Math.max(620, Math.round(width * 0.92));
   const characterSize = Math.max(150, Math.min(isWide ? 250 : 210, width * (isWide ? 0.22 : 0.38)));
   const letterSize = Math.max(150, Math.min(isWide ? 230 : 200, width * (isWide ? 0.20 : 0.36)));
+  const letterLift = item.id === 'gheyn' ? -8 : 0;
+  const characterLift = item.id === 'gheyn' ? -characterSize * 0.05 : 0;
 
   useEffect(() => {
     setFinished(false);
@@ -522,44 +517,15 @@ function SequentialAlphabetShowPlayer({
     animationRef.current?.stop();
     animationRef.current = null;
 
-    groupX.setValue(startX);
-    exampleOpacity.setValue(0);
-    exampleScale.setValue(0.72);
-    characterBounce.setValue(0);
-    letterPop.setValue(0.8);
+    motion.setValue(0);
     stop();
 
     animationRef.current = Animated.sequence([
-      Animated.parallel([
-        Animated.timing(groupX, {
-          toValue: centerX,
-          duration: 940,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.sequence([
-          Animated.timing(characterBounce, { toValue: -18, duration: 220, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-          Animated.timing(characterBounce, { toValue: 0, duration: 260, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-          Animated.timing(characterBounce, { toValue: -10, duration: 180, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-          Animated.timing(characterBounce, { toValue: 0, duration: 220, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        ]),
-        Animated.spring(letterPop, { toValue: 1, tension: 82, friction: 6, useNativeDriver: true }),
-      ]),
+      Animated.timing(motion, { toValue: 1, duration: 1100, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       Animated.delay(240),
-      Animated.parallel([
-        Animated.timing(exampleOpacity, { toValue: 1, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        Animated.spring(exampleScale, { toValue: 1, tension: 76, friction: 6, useNativeDriver: true }),
-      ]),
+      Animated.timing(motion, { toValue: 1.65, duration: 360, easing: Easing.out(Easing.quad), useNativeDriver: true }),
       Animated.delay(1180),
-      Animated.parallel([
-        Animated.timing(groupX, {
-          toValue: exitX,
-          duration: 430,
-          easing: Easing.in(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(exampleOpacity, { toValue: 0, duration: 240, easing: Easing.in(Easing.quad), useNativeDriver: true }),
-      ]),
+      Animated.timing(motion, { toValue: 2, duration: 430, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
     ]);
 
     animationRef.current.start(({ finished: animationFinished }) => {
@@ -584,7 +550,7 @@ function SequentialAlphabetShowPlayer({
       animationRef.current?.stop();
       animationRef.current = null;
     };
-  }, [centerX, characterBounce, exampleOpacity, exampleScale, exitX, groupX, index, item.letter, item.wordFa, letterPop, speak, startX, stop]);
+  }, [index, item.letter, item.wordFa, motion, speak, stop]);
 
   const close = () => {
     stop();
@@ -626,7 +592,14 @@ function SequentialAlphabetShowPlayer({
           style={[
             styles.sequencePushGroup,
             {
-              transform: [{ translateX: groupX }],
+              transform: [
+                {
+                  translateX: motion.interpolate({
+                    inputRange: [0, 1, 1.65, 2],
+                    outputRange: [-900, 0, 0, 620],
+                  }),
+                },
+              ],
             },
           ]}
         >
@@ -638,7 +611,15 @@ function SequentialAlphabetShowPlayer({
               {
                 width: characterSize,
                 height: characterSize * 1.24,
-                transform: [{ translateY: characterBounce }],
+                transform: [
+                  { translateY: characterLift },
+                  {
+                    translateY: motion.interpolate({
+                      inputRange: [0, 1, 1.65, 2],
+                      outputRange: [0, 0, 0, 0],
+                    }),
+                  },
+                ],
               },
             ]}
           />
@@ -650,7 +631,15 @@ function SequentialAlphabetShowPlayer({
                 height: letterSize,
                 borderRadius: letterSize * 0.28,
                 backgroundColor: item.color,
-                transform: [{ scale: letterPop }],
+                transform: [
+                  { translateY: letterLift },
+                  {
+                    scale: motion.interpolate({
+                      inputRange: [0, 0.35, 1, 1.65, 2],
+                      outputRange: [0.78, 0.94, 1, 1, 0.96],
+                    }),
+                  },
+                ],
               },
             ]}
           >
@@ -663,13 +652,25 @@ function SequentialAlphabetShowPlayer({
           style={[
             styles.sequenceExample,
             {
-              opacity: exampleOpacity,
-              transform: [{ scale: exampleScale }],
+              opacity: motion.interpolate({
+                inputRange: [0, 0.86, 1, 1.6, 1.85, 2],
+                outputRange: [0, 0, 1, 1, 0.15, 0],
+              }),
+              transform: [
+                {
+                  scale: motion.interpolate({
+                    inputRange: [0, 1, 1.65, 2],
+                    outputRange: [0.72, 1, 0.96, 0.9],
+                  }),
+                },
+              ],
             },
           ]}
         >
           <View style={[styles.sequenceExampleImageWrap, { backgroundColor: item.accent }]}>
-            {exampleSource ? <Image source={exampleSource} style={styles.sequenceExampleImage} resizeMode="contain" /> : null}
+            {exampleSource ? (
+              <Image source={exampleSource} style={styles.sequenceExampleImage} resizeMode="contain" />
+            ) : null}
           </View>
           <Text style={styles.sequenceWord}>{item.wordFa}</Text>
           <Text style={styles.sequenceEnglish}>{item.wordEn}</Text>

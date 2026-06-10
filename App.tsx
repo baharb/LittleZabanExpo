@@ -63,7 +63,7 @@ function Router() {
     case 'AlphabetShow':     return <AlphabetShowScreen />;
     case 'AlphabetTrain':    return <AlphabetTrainScreen />;
     case 'InteractiveFarsiTrace': return <InteractiveFarsiTraceScreen />;
-    case 'FirstLettersTracing': return <FirstLettersTracingScreen />;
+    case 'FirstLettersTracing': return <InteractiveFarsiTraceScreen />;
     case 'LearningPath':     return <LearningPathScreen />;
     case 'Audiobooks':       return <AudiobooksScreen />;
     case 'PhysicalActivity': return <PhysicalActivityScreen />;

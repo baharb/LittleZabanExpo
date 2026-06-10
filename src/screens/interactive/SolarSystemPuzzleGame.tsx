@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
 import Svg, { Circle, Polygon } from 'react-native-svg';
 import TopBar from '../../components/TopBar';
+import CelebrationOverlay from '../../components/CelebrationOverlay';
 import { AppContext } from '../../store/AppContext';
 import { useNav } from '../../store/NavContext';
 import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
@@ -14,9 +15,9 @@ type StageSize = { width: number; height: number };
 type Rect = { x: number; y: number; w: number; h: number };
 const TTS = (l: string) => ({ fa: 'fa-IR', ar: 'fa-IR', zh: 'zh-CN', ko: 'ko-KR', fr: 'fr-FR', es: 'es-ES' } as any)[l] ?? 'en-US';
 const RATE = (l: string) => (l === 'fa' || l === 'ar' ? 0.65 : 0.8);
-const CELEBRATION_STAR_GROUP_COUNT = 440;
-const CELEBRATION_BURST_MS = 10080;
-const SETTLE_MS = 980;
+const CELEBRATION_PARTICLE_COUNT = 160;
+const CELEBRATION_BURST_MS = 3600;
+const SETTLE_MS = 600;
 const PLANET_NAME_EN: Record<string, string> = {
   mercury: 'Mercury',
   venus: 'Venus',
@@ -80,62 +81,96 @@ function StarSparkle({
 
 type CelebrationStarSpec = {
   id: number;
-  left: number;
-  top: number;
+  spawnX: number;
+  spawnY: number;
+  vx: number;
+  vy: number;
+  gravity: number;
   size: number;
   delay: number;
-  duration: number;
-  drift: number;
-  glowColor: string;
   primaryColor: string;
   innerColor: string;
   coreColor: string;
-  spinStart: number;
-  spinEnd: number;
-  twinLeft: number;
-  twinTop: number;
-  twinSize: number;
-  startsVisible: boolean;
+  glowColor: string;
+  spinRate: number;
 };
 
-function FallingCelebrationStar({
-  star,
+function BurstCelebration({
+  particles,
+  stageWidth,
   stageHeight,
   progress,
 }: {
-  star: CelebrationStarSpec;
+  particles: CelebrationStarSpec[];
+  stageWidth: number;
   stageHeight: number;
   progress: Animated.Value;
 }) {
-  const start = star.delay / CELEBRATION_BURST_MS;
-  const end = Math.min(1, (star.delay + star.duration) / CELEBRATION_BURST_MS);
-  const at = (point: number) => start + (end - start) * point;
+  if (!particles.length) return null;
+  return (
+    <>
+      {particles.map(p => (
+        <BurstParticle
+          key={p.id}
+          p={p}
+          stageWidth={stageWidth}
+          stageHeight={stageHeight}
+          progress={progress}
+        />
+      ))}
+    </>
+  );
+}
 
-  const translateY = progress.interpolate({
-    inputRange: [start, end],
-    outputRange: [star.startsVisible ? 0 : -stageHeight * 0.2, stageHeight + 560 - star.top],
+function BurstParticle({
+  p,
+  stageWidth,
+  stageHeight,
+  progress,
+}: {
+  p: CelebrationStarSpec;
+  stageWidth: number;
+  stageHeight: number;
+  progress: Animated.Value;
+}) {
+  const totalMs = CELEBRATION_BURST_MS;
+  const pStart = p.delay / totalMs;
+  const pEnd = 1;
+  const tSec = (pEnd - pStart) * totalMs / 1000;
+
+  const endX = p.vx * tSec;
+  const endY = p.vy * tSec + 0.5 * p.gravity * tSec * tSec;
+
+  const fadeInEnd  = pStart + (pEnd - pStart) * 0.04;
+  const fadeOutStart = pStart + (pEnd - pStart) * 0.82;
+
+  const translateX = progress.interpolate({
+    inputRange: [pStart, pEnd],
+    outputRange: [0, endX],
     extrapolate: 'clamp',
   });
-  const translateX = progress.interpolate({
-    inputRange: [start, end],
-    outputRange: [0, star.drift],
+  const translateY = progress.interpolate({
+    inputRange: [pStart, pEnd],
+    outputRange: [0, endY],
     extrapolate: 'clamp',
   });
   const opacity = progress.interpolate({
-    inputRange: [start, at(star.startsVisible ? 0.01 : 0.06), at(0.48), at(0.68), end],
-    outputRange: [star.startsVisible ? 1 : 0, 1, 1, 0, 0],
-    extrapolate: 'clamp',
-  });
-  const scale = progress.interpolate({
-    inputRange: [start, at(0.12), at(0.72), end],
-    outputRange: [0.65, 1.08, 1.18, 0.78],
+    inputRange: [pStart, fadeInEnd, fadeOutStart, pEnd],
+    outputRange: [0, 1, 1, 0],
     extrapolate: 'clamp',
   });
   const rotate = progress.interpolate({
-    inputRange: [start, end],
-    outputRange: [`${star.spinStart}deg`, `${star.spinEnd}deg`],
+    inputRange: [pStart, pEnd],
+    outputRange: ['0deg', `${p.spinRate * 360}deg`],
     extrapolate: 'clamp',
   });
+  const scale = progress.interpolate({
+    inputRange: [pStart, pStart + (pEnd - pStart) * 0.1, pEnd],
+    outputRange: [0.3, 1.0, 0.8],
+    extrapolate: 'clamp',
+  });
+
+  const sz = p.size;
 
   return (
     <Animated.View
@@ -143,32 +178,21 @@ function FallingCelebrationStar({
       style={[
         styles.blinkStar,
         {
-          left: star.left,
-          top: star.top,
-          width: star.size * 1.45,
-          height: star.size * 1.45,
+          left: p.spawnX - sz / 2,
+          top: p.spawnY - sz / 2,
+          width: sz,
+          height: sz,
           opacity,
           transform: [{ translateX }, { translateY }, { scale }, { rotate }],
         },
       ]}
     >
-      <View style={[styles.starGlow, { shadowColor: star.glowColor }]}>
-        <StarSparkle primaryColor={star.primaryColor} innerColor={star.innerColor} coreColor={star.coreColor} />
-      </View>
-      <View
-        style={[
-          styles.celebrationTwinStar,
-          {
-            left: star.twinLeft,
-            top: star.twinTop,
-            width: star.twinSize,
-            height: star.twinSize,
-          },
-        ]}
-      >
-        <View style={[styles.starGlow, { shadowColor: star.glowColor }]}>
-          <StarSparkle primaryColor={star.primaryColor} innerColor={star.innerColor} coreColor={star.coreColor} />
-        </View>
+      <View style={[styles.starGlow, { shadowColor: p.glowColor }]}>
+        <StarSparkle
+          primaryColor={p.primaryColor}
+          innerColor={p.innerColor}
+          coreColor={p.coreColor}
+        />
       </View>
     </Animated.View>
   );
@@ -434,22 +458,11 @@ export default function SolarSystemPuzzleGame() {
   const [placedCount, setPlacedCount] = useState(0);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [placedIds, setPlacedIds] = useState<string[]>([]);
-  const [celebrationStars, setCelebrationStars] = useState<CelebrationStarSpec[]>([]);
-  const [backgroundSparkles, setBackgroundSparkles] = useState<Array<{ id: number; left: number; top: number; size: number; boost: number }>>([]);
-  const [showBackgroundSparkles, setShowBackgroundSparkles] = useState(false);
+  const [celebrationActive, setCelebrationActive] = useState(false);
+  const [celebrationSeed, setCelebrationSeed] = useState(1);
   const celebrationPlayedRef = useRef(false);
   const placedIdsRef = useRef<string[]>([]);
   const placedCountRef = useRef(0);
-  const celebrationProgress = useRef(new Animated.Value(0)).current;
-  const celebrationAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
-  const celebrationSeqRef = useRef(0);
-  const bgOpacity = useRef(new Animated.Value(0)).current;
-  const bgScale = useRef(new Animated.Value(0.72)).current;
-  const bgTwinkle = useRef(new Animated.Value(0)).current;
-  const bgTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const bgNextTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const bgLoopRef = useRef<Animated.CompositeAnimation | null>(null);
-  const bgSeqRef = useRef(0);
   const isFa = lang === 'fa' || lang === 'ar';
 
   const layout = useMemo(() => {
@@ -468,80 +481,9 @@ export default function SolarSystemPuzzleGame() {
   const startCelebration = () => {
     if (celebrationPlayedRef.current || !stageSize.width || !stageSize.height) return;
     celebrationPlayedRef.current = true;
-    if (bgTimeoutRef.current) {
-      clearTimeout(bgTimeoutRef.current);
-      bgTimeoutRef.current = null;
-    }
-    if (bgNextTimeoutRef.current) {
-      clearTimeout(bgNextTimeoutRef.current);
-      bgNextTimeoutRef.current = null;
-    }
-    bgLoopRef.current?.stop();
-    bgLoopRef.current = null;
-    celebrationAnimationRef.current?.stop();
-    celebrationAnimationRef.current = null;
-    setShowBackgroundSparkles(false);
-    setBackgroundSparkles([]);
-
-    const palette = [
-      { primaryColor: '#FFE875', innerColor: '#FFF8D0', coreColor: '#FFFDF2', glowColor: '#FFEFB0' },
-      { primaryColor: '#7DD3FC', innerColor: '#DDF5FF', coreColor: '#FFFFFF', glowColor: '#BFEAFF' },
-      { primaryColor: '#F9A8D4', innerColor: '#FCE2F0', coreColor: '#FFF9FC', glowColor: '#F7C2E0' },
-      { primaryColor: '#86EFAC', innerColor: '#DDFBE6', coreColor: '#F7FFF9', glowColor: '#C9F7D7' },
-      { primaryColor: '#FDBA74', innerColor: '#FFE8C9', coreColor: '#FFF8F0', glowColor: '#FFD7A3' },
-      { primaryColor: '#C4B5FD', innerColor: '#E7E0FF', coreColor: '#FAF7FF', glowColor: '#DCCFFC' },
-    ];
-
-    const next: CelebrationStarSpec[] = Array.from({ length: CELEBRATION_STAR_GROUP_COUNT }, (_, index) => {
-      const tone = palette[index % palette.length];
-      const size = 9 + Math.round(Math.random() * 8);
-      const startsVisible = index < 120;
-      return {
-        id: celebrationSeqRef.current * 1000 + index,
-        left: clamp(
-          Math.round(-stageSize.width * 0.12 + Math.random() * (stageSize.width * 1.24)),
-          -Math.round(stageSize.width * 0.12),
-          Math.max(4, Math.round(stageSize.width * 1.12)),
-        ),
-        top: startsVisible
-          ? Math.round(stageSize.height * 0.08 + Math.random() * stageSize.height * 0.66)
-          : 0,
-        size,
-        delay: startsVisible ? 0 : 120 + Math.round(Math.random() * 2100),
-        duration: 3240 + Math.round(Math.random() * 1620),
-        drift: Math.round((Math.random() - 0.5) * 320),
-        glowColor: tone.glowColor,
-        primaryColor: tone.primaryColor,
-        innerColor: tone.innerColor,
-        coreColor: tone.coreColor,
-        spinStart: -20 + Math.round(Math.random() * 40),
-        spinEnd: 120 + Math.round(Math.random() * 120),
-        twinLeft: Math.round((Math.random() - 0.5) * 84),
-        twinTop: Math.round(18 + Math.random() * 84),
-        twinSize: Math.round(size * (0.74 + Math.random() * 0.34)),
-        startsVisible,
-      };
-    });
-
-    celebrationSeqRef.current += 1;
-    setCelebrationStars(next);
-    celebrationProgress.setValue(0);
-    celebrationAnimationRef.current = Animated.timing(celebrationProgress, {
-      toValue: 1,
-      duration: CELEBRATION_BURST_MS,
-      easing: Easing.linear,
-      useNativeDriver: true,
-    });
-    requestAnimationFrame(() => {
-      celebrationAnimationRef.current?.start(({ finished }) => {
-        celebrationAnimationRef.current = null;
-        if (!finished) return;
-        setCelebrationStars([]);
-        setShowBackgroundSparkles(true);
-      });
-    });
+    setCelebrationSeed(prev => prev + 1);
+    setCelebrationActive(true);
   };
-
   const handlePlaced = () => {
     setActiveId(null);
     const nextCount = Math.min(draggableLayout.length, placedCountRef.current + 1);
@@ -562,125 +504,9 @@ export default function SolarSystemPuzzleGame() {
 
   useEffect(() => {
     if (allPlaced) return;
-    celebrationAnimationRef.current?.stop();
-    celebrationAnimationRef.current = null;
-    celebrationProgress.setValue(0);
-    setCelebrationStars([]);
-    setBackgroundSparkles([]);
-    setShowBackgroundSparkles(false);
+    setCelebrationActive(false);
     celebrationPlayedRef.current = false;
-  }, [allPlaced, celebrationProgress]);
-
-  useEffect(() => {
-    return () => {
-      celebrationAnimationRef.current?.stop();
-      celebrationAnimationRef.current = null;
-      if (bgTimeoutRef.current) {
-        clearTimeout(bgTimeoutRef.current);
-        bgTimeoutRef.current = null;
-      }
-      if (bgNextTimeoutRef.current) {
-        clearTimeout(bgNextTimeoutRef.current);
-        bgNextTimeoutRef.current = null;
-      }
-      bgLoopRef.current?.stop();
-      bgLoopRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!showBackgroundSparkles || !stageSize.width || !stageSize.height) {
-      setBackgroundSparkles([]);
-      bgOpacity.setValue(0);
-      bgScale.setValue(0.72);
-      bgTwinkle.setValue(0);
-      bgLoopRef.current?.stop();
-      bgLoopRef.current = null;
-      return;
-    }
-
-    const spawnCluster = () => {
-      if (bgTimeoutRef.current) {
-        clearTimeout(bgTimeoutRef.current);
-        bgTimeoutRef.current = null;
-      }
-      bgSeqRef.current += 1;
-      const quadrants = [
-        { leftMin: 12, leftMax: stageSize.width * 0.42, topMin: 24, topMax: stageSize.height * 0.30 },
-        { leftMin: stageSize.width * 0.58, leftMax: Math.max(stageSize.width - 18, stageSize.width * 0.58), topMin: 24, topMax: stageSize.height * 0.30 },
-        { leftMin: stageSize.width * 0.30, leftMax: stageSize.width * 0.70, topMin: stageSize.height * 0.20, topMax: stageSize.height * 0.42 },
-        { leftMin: 18, leftMax: stageSize.width * 0.48, topMin: stageSize.height * 0.34, topMax: stageSize.height * 0.58 },
-        { leftMin: stageSize.width * 0.52, leftMax: Math.max(stageSize.width - 18, stageSize.width * 0.52), topMin: stageSize.height * 0.34, topMax: stageSize.height * 0.58 },
-        { leftMin: 12, leftMax: stageSize.width * 0.42, topMin: stageSize.height * 0.56, topMax: Math.max(stageSize.height - 110, stageSize.height * 0.56) },
-        { leftMin: stageSize.width * 0.58, leftMax: Math.max(stageSize.width - 18, stageSize.width * 0.58), topMin: stageSize.height * 0.56, topMax: Math.max(stageSize.height - 110, stageSize.height * 0.56) },
-        { leftMin: stageSize.width * 0.30, leftMax: stageSize.width * 0.70, topMin: stageSize.height * 0.62, topMax: Math.max(stageSize.height - 90, stageSize.height * 0.62) },
-      ].sort(() => Math.random() - 0.5);
-
-      const next = quadrants.map((zone, index) => ({
-        id: bgSeqRef.current * 10 + index,
-        left: clamp(
-          Math.round(zone.leftMin + Math.random() * Math.max(10, zone.leftMax - zone.leftMin)),
-          10,
-          Math.max(10, stageSize.width - 16),
-        ),
-        top: clamp(
-          Math.round(zone.topMin + Math.random() * Math.max(10, zone.topMax - zone.topMin)),
-          18,
-          Math.max(18, stageSize.height - 120),
-        ),
-        size: 9 + Math.round(Math.random() * 5),
-        boost: index === 0 ? 1.45 : 1,
-      }));
-
-      setBackgroundSparkles(next);
-      bgOpacity.setValue(0);
-      bgScale.setValue(0.72);
-      bgTwinkle.setValue(0);
-      bgLoopRef.current?.stop();
-      bgLoopRef.current = Animated.loop(
-        Animated.sequence([
-          Animated.timing(bgTwinkle, { toValue: 1, duration: 760, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
-          Animated.timing(bgTwinkle, { toValue: 0, duration: 760, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
-        ]),
-      );
-      bgLoopRef.current.start();
-      Animated.parallel([
-        Animated.timing(bgOpacity, { toValue: 1, duration: 520, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        Animated.timing(bgScale, { toValue: 1, duration: 520, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      ]).start();
-
-      bgTimeoutRef.current = setTimeout(() => {
-        bgLoopRef.current?.stop();
-        bgLoopRef.current = null;
-        Animated.parallel([
-          Animated.timing(bgOpacity, { toValue: 0, duration: 1640, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
-          Animated.timing(bgScale, { toValue: 0.74, duration: 1640, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
-        ]).start(() => {
-          setBackgroundSparkles([]);
-          bgNextTimeoutRef.current = setTimeout(() => {
-            if (showBackgroundSparkles && stageSize.width && stageSize.height) {
-              spawnCluster();
-            }
-          }, 1500);
-        });
-      }, 2400);
-    };
-
-    spawnCluster();
-
-    return () => {
-      if (bgTimeoutRef.current) {
-        clearTimeout(bgTimeoutRef.current);
-        bgTimeoutRef.current = null;
-      }
-      if (bgNextTimeoutRef.current) {
-        clearTimeout(bgNextTimeoutRef.current);
-        bgNextTimeoutRef.current = null;
-      }
-      bgLoopRef.current?.stop();
-      bgLoopRef.current = null;
-    };
-  }, [bgOpacity, bgScale, bgTwinkle, showBackgroundSparkles, stageSize.height, stageSize.width]);
+  }, [allPlaced]);
 
   return (
     <View style={styles.root}>
@@ -693,50 +519,6 @@ export default function SolarSystemPuzzleGame() {
       <View style={styles.stage} onLayout={event => setStageSize(event.nativeEvent.layout)}>
         {layout.length ? (
           <>
-            {backgroundSparkles.map(star => (
-              <Animated.View
-                key={star.id}
-                pointerEvents="none"
-                style={[
-                  styles.blinkStar,
-                  {
-                    left: star.left,
-                    top: star.top,
-                    width: star.size * star.boost * 1.16,
-                    height: star.size * star.boost * 1.16,
-                    opacity: bgOpacity,
-                    transform: [
-                      {
-                        scale: Animated.multiply(
-                          bgScale,
-                          bgTwinkle.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0.96, 1.16],
-                          }),
-                        ),
-                      },
-                      { rotate: '10deg' },
-                    ],
-                  },
-                ]}
-              >
-                <View style={styles.bgStarGlow}>
-                  <StarSparkle
-                    primaryColor="#FFE875"
-                    innerColor="#FFF8D0"
-                    coreColor="#FFFDF2"
-                  />
-                </View>
-              </Animated.View>
-            ))}
-            {celebrationStars.map(star => (
-              <FallingCelebrationStar
-                key={star.id}
-                star={star}
-                stageHeight={stageSize.height}
-                progress={celebrationProgress}
-              />
-            ))}
             <View style={styles.trackLayer} pointerEvents="none">
               {moonLayout ? (
                 <View
@@ -776,6 +558,15 @@ export default function SolarSystemPuzzleGame() {
                 />
               )) : null}
             </View>
+
+            <CelebrationOverlay
+              active={celebrationActive}
+              width={stageSize.width}
+              height={stageSize.height}
+              seed={celebrationSeed}
+              particleCount={880}
+              onComplete={() => setCelebrationActive(false)}
+            />
 
             <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
               {draggableLayout.map(planet => (
@@ -841,11 +632,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 30,
     elevation: 18,
-  },
-  celebrationTwinStar: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   bgStarGlow: {
     width: '100%',
@@ -953,3 +739,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
+
