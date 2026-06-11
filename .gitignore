@@ -14,3 +14,7 @@ ios/build/
 
 # Logs
 *.log
+
+*.png
+*.webp
+*.jpg
