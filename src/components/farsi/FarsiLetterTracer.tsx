@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, G, Path, Polygon } from 'react-native-svg';
+import Svg, { Circle, G, Path } from 'react-native-svg';
 import { FarsiLetter } from '../../data/farsiLetters';
 import {
   angleBetween,
@@ -331,11 +331,7 @@ export default function FarsiLetterTracer({
           const baseColor = '#E7DDEE';
           const guideBaseColor = '#F5DAE4';
           const baseWidth = 24;
-          const dashWidth = 7;
-          const activeColor = letter.color ?? '#FF7AA7';
-          const arrowDefs = strokeDef.arrows ?? [];
-          const arrowPoints = arrowDefs.length ? arrowDefs : [{ t: 0.25 }, { t: 0.55 }, { t: 0.82 }];
-
+  const activeColor = letter.color ?? '#FF7AA7';
           return (
             <G key={strokeDef.id}>
               <Path
@@ -358,17 +354,6 @@ export default function FarsiLetterTracer({
                 strokeDasharray={phase === 'guide' ? '10 10' : undefined}
                 strokeDashoffset={phase === 'guide' ? 0 : undefined}
               />
-              <Path
-                d={strokeDef.path}
-                stroke={phase === 'guide' ? '#FFFFFF' : '#FFFFFF'}
-                strokeWidth={dashWidth}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-                opacity={phase === 'guide' ? 0.7 : 0.86}
-                strokeDasharray="10 10"
-                strokeDashoffset={phase === 'guide' ? 0 : undefined}
-              />
               {completedPath ? (
                 <Path
                   d={completedPath}
@@ -380,20 +365,6 @@ export default function FarsiLetterTracer({
                   opacity={phase === 'guide' ? 0 : 1}
                 />
               ) : null}
-              {arrowPoints.map((arrow, idx) => {
-                const pt = pointAtProgress(points, arrow.t);
-                const prev = pointAtProgress(points, Math.max(arrow.t - 0.02, 0));
-                const rotation = arrow.rotation ?? angleBetween(prev, pt);
-                return (
-                  <Polygon
-                    key={`${strokeDef.id}-arrow-${idx}`}
-                    points="0,-8 14,0 0,8"
-                    fill={activeColor}
-                    opacity={phase === 'guide' ? 0.7 : 0.55}
-                    transform={`translate(${pt.x},${pt.y}) rotate(${rotation})`}
-                  />
-                );
-              })}
             </G>
           );
         })}
@@ -468,27 +439,6 @@ export default function FarsiLetterTracer({
               />
             ))
           : null}
-
-        {strokes.map((strokeDef, strokeIndex) => {
-          const pts = strokeDef.points;
-          if (!pts.length) return null;
-          const start = pts[0]!;
-          const label = strokeDef.startLabel ?? strokeIndex + 1;
-          return (
-            <View
-              key={`${strokeDef.id}-num`}
-              style={[
-                styles.strokeNumber,
-                {
-                  left: start.x * scaleX - 13,
-                  top: start.y * scaleY - 13,
-                },
-              ]}
-            >
-              <Text style={styles.strokeNumberText}>{label}</Text>
-            </View>
-          );
-        })}
 
         {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       </View>
