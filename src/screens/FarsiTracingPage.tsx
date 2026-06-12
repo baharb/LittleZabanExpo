@@ -1,5 +1,5 @@
 import React, { useContext, useMemo, useState } from 'react';
-import { StyleSheet, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
 import TopBar from '../components/TopBar';
@@ -7,9 +7,10 @@ import { AppContext } from '../store/AppContext';
 import { useNav } from '../store/NavContext';
 import { FARSI_LETTERS } from '../data/farsiLetters';
 import FarsiLetterTracer from '../components/farsi/FarsiLetterTracer';
-import LetterInfoPanel from '../components/farsi/LetterInfoPanel';
 import LetterSelectorModal from '../components/farsi/LetterSelectorModal';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
+import { ff } from '../theme/fonts';
+import { C } from '../theme/colors';
 
 export default function FarsiTracingPage() {
   const { width, height } = useWindowDimensions();
@@ -19,13 +20,22 @@ export default function FarsiTracingPage() {
   const [gridOpen, setGridOpen] = useState(false);
   const [guideToken, setGuideToken] = useState(0);
   const [soundOn, setSoundOn] = useState(true);
+  const [letterComplete, setLetterComplete] = useState(false);
 
   const letter = FARSI_LETTERS[index] ?? FARSI_LETTERS[0]!;
-  const compact = width < 980;
+  const isFa = lang === 'fa' || lang === 'ar';
+  const compact = width < 900;
   const boardSize = useMemo(() => {
-    if (compact) return Math.min(width - 24, height * 0.54);
-    return Math.min(width * 0.58, height * 0.74, 760);
+    const sidePad = compact ? 120 : 160;
+    if (compact) return Math.min(width - sidePad, height * 0.5);
+    return Math.min(width - sidePad, height * 0.68, 520);
   }, [compact, height, width]);
+
+  const goToLetter = (nextIndex: number) => {
+    setIndex(nextIndex);
+    setLetterComplete(false);
+    setGuideToken(token => token + 1);
+  };
 
   const playLetterSound = (letterId: string) => {
     if (!soundOn) return;
@@ -62,10 +72,18 @@ export default function FarsiTracingPage() {
     }
   };
 
-  const next = () => setIndex(prev => Math.min(prev + 1, FARSI_LETTERS.length - 1));
-  const prev = () => setIndex(prev => Math.max(prev - 1, 0));
-  const replayGuide = () => setGuideToken(token => token + 1);
+  const next = () => {
+    if (!letterComplete || index >= FARSI_LETTERS.length - 1) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    goToLetter(index + 1);
+  };
+  const prev = () => {
+    if (index <= 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    goToLetter(index - 1);
+  };
   const reset = () => {
+    setLetterComplete(false);
     setGuideToken(token => token + 1);
     playTryAgainSound();
   };
@@ -82,8 +100,8 @@ export default function FarsiTracingPage() {
         rightContent={
           <View style={styles.rightTopRow}>
             <TouchableOpacity style={styles.topGridBtn} onPress={() => setGridOpen(true)} activeOpacity={0.8}>
-              <View style={styles.gridIcon}>
-                {Array.from({ length: 9 }).map((_, i) => <View key={i} style={styles.gridDot} />)}
+              <View style={styles.topGridIcon}>
+                {Array.from({ length: 9 }).map((_, i) => <View key={i} style={styles.topGridDot} />)}
               </View>
             </TouchableOpacity>
             <TouchableOpacity
@@ -97,40 +115,50 @@ export default function FarsiTracingPage() {
         }
       />
 
-      <View style={[styles.body, compact ? styles.bodyCompact : styles.bodyWide]}>
-        <View style={[styles.boardShell, { width: boardSize }]}>
-          <FarsiLetterTracer
-            key={`${letter.id}-${guideToken}`}
-            letter={letter}
-            boardSize={boardSize}
-            guideReplayToken={guideToken}
-            onComplete={() => {
-              if (index < FARSI_LETTERS.length - 1) {
-                setTimeout(() => next(), 1200);
-              }
-            }}
-            onTryAgain={playTryAgainSound}
-            playLetterSound={playLetterSound}
-            playSuccessSound={playSuccessSound}
-            playTryAgainSound={playTryAgainSound}
-          />
-          <View style={styles.boardCaption}>
-            <View style={styles.captionLine} />
-            <View style={styles.captionLineShort} />
+      <View style={styles.body}>
+        <Text style={[styles.progressLine, { fontFamily: ff(lang, 'bold') }]}>
+          {isFa ? `حرف ${index + 1} از ${FARSI_LETTERS.length}` : `Letter ${index + 1} of ${FARSI_LETTERS.length}`}
+        </Text>
+        <Text style={[styles.subtitle, { fontFamily: ff(lang, 'black') }]}>
+          {letter.nameFa} • {letter.nameEn}
+        </Text>
+
+        <View style={styles.stage}>
+          <NavFlash side="left" onPress={prev} disabled={index === 0} />
+
+          <View style={[styles.boardShell, { width: boardSize }]}>
+            <FarsiLetterTracer
+              key={`${letter.id}-${guideToken}`}
+              letter={letter}
+              boardSize={boardSize}
+              guideReplayToken={guideToken}
+              onComplete={() => setLetterComplete(true)}
+              onTryAgain={playTryAgainSound}
+              playLetterSound={playLetterSound}
+              playSuccessSound={playSuccessSound}
+              playTryAgainSound={playTryAgainSound}
+            />
           </View>
+
+          <NavFlash side="right" onPress={next} disabled={!letterComplete || index >= FARSI_LETTERS.length - 1} />
         </View>
 
-          <LetterInfoPanel
-            letter={letter}
-            index={index}
-            total={FARSI_LETTERS.length}
-            onPrev={prev}
-            onNext={next}
-            onReset={reset}
-            onReplayGuide={replayGuide}
-            onOpenGrid={() => setGridOpen(true)}
-            compact={compact}
-          />
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.clearBtn} onPress={reset} activeOpacity={0.86}>
+            <Image source={neliWorldAssets.ui.restart} style={styles.clearIcon} resizeMode="contain" />
+            <Text style={[styles.clearText, { fontFamily: ff(lang, 'black') }]}>
+              {isFa ? 'پاک کن' : 'Clear'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.gridBtn} onPress={() => setGridOpen(true)} activeOpacity={0.86}>
+            <View style={styles.gridIcon}>
+              {Array.from({ length: 9 }).map((_, i) => <View key={i} style={styles.gridDot} />)}
+            </View>
+            <Text style={[styles.gridText, { fontFamily: ff(lang, 'bold') }]}>
+              {isFa ? 'همه حروف' : 'All letters'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <LetterSelectorModal
@@ -139,7 +167,7 @@ export default function FarsiTracingPage() {
         selectedId={letter.id}
         onClose={() => setGridOpen(false)}
         onSelect={nextIndex => {
-          setIndex(nextIndex);
+          goToLetter(nextIndex);
           setGridOpen(false);
         }}
       />
@@ -147,10 +175,26 @@ export default function FarsiTracingPage() {
   );
 }
 
+function NavFlash({ side, onPress, disabled }: { side: 'left' | 'right'; onPress: () => void; disabled?: boolean }) {
+  const icon = side === 'left' ? neliWorldAssets.ui.back : neliWorldAssets.ui.next;
+  return (
+    <TouchableOpacity
+      style={[styles.navFlash, disabled && styles.navFlashDisabled]}
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.82}
+      hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+      accessibilityLabel={side === 'left' ? 'Previous letter' : 'Next letter'}
+    >
+      <Image source={icon} style={styles.navFlashIcon} resizeMode="contain" />
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F3F1FA',
+    backgroundColor: '#FAFAFA',
   },
   rightTopRow: {
     flexDirection: 'row',
@@ -165,14 +209,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  gridIcon: {
+  topGridIcon: {
     width: 18,
     height: 18,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 2,
   },
-  gridDot: {
+  topGridDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
@@ -193,37 +237,103 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-    gap: 14,
+    paddingHorizontal: 16,
+    paddingBottom: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
   },
-  bodyWide: {
+  progressLine: {
+    color: C.textMid,
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  subtitle: {
+    color: C.textDark,
+    fontSize: 20,
+    lineHeight: 28,
+    textAlign: 'center',
+  },
+  stage: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    width: '100%',
   },
-  bodyCompact: {
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
+  navFlash: {
+    width: 72,
+    height: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navFlashDisabled: {
+    opacity: 0.32,
+  },
+  navFlashIcon: {
+    width: 56,
+    height: 56,
   },
   boardShell: {
-    alignSelf: 'center',
-    gap: 10,
-  },
-  boardCaption: {
     alignItems: 'center',
-    gap: 4,
   },
-  captionLine: {
-    width: '42%',
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 6,
+  },
+  clearBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minWidth: 130,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderColor: C.border,
+    paddingHorizontal: 18,
+    justifyContent: 'center',
+  },
+  clearIcon: {
+    width: 22,
+    height: 22,
+    tintColor: C.purple,
+  },
+  clearText: {
+    color: C.purple,
+    fontSize: 16,
+  },
+  gridBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minWidth: 130,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: C.purpleLight,
+    borderWidth: 2,
+    borderColor: C.border,
+    paddingHorizontal: 18,
+    justifyContent: 'center',
+  },
+  gridIcon: {
+    width: 16,
+    height: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 2,
+  },
+  gridDot: {
+    width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#CBBDEB',
+    backgroundColor: C.purple,
   },
-  captionLineShort: {
-    width: '20%',
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#E2D9F7',
+  gridText: {
+    color: C.purple,
+    fontSize: 14,
   },
 });
