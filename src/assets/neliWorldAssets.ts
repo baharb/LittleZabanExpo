@@ -180,6 +180,10 @@ export const puzzleBackgroundPickers = {
 } as const;
 
 export const neliWorldAssets = {
+  traceLetters: {
+    alef: require('../../assets/neli-world/trace-letters/alef.png'),
+    be: require('../../assets/neli-world/trace-letters/be.png'),
+  },
   characters: {
     aidin: characterAssets.aidin.base,
     dara: characterAssets.dara.base,

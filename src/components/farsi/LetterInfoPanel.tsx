@@ -2,6 +2,7 @@ import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FarsiLetter } from '../../data/farsiLetters';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
+import { ff } from '../../theme/fonts';
 
 type Props = {
   letter: FarsiLetter;
@@ -130,11 +131,13 @@ const styles = StyleSheet.create({
   bigLetter: {
     fontSize: 62,
     fontWeight: '900',
+    fontFamily: ff('fa', 'black'),
   },
   nameFa: {
     fontSize: 20,
     fontWeight: '900',
     color: '#2F2340',
+    fontFamily: ff('fa', 'black'),
   },
   namePill: {
     minWidth: 84,
@@ -149,6 +152,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8A7A9B',
     fontWeight: '700',
+    fontFamily: ff('en', 'regular'),
   },
   exampleCard: {
     flexDirection: 'row',
@@ -178,16 +182,19 @@ const styles = StyleSheet.create({
     color: '#8A7A9B',
     textTransform: 'uppercase',
     marginBottom: 2,
+    fontFamily: ff('en', 'bold'),
   },
   exampleFa: {
     fontSize: 18,
     fontWeight: '900',
     color: '#2F2340',
+    fontFamily: ff('fa', 'bold'),
   },
   exampleEn: {
     fontSize: 11,
     color: '#7A7190',
     marginTop: 2,
+    fontFamily: ff('en', 'regular'),
   },
   progressRow: {
     flexDirection: 'row',
@@ -251,6 +258,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '900',
     color: '#4C3B69',
+    fontFamily: ff('en', 'bold'),
   },
   resetBtn: {
     height: 48,
@@ -272,5 +280,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '900',
     color: '#C93E77',
+    fontFamily: ff('fa', 'bold'),
   },
 });
