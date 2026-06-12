@@ -28,11 +28,8 @@ const viewBox = '0 0 200 200';
 const arrows = (t: number[] = [0.25, 0.55, 0.82]) => t.map(value => ({ t: value }));
 const stroke = (id: string, path: string, startLabel?: number, arrowsList: { t: number; rotation?: number }[] = arrows()) => ({ id, path, startLabel, arrows: arrowsList });
 
-const ALEF = 'M 100 22 C 100 52 100 88 100 124 C 100 148 100 164 100 176';
+const ALEF = 'M 100 28 C 100 68 100 104 100 170';
 const BOWL = 'M 160 90 Q 100 80 60 90 Q 30 100 40 120 Q 50 145 100 140 Q 150 135 160 120 Q 170 105 160 90';
-// Be is derived from a high-resolution Vazirmatn render, then reduced to a
-// single centerline so the guide follows the font shape rather than a hand-rolled curve.
-const BE_BODY = 'M 183.6 13.1 L 174.4 28.0 L 175.9 49.1 L 174.2 62.1 L 172.6 66.7 L 170.7 69.8 L 163.8 75.7 L 153.1 79.9 L 143.4 81.9 L 126.3 83.4 L 91.8 83.6 L 65.4 81.6 L 48.5 77.9 L 41.6 75.3 L 35.7 71.8 L 30.0 66.3 L 26.5 59.7 L 24.3 46.0 L 24.7 39.7 L 26.0 29.1 L 32.6 24.7 L 41.2 20.5';
 const JIM = 'M 150 60 Q 160 60 160 80 Q 160 120 130 145 Q 100 165 70 150 Q 45 135 50 110';
 const HA = 'M 140 80 Q 140 60 120 60 Q 100 60 100 80 Q 100 100 120 100 Q 140 100 140 80 M 100 80 Q 80 80 65 100 Q 50 120 60 140 Q 70 158 100 158 Q 130 158 145 140 Q 160 122 150 100';
 const DAL = 'M 120 50 Q 140 50 145 75 Q 148 100 130 130 Q 110 155 80 155 L 50 155';
@@ -41,7 +38,8 @@ const SIN = 'M 170 100 Q 150 85 130 100 Q 115 112 115 100 Q 115 88 100 100 Q 85 
 const SAD = 'M 18 128 Q 22 84 55 88 Q 80 92 92 116 Q 102 135 116 142 Q 130 150 150 142 Q 170 134 184 114 Q 196 98 184 80';
 const EYN = 'M 140 70 Q 155 55 155 80 Q 155 100 130 100 Q 105 100 105 80 Q 105 65 120 65 Q 135 65 140 80 Q 148 100 140 120 Q 125 150 90 155 Q 65 158 55 140';
 const FE = 'M 155 90 Q 155 65 130 65 Q 105 65 105 90 Q 105 115 130 115 Q 150 115 155 100 Q 160 74 140 74 Q 110 75 90 95 Q 65 118 65 145 Q 65 165 85 165';
-const KAF = 'M 38 52 Q 52 44 68 47 Q 82 50 90 60 Q 125 80 130 110 Q 136 145 110 160 Q 92 170 78 165';
+const KAF_TOP = 'M 38 52 Q 52 44 68 47 Q 82 50 90 60';
+const KAF_BODY = 'M 90 60 Q 125 80 130 110 Q 136 145 110 160 Q 92 170 78 165';
 const LAM = 'M 130 30 Q 145 30 145 55 Q 145 100 120 140 Q 100 165 70 160 Q 45 155 45 135';
 const MIM = 'M 155 80 Q 155 60 135 60 Q 115 60 115 80 Q 115 100 135 100 Q 150 100 155 88 Q 160 75 140 75 Q 110 75 90 95 Q 65 118 65 145 Q 65 165 85 165';
 const NOON = 'M 160 90 Q 100 75 55 90 Q 30 100 35 125 Q 40 150 80 155 Q 120 160 150 145 Q 175 132 160 90';
@@ -52,11 +50,11 @@ const YE = 'M 160 80 Q 140 65 110 70 Q 80 75 65 95 Q 50 115 60 140 Q 70 162 100 
 const repeatDots = (dots: { x: number; y: number }[]) => dots;
 
 export const FARSI_LETTERS: FarsiLetter[] = [
-  { id: 'alef', letter: 'ا', nameFa: 'الف', nameEn: 'Alef', exampleFa: 'ابر', exampleEn: 'Cloud', exampleIcon: '☁️', viewBox, strokes: [stroke('main', ALEF, 1, arrows([0.08, 0.42, 0.82]))], color: '#F15A7B' },
-  { id: 'be', letter: 'ب', nameFa: 'بِ', nameEn: 'Be', exampleFa: 'بره', exampleEn: 'Lamb', exampleIcon: '🐑', viewBox, strokes: [stroke('main', BE_BODY, 1, arrows([0.12, 0.45, 0.78]))], dots: repeatDots([{ x: 102.7, y: 131.2 }]), color: '#FF8B2B' },
-  { id: 'pe', letter: 'پ', nameFa: 'پِ', nameEn: 'Pe', exampleFa: 'پروانه', exampleEn: 'Butterfly', exampleIcon: '🦋', viewBox, strokes: [stroke('main', BOWL, 1, arrows([0.12, 0.45, 0.78]))], dots: repeatDots([{ x: 88, y: 176 }, { x: 100, y: 176 }, { x: 112, y: 176 }]), color: '#9B5CFF' },
-  { id: 'te', letter: 'ت', nameFa: 'تِ', nameEn: 'Te', exampleFa: 'توپ', exampleEn: 'Ball', exampleIcon: '⚽', viewBox, strokes: [stroke('main', BOWL, 1, arrows([0.12, 0.45, 0.78]))], dots: repeatDots([{ x: 86, y: 70 }, { x: 114, y: 70 }]), color: '#4CC9F0' },
-  { id: 'se', letter: 'ث', nameFa: 'ثِ', nameEn: 'Se', exampleFa: 'ثعلب', exampleEn: 'Fox', exampleIcon: '🦊', viewBox, strokes: [stroke('main', BOWL, 1, arrows([0.12, 0.45, 0.78]))], dots: repeatDots([{ x: 82, y: 66 }, { x: 100, y: 64 }, { x: 118, y: 66 }]), color: '#FF6BB5' },
+  { id: 'alef', letter: 'ا', nameFa: 'الف', nameEn: 'Alef', exampleFa: 'ابر', exampleEn: 'Cloud', exampleIcon: '☁️', viewBox, strokes: [stroke('main', ALEF, 1, arrows([0.1, 0.45, 0.8]))], color: '#F15A7B' },
+  { id: 'be', letter: 'ب', nameFa: 'بِ', nameEn: 'Be', exampleFa: 'بره', exampleEn: 'Lamb', exampleIcon: '🐑', viewBox, strokes: [stroke('main', BOWL, 1)], dots: repeatDots([{ x: 100, y: 158 }]), color: '#FF8B2B' },
+  { id: 'pe', letter: 'پ', nameFa: 'پِ', nameEn: 'Pe', exampleFa: 'پروانه', exampleEn: 'Butterfly', exampleIcon: '🦋', viewBox, strokes: [stroke('main', BOWL, 1)], dots: repeatDots([{ x: 88, y: 160 }, { x: 100, y: 160 }, { x: 112, y: 160 }]), color: '#9B5CFF' },
+  { id: 'te', letter: 'ت', nameFa: 'تِ', nameEn: 'Te', exampleFa: 'توپ', exampleEn: 'Ball', exampleIcon: '⚽', viewBox, strokes: [stroke('main', BOWL, 1)], dots: repeatDots([{ x: 86, y: 70 }, { x: 114, y: 70 }]), color: '#4CC9F0' },
+  { id: 'se', letter: 'ث', nameFa: 'ثِ', nameEn: 'Se', exampleFa: 'ثعلب', exampleEn: 'Fox', exampleIcon: '🦊', viewBox, strokes: [stroke('main', BOWL, 1)], dots: repeatDots([{ x: 82, y: 66 }, { x: 100, y: 64 }, { x: 118, y: 66 }]), color: '#FF6BB5' },
   { id: 'jim', letter: 'ج', nameFa: 'جیم', nameEn: 'Jim', exampleFa: 'جنگل', exampleEn: 'Jungle', exampleIcon: '🌴', viewBox, strokes: [stroke('main', JIM, 1)], dots: repeatDots([{ x: 120, y: 106 }]), color: '#55D16F' },
   { id: 'che', letter: 'چ', nameFa: 'چِ', nameEn: 'Che', exampleFa: 'چتر', exampleEn: 'Umbrella', exampleIcon: '☂️', viewBox, strokes: [stroke('main', JIM, 1)], dots: repeatDots([{ x: 86, y: 66 }, { x: 100, y: 64 }, { x: 114, y: 66 }]), color: '#7A67FF' },
   { id: 'he', letter: 'ح', nameFa: 'حِ', nameEn: 'Ha', exampleFa: 'حلوا', exampleEn: 'Halva', exampleIcon: '🍬', viewBox, strokes: [stroke('main', HA, 1, arrows([0.08, 0.38, 0.72]))], color: '#20C7B3' },
@@ -67,7 +65,7 @@ export const FARSI_LETTERS: FarsiLetter[] = [
   { id: 'ze', letter: 'ز', nameFa: 'زِ', nameEn: 'Ze', exampleFa: 'زرافه', exampleEn: 'Giraffe', exampleIcon: '🦒', viewBox, strokes: [stroke('main', RE, 1, arrows([0.18, 0.5, 0.8]))], dots: repeatDots([{ x: 122, y: 80 }]), color: '#FFD93D' },
   { id: 'zhe', letter: 'ژ', nameFa: 'ژِ', nameEn: 'Zhe', exampleFa: 'ژاله', exampleEn: 'Dew', exampleIcon: '💧', viewBox, strokes: [stroke('main', RE, 1, arrows([0.18, 0.5, 0.8]))], dots: repeatDots([{ x: 108, y: 48 }, { x: 122, y: 46 }, { x: 136, y: 48 }]), color: '#FF64B8' },
   { id: 'sin', letter: 'س', nameFa: 'سین', nameEn: 'Sin', exampleFa: 'سیب', exampleEn: 'Apple', exampleIcon: '🍎', viewBox, strokes: [stroke('main', SIN, 1, arrows([0.15, 0.42, 0.76]))], color: '#FF6B6B' },
-  { id: 'shin', letter: 'ش', nameFa: 'شین', nameEn: 'Shin', exampleFa: 'شیر', exampleEn: 'Lion', exampleIcon: '🦁', viewBox, strokes: [stroke('main', SIN, 1, arrows([0.15, 0.42, 0.76]))], dots: repeatDots([{ x: 100, y: 64 }, { x: 115, y: 60 }, { x: 130, y: 64 }]), color: '#FF80C0' },
+  { id: 'shin', letter: 'ش', nameFa: 'شین', nameEn: 'Shin', exampleFa: 'شیر', exampleEn: 'Lion', exampleIcon: '🦁', viewBox, strokes: [stroke('main', SIN, 1, arrows([0.15, 0.42, 0.76])), stroke('dot1', 'M 100 64', 2, []), stroke('dot2', 'M 115 60', 3, []), stroke('dot3', 'M 130 64', 4, [])], dots: repeatDots([{ x: 100, y: 64 }, { x: 115, y: 60 }, { x: 130, y: 64 }]), color: '#FF80C0' },
   { id: 'sad', letter: 'ص', nameFa: 'صاد', nameEn: 'Sad', exampleFa: 'صابون', exampleEn: 'Soap', exampleIcon: '🧼', viewBox, strokes: [stroke('main', SAD, 1, arrows([0.15, 0.46, 0.8]))], color: '#06B6D4' },
   { id: 'zad', letter: 'ض', nameFa: 'ضاد', nameEn: 'Zad', exampleFa: 'ضربان', exampleEn: 'Beat', exampleIcon: '🥁', viewBox, strokes: [stroke('main', SAD, 1, arrows([0.15, 0.46, 0.8]))], dots: repeatDots([{ x: 120, y: 74 }]), color: '#EC4899' },
   { id: 'ta', letter: 'ط', nameFa: 'طا', nameEn: 'Ta', exampleFa: 'طبل', exampleEn: 'Drum', exampleIcon: '🥁', viewBox, strokes: [stroke('main', SAD, 1, arrows([0.15, 0.46, 0.8]))], color: '#84CC16' },
@@ -76,8 +74,8 @@ export const FARSI_LETTERS: FarsiLetter[] = [
   { id: 'gheyn', letter: 'غ', nameFa: 'غین', nameEn: 'Gheyn', exampleFa: 'غذا', exampleEn: 'Food', exampleIcon: '🍲', viewBox, strokes: [stroke('main', EYN, 1, arrows([0.15, 0.46, 0.78]))], dots: repeatDots([{ x: 136, y: 52 }]), color: '#06B6D4' },
   { id: 'fe', letter: 'ف', nameFa: 'فا', nameEn: 'Fe', exampleFa: 'فیل', exampleEn: 'Elephant', exampleIcon: '🐘', viewBox, strokes: [stroke('main', FE, 1, arrows([0.15, 0.45, 0.75]))], dots: repeatDots([{ x: 130, y: 50 }]), color: '#22C55E' },
   { id: 'ghaf', letter: 'ق', nameFa: 'قاف', nameEn: 'Qaf', exampleFa: 'قلب', exampleEn: 'Heart', exampleIcon: '❤️', viewBox, strokes: [stroke('main', FE, 1, arrows([0.15, 0.45, 0.75]))], dots: repeatDots([{ x: 120, y: 50 }, { x: 140, y: 50 }]), color: '#FF4D8C' },
-  { id: 'kaf', letter: 'ک', nameFa: 'کاف', nameEn: 'Kaf', exampleFa: 'کتاب', exampleEn: 'Book', exampleIcon: '📖', viewBox, strokes: [stroke('main', KAF, 1, arrows([0.12, 0.4, 0.72]))], color: '#5C6BFF' },
-  { id: 'gaf', letter: 'گ', nameFa: 'گاف', nameEn: 'Gaf', exampleFa: 'گربه', exampleEn: 'Cat', exampleIcon: '🐱', viewBox, strokes: [stroke('main', KAF, 1, arrows([0.12, 0.4, 0.72]))], dots: repeatDots([{ x: 148, y: 50 }]), color: '#FF8C42' },
+  { id: 'kaf', letter: 'ک', nameFa: 'کاف', nameEn: 'Kaf', exampleFa: 'کتاب', exampleEn: 'Book', exampleIcon: '📖', viewBox, strokes: [stroke('top', KAF_TOP, 1, arrows([0.12, 0.4, 0.72])), stroke('body', KAF_BODY, 2, arrows([0.2, 0.5, 0.82]))], color: '#5C6BFF' },
+  { id: 'gaf', letter: 'گ', nameFa: 'گاف', nameEn: 'Gaf', exampleFa: 'گربه', exampleEn: 'Cat', exampleIcon: '🐱', viewBox, strokes: [stroke('top', KAF_TOP, 1, arrows([0.12, 0.4, 0.72])), stroke('body', KAF_BODY, 2, arrows([0.2, 0.5, 0.82]))], dots: repeatDots([{ x: 148, y: 50 }]), color: '#FF8C42' },
   { id: 'lam', letter: 'ل', nameFa: 'لام', nameEn: 'Lam', exampleFa: 'لاک‌پشت', exampleEn: 'Turtle', exampleIcon: '🐢', viewBox, strokes: [stroke('main', LAM, 1, arrows([0.12, 0.45, 0.82]))], color: '#4ECDC4' },
   { id: 'mim', letter: 'م', nameFa: 'میم', nameEn: 'Mim', exampleFa: 'ماه', exampleEn: 'Moon', exampleIcon: '🌙', viewBox, strokes: [stroke('main', MIM, 1, arrows([0.2, 0.5, 0.82]))], color: '#FFD93D' },
   { id: 'noon', letter: 'ن', nameFa: 'نون', nameEn: 'Nun', exampleFa: 'نخل', exampleEn: 'Palm', exampleIcon: '🌴', viewBox, strokes: [stroke('main', NOON, 1, arrows([0.15, 0.48, 0.82]))], dots: repeatDots([{ x: 107, y: 68 }]), color: '#5BDA7A' },

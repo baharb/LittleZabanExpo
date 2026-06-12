@@ -114,6 +114,10 @@ export default function FarsiTracingPage() {
             playSuccessSound={playSuccessSound}
             playTryAgainSound={playTryAgainSound}
           />
+          <View style={styles.boardCaption}>
+            <View style={styles.captionLine} />
+            <View style={styles.captionLineShort} />
+          </View>
         </View>
 
           <LetterInfoPanel
@@ -146,7 +150,7 @@ export default function FarsiTracingPage() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F7FAFC',
+    backgroundColor: '#F3F1FA',
   },
   rightTopRow: {
     flexDirection: 'row',
@@ -192,28 +196,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingBottom: 14,
     gap: 14,
-    alignItems: 'center',
   },
   bodyWide: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F7FAFC',
   },
   bodyCompact: {
     flexDirection: 'column',
     justifyContent: 'flex-start',
-    backgroundColor: '#F7FAFC',
   },
   boardShell: {
     alignSelf: 'center',
     gap: 10,
-    backgroundColor: '#fff',
-    borderRadius: 32,
-    padding: 12,
-    shadowColor: '#8797AA',
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    elevation: 3,
+  },
+  boardCaption: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  captionLine: {
+    width: '42%',
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#CBBDEB',
+  },
+  captionLineShort: {
+    width: '20%',
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E2D9F7',
   },
 });
