@@ -1,4 +1,23 @@
 export type Point = { x: number; y: number };
+export type SampledPoint = {
+  x: number;
+  y: number;
+  index: number;
+  distanceAlongPath: number;
+  progress: number;
+};
+
+export type StrokeProgressState = {
+  strokeId: string;
+  progress: number;
+  completed: boolean;
+};
+
+export type ValidationResult = {
+  accepted: boolean;
+  progress: number;
+  reason?: 'too_far' | 'wrong_start' | 'jumped_too_far' | 'backward' | 'accepted';
+};
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -10,53 +29,28 @@ export function distance(a: Point, b: Point) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-export function sampleSvgPath(path: string, sampleCount = 128): Point[] {
+export function sampleSvgPath(path: string, sampleCount = 128): SampledPoint[] {
   const segments = parseSvgPath(path);
-  const polyline: Point[] = [];
-  for (const segment of segments) {
-    if (segment.type === 'M') {
-      polyline.push({ x: segment.to.x, y: segment.to.y });
-      continue;
-    }
-    const from = segment.from;
-    const to = segment.to;
-    const steps = segment.type === 'L' ? 1 : Math.max(8, Math.ceil(segment.approxLength / 8));
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      polyline.push(sampleSegmentPoint(segment, t));
-    }
-    // Preserve continuity
-    if (!polyline.length || distance(polyline[polyline.length - 1]!, to) > 0.01) {
-      polyline.push({ x: to.x, y: to.y });
-    }
-    void from;
+  const total = segments.reduce((sum, segment) => sum + (segment.type === 'M' ? 0 : segment.approxLength), 0);
+  if (!Number.isFinite(total) || total <= 0) return [];
+  const count = Math.max(2, sampleCount);
+  const out: SampledPoint[] = [];
+  for (let i = 0; i < count; i++) {
+    const distanceAlongPath = total * (i / (count - 1));
+    const point = pointAtLengthOnParsedPath(segments, distanceAlongPath, total);
+    out.push({
+      x: point.x,
+      y: point.y,
+      index: i,
+      distanceAlongPath,
+      progress: distanceAlongPath / total,
+    });
   }
-  if (polyline.length < 2) return polyline;
-  const total = polylineLength(polyline);
-  if (total <= 0) return polyline;
-  const resampled: Point[] = [];
-  const step = total / Math.max(2, sampleCount - 1);
-  let target = 0;
-  let traversed = 0;
-  resampled.push(polyline[0]!);
-  for (let i = 1; i < polyline.length; i++) {
-    const prev = polyline[i - 1]!;
-    const curr = polyline[i]!;
-    const segLen = distance(prev, curr);
-    if (segLen <= 0) continue;
-    while (target + step <= traversed + segLen) {
-      const local = (target + step - traversed) / segLen;
-      resampled.push({
-        x: prev.x + (curr.x - prev.x) * local,
-        y: prev.y + (curr.y - prev.y) * local,
-      });
-      target += step;
-    }
-    traversed += segLen;
-  }
-  const last = polyline[polyline.length - 1]!;
-  if (distance(resampled[resampled.length - 1]!, last) > 0.01) resampled.push(last);
-  return resampled;
+  return out;
+}
+
+export function sampleSvgPathPoints(path: string, sampleCount = 128): Point[] {
+  return sampleSvgPath(path, sampleCount).map(p => ({ x: p.x, y: p.y }));
 }
 
 export function polylineLength(points: Point[]) {
@@ -131,6 +125,109 @@ export function nearestIndex(points: Point[], point: Point, startIndex = 0, look
   return { index: bestIndex, distance: bestDistance };
 }
 
+export function getNearestPointOnSamples(x: number, y: number, samples: SampledPoint[]) {
+  let point = samples[0];
+  let index = 0;
+  let distanceToPoint = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < samples.length; i++) {
+    const sample = samples[i]!;
+    const d = Math.hypot(sample.x - x, sample.y - y);
+    if (d < distanceToPoint) {
+      point = sample;
+      index = i;
+      distanceToPoint = d;
+    }
+  }
+  return {
+    point: point ?? { x, y, index: 0, distanceAlongPath: 0, progress: 0 },
+    index,
+    distance: distanceToPoint,
+    progress: point?.progress ?? 0,
+  };
+}
+
+export function screenToSvgCoordinates(
+  point: Point,
+  layout: { x: number; y: number; width: number; height: number },
+  viewBox: { width: number; height: number },
+) {
+  return {
+    x: ((point.x - layout.x) / Math.max(1, layout.width)) * viewBox.width,
+    y: ((point.y - layout.y) / Math.max(1, layout.height)) * viewBox.height,
+  };
+}
+
+export function validateStrokeMove(params: {
+  point: Point;
+  samples: SampledPoint[];
+  currentProgress: number;
+  tolerance: number;
+  startTolerance?: number;
+}): ValidationResult {
+  const { point, samples, currentProgress, tolerance, startTolerance = tolerance * 0.8 } = params;
+  if (!samples.length) return { accepted: false, progress: currentProgress, reason: 'too_far' };
+  const currentIndex = Math.max(0, Math.floor(currentProgress * (samples.length - 1)));
+  const nearest = getNearestPointOnSamples(point.x, point.y, samples);
+  const start = samples[0]!;
+  const startDistance = distance(point, start);
+  if (currentProgress <= 0.001 && startDistance > startTolerance) {
+    return { accepted: false, progress: 0, reason: 'wrong_start' };
+  }
+  if (nearest.distance > tolerance) {
+    return { accepted: false, progress: currentProgress, reason: 'too_far' };
+  }
+  if (nearest.index + 4 < currentIndex) {
+    return { accepted: false, progress: currentProgress, reason: 'backward' };
+  }
+  const nextProgress = Math.max(currentProgress, nearest.progress);
+  if (nextProgress - currentProgress > 0.18) {
+    return { accepted: false, progress: currentProgress, reason: 'jumped_too_far' };
+  }
+  return { accepted: true, progress: nextProgress, reason: 'accepted' };
+}
+
+export function calculateDashOffset(pathLength: number, progress: number) {
+  return pathLength - clamp(progress, 0, 1) * pathLength;
+}
+
+export function mirrorSvgPathX(path: string, width: number) {
+  const segments = parseSvgPath(path);
+  const mirrored = segments.map(segment => {
+    if (segment.type === 'M') {
+      return { type: 'M' as const, to: { x: width - segment.to.x, y: segment.to.y } };
+    }
+    if (segment.type === 'L') {
+      return {
+        type: 'L' as const,
+        from: { x: width - segment.from.x, y: segment.from.y },
+        to: { x: width - segment.to.x, y: segment.to.y },
+        approxLength: segment.approxLength,
+      };
+    }
+    if (segment.type === 'Q') {
+      return {
+        type: 'Q' as const,
+        from: { x: width - segment.from.x, y: segment.from.y },
+        cp1: { x: width - segment.cp1.x, y: segment.cp1.y },
+        to: { x: width - segment.to.x, y: segment.to.y },
+        approxLength: segment.approxLength,
+      };
+    }
+    if (segment.type === 'C') {
+      return {
+        type: 'C' as const,
+        from: { x: width - segment.from.x, y: segment.from.y },
+        cp1: { x: width - segment.cp1.x, y: segment.cp1.y },
+        cp2: { x: width - segment.cp2.x, y: segment.cp2.y },
+        to: { x: width - segment.to.x, y: segment.to.y },
+        approxLength: segment.approxLength,
+      };
+    }
+    return segment;
+  });
+  return serializeParsedSegments(mirrored);
+}
+
 function sampleSegmentPoint(segment: ParsedSegment, t: number): Point {
   if (segment.type === 'M') return { x: segment.to.x, y: segment.to.y };
   if (segment.type === 'L') {
@@ -159,6 +256,35 @@ function sampleSegmentPoint(segment: ParsedSegment, t: number): Point {
       3 * u * t * t * segment.cp2.y +
       t * t * t * segment.to.y,
   };
+}
+
+function pointAtLengthOnParsedPath(segments: ParsedSegment[], distanceAlongPath: number, totalLength: number): Point {
+  if (!segments.length) return { x: 0, y: 0 };
+  if (segments.length === 1) {
+    const only = segments[0]!;
+    return only.type === 'M' ? only.to : sampleSegmentPoint(only, 1);
+  }
+  const target = clamp(distanceAlongPath, 0, totalLength);
+  let traversed = 0;
+  let lastPoint: Point = segments[0]!.type === 'M' ? segments[0]!.to : { x: 0, y: 0 };
+
+  for (const segment of segments) {
+    if (segment.type === 'M') {
+      lastPoint = segment.to;
+      if (target <= 0) return lastPoint;
+      continue;
+    }
+
+    const segLen = Math.max(0.0001, segment.approxLength);
+    if (traversed + segLen >= target) {
+      const local = (target - traversed) / segLen;
+      return sampleSegmentPoint(segment, clamp(local, 0, 1));
+    }
+    traversed += segLen;
+    lastPoint = segment.to;
+  }
+
+  return lastPoint;
 }
 
 type ParsedSegment =
@@ -226,4 +352,14 @@ function parseSvgPath(path: string): ParsedSegment[] {
   }
 
   return out;
+}
+
+function serializeParsedSegments(segments: ParsedSegment[]) {
+  return segments.map(segment => {
+    if (segment.type === 'M') return `M ${segment.to.x} ${segment.to.y}`;
+    if (segment.type === 'L') return `L ${segment.to.x} ${segment.to.y}`;
+    if (segment.type === 'Q') return `Q ${segment.cp1.x} ${segment.cp1.y} ${segment.to.x} ${segment.to.y}`;
+    if (segment.type === 'C') return `C ${segment.cp1.x} ${segment.cp1.y} ${segment.cp2.x} ${segment.cp2.y} ${segment.to.x} ${segment.to.y}`;
+    return 'Z';
+  }).join(' ');
 }

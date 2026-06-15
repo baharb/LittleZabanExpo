@@ -6,19 +6,18 @@ import {
   Text,
   View,
 } from 'react-native';
-import Svg, { Circle, Defs, G, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, G, LinearGradient, Path, Stop } from 'react-native-svg';
 import { FarsiLetter } from '../../data/farsiLetters';
-import { FA } from '../../theme/fonts';
 import {
   Point,
   angleBetween,
   clamp,
   distance,
-  nearestIndex,
   pathSegmentPath,
   pointAtProgress,
   polylineLength,
   sampleSvgPath,
+  validateStrokeMove,
 } from '../../utils/tracingUtils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -52,10 +51,10 @@ type CelebParticle = {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CELEB_MS    = 2800;
-const DASH        = 16;
-const GAP         = 9;
-const GUIDE_W     = 22;   // thick, kid-friendly stroke
-const TRAIL_W     = 20;
+const DASH        = 11;
+const GAP         = 13;
+const GUIDE_W     = 10;
+const TRAIL_W     = 18;
 const START_R     = 12;
 const AnimPath    = Animated.createAnimatedComponent(Path);
 
@@ -168,6 +167,23 @@ function AnimatedGuidePath({
   );
 }
 
+function buildDashedPaths(points: Point[], dashLength = DASH, gapLength = GAP) {
+  if (points.length < 2) return [];
+  const total = polylineLength(points);
+  if (total <= 0) return [];
+  const out: string[] = [];
+  let cursor = 0;
+  while (cursor < total) {
+    const start = cursor;
+    const end = Math.min(total, cursor + dashLength);
+    const a = pointAtProgress(points, start / total);
+    const b = pointAtProgress(points, end / total);
+    out.push(`M ${a.x} ${a.y} L ${b.x} ${b.y}`);
+    cursor += dashLength + gapLength;
+  }
+  return out;
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function FarsiLetterTracer({
@@ -187,7 +203,14 @@ export default function FarsiLetterTracer({
   const scaleY = boardSize / vb.height;
 
   const strokes = useMemo(
-    () => letter.strokes.map(st => ({ ...st, points: sampleSvgPath(st.path, 160) })),
+    () => letter.strokes.map(st => {
+      const samples = sampleSvgPath(st.path, 160);
+      return {
+        ...st,
+        samples,
+        points: samples.map(s => ({ x: s.x, y: s.y })),
+      };
+    }),
     [letter],
   );
 
@@ -346,6 +369,7 @@ export default function FarsiLetterTracer({
     const st = strokes[activeStroke];
     if (!st) return;
     const pts = st.points;
+    const samples = st.samples;
     const curProg = strokeProg[activeStroke] ?? 0;
     const startPt = pts[0]!;
     const gate = Math.max(18, tolerance * 0.8);
@@ -359,18 +383,22 @@ export default function FarsiLetterTracer({
       }
     }
 
-    const curIdx = Math.max(0, Math.floor(curProg * (pts.length - 1)));
-    const { index, distance: nearDist } = nearestIndex(pts, point, curIdx, 16);
+    const validation = validateStrokeMove({
+      point,
+      samples,
+      currentProgress: curProg,
+      tolerance,
+      startTolerance: gate,
+    });
 
-    if (index >= 0 && nearDist <= tolerance) {
-      const nextIdx  = Math.max(curIdx, index);
-      const progress = nextIdx / Math.max(1, pts.length - 1);
+    if (validation.accepted) {
+      const progress = validation.progress;
       const next = strokeProg.slice();
       next[activeStroke] = progress;
       setStrokeProg(next);
       setHint('');
 
-      if (progress >= 0.985) {
+      if (progress >= 0.95) {
         pointerActive.current  = false;
         strokeArmed.current    = false;
         const nextStroke = activeStroke + 1;
@@ -386,7 +414,7 @@ export default function FarsiLetterTracer({
         }
       }
     } else {
-      setHint(curProg <= 0.03 ? 'از نقطه سبز شروع کن' : 'مسیر را دنبال کن');
+      setHint(validation.reason === 'wrong_start' ? 'از نقطه سبز شروع کن' : 'مسیر را دنبال کن');
     }
   }
 
@@ -469,42 +497,63 @@ export default function FarsiLetterTracer({
           </LinearGradient>
         </Defs>
 
-        {/* Ghost letter — light gray guide, Vazirmatn */}
-        <SvgText
-          x={vb.width / 2}
-          y={vb.height * 0.62}
-          fontSize={118}
-          fill="#C8CDD8"
-          textAnchor="middle"
-          fontFamily={FA.black}
-          opacity={0.42}
-        >
-          {letter.letter}
-        </SvgText>
+        <Path d={letter.outlinePath} fill="rgba(255,255,255,0.92)" />
+        <Path d={letter.outlinePath} fill="none" stroke="rgba(127,113,166,0.26)" strokeWidth={5} />
+        <Path d={letter.outlinePath} fill="none" stroke="rgba(255,255,255,0.98)" strokeWidth={1.5} />
 
         {strokes.map((st, si) => {
           const prog = progFor(si);
           const completed = pathSegmentPath(st.points, prog);
-          const isActive = si === activeStroke && phase === 'trace';
 
           return (
             <G key={st.id}>
               {/* Guide path — animated dashes (always shown in guide phase, faint in trace) */}
               {phase === 'guide' ? (
-                <AnimatedGuidePath
-                  pathD={st.path}
-                  color={col}
-                  anim={guideAnim}
-                  opacity={si < guideTick.si ? 0.15 : si > guideTick.si ? 0.45 : 0.65}
-                />
+                <G>
+                  <AnimatedGuidePath
+                    pathD={st.path}
+                    color={col}
+                    anim={guideAnim}
+                    opacity={0.18}
+                  />
+                  <Path
+                    d={st.path}
+                    stroke="rgba(78,69,101,0.22)"
+                    strokeWidth={GUIDE_W + 8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+                  {buildDashedPaths(st.points).map((seg, dashIndex) => (
+                    <Path
+                      key={`${st.id}-dash-${dashIndex}`}
+                      d={seg}
+                      stroke={si < guideTick.si ? 'rgba(78,69,101,0.55)' : col}
+                      strokeWidth={GUIDE_W}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      fill="none"
+                      opacity={si < guideTick.si ? 0.58 : 0.96}
+                    />
+                  ))}
+                </G>
               ) : (
                 // Trace phase: show static dashed guide (faint) underneath user trail
                 <G>
-                  <Path d={st.path} stroke={col} strokeWidth={GUIDE_W + 6}
-                    strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.06} />
-                  <Path d={st.path} stroke={col} strokeWidth={GUIDE_W}
-                    strokeLinecap="round" strokeLinejoin="round" fill="none"
-                    strokeDasharray={`${DASH} ${GAP}`} opacity={prog < 0.98 ? 0.35 : 0.12} />
+                  <Path d={st.path} stroke="rgba(78,69,101,0.22)" strokeWidth={GUIDE_W + 8}
+                    strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  {buildDashedPaths(st.points).map((seg, dashIndex) => (
+                    <Path
+                      key={`${st.id}-trace-dash-${dashIndex}`}
+                      d={seg}
+                      stroke={prog < 0.98 ? col : 'rgba(78,69,101,0.55)'}
+                      strokeWidth={GUIDE_W}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      fill="none"
+                      opacity={prog < 0.98 ? 0.96 : 0.55}
+                    />
+                  ))}
                 </G>
               )}
 
