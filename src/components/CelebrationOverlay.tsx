@@ -2,15 +2,17 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Polygon } from 'react-native-svg';
 
-const DEFAULT_DURATION_MS = 3800;
+const DEFAULT_DURATION_MS = 3600;
 
 const STAR_PALETTE = [
-  { primaryColor: '#FFE875', innerColor: '#FFF8D0', coreColor: '#FFFDF2' },
-  { primaryColor: '#FF6B9D', innerColor: '#FFD0E1', coreColor: '#FFF1F7' },
-  { primaryColor: '#4CC9F0', innerColor: '#B8EDFF', coreColor: '#E6FBFF' },
-  { primaryColor: '#80ED99', innerColor: '#CDF7D6', coreColor: '#F0FDF4' },
-  { primaryColor: '#FF9F1C', innerColor: '#FFDDA1', coreColor: '#FFF3DC' },
-  { primaryColor: '#C77DFF', innerColor: '#E8C4FF', coreColor: '#F6E8FF' },
+  { primaryColor: '#FFE875', glowColor: '#FFF4B8' },
+  { primaryColor: '#FF6B9D', glowColor: '#FFD0E1' },
+  { primaryColor: '#4CC9F0', glowColor: '#B8EDFF' },
+  { primaryColor: '#80ED99', glowColor: '#CDF7D6' },
+  { primaryColor: '#FF9F1C', glowColor: '#FFDDA1' },
+  { primaryColor: '#C77DFF', glowColor: '#E8C4FF' },
+  { primaryColor: '#FF5D5D', glowColor: '#FFD3D3' },
+  { primaryColor: '#58D0E8', glowColor: '#D4F6FF' },
 ];
 
 type CelebrationParticle = {
@@ -21,6 +23,7 @@ type CelebrationParticle = {
   delay: number;
   duration: number;
   drift: number;
+  sway: number;
   rotateStart: number;
   rotateEnd: number;
   scaleStart: number;
@@ -29,8 +32,7 @@ type CelebrationParticle = {
   alphaStart: number;
   alphaPeak: number;
   primaryColor: string;
-  innerColor: string;
-  coreColor: string;
+  glowColor: string;
 };
 
 function clamp(n: number, min: number, max: number) {
@@ -49,42 +51,40 @@ function mulberry32(seed: number) {
 
 function buildParticles(seed: number, width: number, height: number, count: number) {
   const random = mulberry32(seed || 1);
-  const topClusterCount = Math.max(1, Math.round(count * 0.9));
 
   return Array.from({ length: count }, (_, index) => {
-    const isTopCluster = index < topClusterCount;
-    const size = Math.round(14 + random() * 10);
+    const size = Math.round(12 + random() * 9);
     const rowT = random();
-    const spread = 0.92 + rowT * 0.76;
-    const topBand = isTopCluster ? Math.max(24, height * 0.1) : Math.max(18, height * 0.05);
+    const spread = 0.78 + rowT * 0.56;
+    const topBand = Math.max(18, height * 0.12);
+    const xBand = 0.12 + random() * 0.76;
     const tone = STAR_PALETTE[index % STAR_PALETTE.length];
     return {
       id: seed * 1000 + index,
       left: clamp(
         Math.round(
-          ((isTopCluster ? 0.58 : 0.42) + (random() - 0.5) * (isTopCluster ? 0.22 : 0.32) + (random() - 0.5) * 0.22) * width,
+          (xBand + (random() - 0.5) * 0.12) * width,
         ),
         0,
         Math.max(4, width),
       ),
       top: clamp(
         Math.round(
-          isTopCluster
-            ? random() * height * 0.1
-            : Math.pow(rowT, 0.88) * height * 0.84 + random() * topBand,
+          random() * topBand,
         ),
         0,
         Math.max(4, height - 8),
       ),
       size,
-      delay: 0,
-      duration: Math.round(1100 + random() * 650 + rowT * 500),
+      delay: Math.round(random() * 520),
+      duration: Math.round(1500 + random() * 900 + rowT * 500),
       drift: Math.round((random() - 0.5) * width * spread),
+      sway: Math.round((random() - 0.5) * width * 0.1),
       rotateStart: Math.round(-40 + random() * 80),
-      rotateEnd: Math.round(120 + random() * 220),
+      rotateEnd: Math.round(180 + random() * 260),
       scaleStart: 0.82,
-      scaleMid: 1.1,
-      scaleEnd: 0.96,
+      scaleMid: 1.06,
+      scaleEnd: 0.92,
       alphaStart: 1,
       alphaPeak: 1,
       ...tone,
@@ -94,22 +94,23 @@ function buildParticles(seed: number, width: number, height: number, count: numb
 
 function StarBurst({
   primaryColor,
-  innerColor,
-  coreColor,
+  glowColor,
 }: {
   primaryColor: string;
-  innerColor: string;
-  coreColor: string;
+  glowColor: string;
 }) {
   return (
     <Svg width="100%" height="100%" viewBox="0 0 100 100">
+      <Circle cx="50" cy="50" r="34" fill={glowColor} opacity="0.18" />
       <Polygon
-        points="50,5 60,36 92,36 66,56 76,88 50,69 24,88 34,56 8,36 40,36"
+        points="50,6 58,35 89,35 64,54 74,84 50,67 26,84 36,54 11,35 42,35"
         fill={primaryColor}
-        opacity="0.95"
       />
-      <Circle cx="50" cy="50" r="11" fill={innerColor} opacity="0.9" />
-      <Circle cx="50" cy="50" r="4" fill={coreColor} />
+      <Polygon
+        points="50,16 56,37 79,37 61,51 68,73 50,61 32,73 39,51 21,37 44,37"
+        fill="#FFFDF6"
+        opacity="0.42"
+      />
     </Svg>
   );
 }
@@ -124,7 +125,7 @@ function Particle({
   progress: Animated.Value;
 }) {
   const start = particle.delay / DEFAULT_DURATION_MS;
-  const end = Math.min(1, (particle.delay + particle.duration) / DEFAULT_DURATION_MS);
+  const end = Math.min(1, particle.duration / DEFAULT_DURATION_MS);
   const mid = start + (end - start) * 0.42;
   const opacityLead = Math.min(mid - 0.001, start + 0.005);
   const scaleLead = Math.min(mid - 0.001, start + 0.015);
@@ -136,7 +137,7 @@ function Particle({
   });
   const translateX = progress.interpolate({
     inputRange: [start, end],
-    outputRange: [0, particle.drift],
+    outputRange: [0, particle.drift + particle.sway],
     extrapolate: 'clamp',
   });
   const opacity = progress.interpolate({
@@ -173,8 +174,7 @@ function Particle({
       <View style={styles.particleGlow}>
         <StarBurst
           primaryColor={particle.primaryColor}
-          innerColor={particle.innerColor}
-          coreColor={particle.coreColor}
+          glowColor={particle.glowColor}
         />
       </View>
     </Animated.View>
@@ -204,7 +204,12 @@ export default function CelebrationOverlay({
 }: CelebrationOverlayProps) {
   const progress = useRef(new Animated.Value(0)).current;
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+  const onCompleteRef = useRef(onComplete);
   const [particles, setParticles] = useState<CelebrationParticle[]>([]);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   const stableParticles = useMemo(() => {
     if (!active || !width || !height) return [];
@@ -234,14 +239,14 @@ export default function CelebrationOverlay({
     });
     animationRef.current.start(({ finished }) => {
       if (!finished) return;
-      onComplete?.();
+      onCompleteRef.current?.();
     });
 
     return () => {
       animationRef.current?.stop();
       animationRef.current = null;
     };
-  }, [active, height, onComplete, progress, stableParticles, width]);
+  }, [active, height, progress, stableParticles, width]);
 
   if (!active || !width || !height) return null;
 

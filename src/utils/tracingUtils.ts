@@ -163,8 +163,9 @@ export function validateStrokeMove(params: {
   currentProgress: number;
   tolerance: number;
   startTolerance?: number;
+  maxProgressJump?: number;
 }): ValidationResult {
-  const { point, samples, currentProgress, tolerance, startTolerance = tolerance * 0.8 } = params;
+  const { point, samples, currentProgress, tolerance, startTolerance = tolerance * 0.8, maxProgressJump = 0.18 } = params;
   if (!samples.length) return { accepted: false, progress: currentProgress, reason: 'too_far' };
   const currentIndex = Math.max(0, Math.floor(currentProgress * (samples.length - 1)));
   const nearest = getNearestPointOnSamples(point.x, point.y, samples);
@@ -180,7 +181,7 @@ export function validateStrokeMove(params: {
     return { accepted: false, progress: currentProgress, reason: 'backward' };
   }
   const nextProgress = Math.max(currentProgress, nearest.progress);
-  if (nextProgress - currentProgress > 0.18) {
+  if (nextProgress - currentProgress > maxProgressJump) {
     return { accepted: false, progress: currentProgress, reason: 'jumped_too_far' };
   }
   return { accepted: true, progress: nextProgress, reason: 'accepted' };

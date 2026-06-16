@@ -564,7 +564,7 @@ export default function SolarSystemPuzzleGame() {
               width={stageSize.width}
               height={stageSize.height}
               seed={celebrationSeed}
-              particleCount={880}
+              particleCount={240}
               onComplete={() => setCelebrationActive(false)}
             />
 

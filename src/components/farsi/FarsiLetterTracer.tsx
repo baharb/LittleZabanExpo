@@ -2,18 +2,20 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  Image,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import Svg, { Circle, Defs, G, LinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Circle, G, Line, Path } from 'react-native-svg';
+import { neliWorldAssets } from '../../assets/neliWorldAssets';
 import { FarsiLetter } from '../../data/farsiLetters';
+import { VAZIR_TRACE_LETTERS } from '../../screens/interactive/vazirmatnTraceData';
 import {
   Point,
   angleBetween,
   clamp,
   distance,
-  pathSegmentPath,
   pointAtProgress,
   polylineLength,
   sampleSvgPath,
@@ -54,9 +56,16 @@ const CELEB_MS    = 2800;
 const DASH        = 11;
 const GAP         = 13;
 const GUIDE_W     = 10;
-const TRAIL_W     = 18;
-const START_R     = 12;
+const POINT_MARKER_SIZE = 46;
+const POINT_MARKER_TIP_ANCHOR_Y = 0.82;
+const COMPLETE_PROGRESS = 0.95;
 const AnimPath    = Animated.createAnimatedComponent(Path);
+const TRACE_IMAGE_ID: Record<string, string> = {
+  haa: 'he-jimi',
+  nun: 'noon',
+  taa: 'ta',
+  zaa: 'za',
+};
 
 // ─── Celebration particles (3-fountain LingoKids style) ───────────────────────
 
@@ -148,10 +157,6 @@ function AnimatedGuidePath({
   });
   return (
     <G>
-      {/* Glow halo */}
-      <Path d={pathD} stroke={color} strokeWidth={GUIDE_W + 10}
-        strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.08} />
-      {/* Animated dashes */}
       <AnimPath
         d={pathD}
         stroke={color}
@@ -167,7 +172,14 @@ function AnimatedGuidePath({
   );
 }
 
-function buildDashedPaths(points: Point[], dashLength = DASH, gapLength = GAP) {
+function buildDashedPaths(points: Point[], dashLength = DASH, gapLength = GAP, dashStops?: Array<[number, number]>) {
+  if (dashStops?.length) {
+    return dashStops.map(([start, end]) => {
+      const a = pointAtProgress(points, clamp(start, 0, 1));
+      const b = pointAtProgress(points, clamp(end, 0, 1));
+      return `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
+    });
+  }
   if (points.length < 2) return [];
   const total = polylineLength(points);
   if (total <= 0) return [];
@@ -217,7 +229,7 @@ export default function FarsiLetterTracer({
   const [phase,         setPhase]         = useState<Phase>('guide');
   const [activeStroke,  setActiveStroke]  = useState(0);
   const [strokeProg,    setStrokeProg]    = useState<number[]>(() => strokes.map(() => 0));
-  const [dotIndex,      setDotIndex]      = useState(0);
+  const [completedDots, setCompletedDots] = useState<number[]>([]);
   const [hint,          setHint]          = useState('مسیر را دنبال کن');
   const [success,       setSuccess]       = useState(false);
   const [guideTick,     setGuideTick]     = useState({ si: 0, progress: 0 });
@@ -226,6 +238,7 @@ export default function FarsiLetterTracer({
 
   const pointerActive   = useRef(false);
   const strokeArmed     = useRef(false);
+  const dotTouchConsumed = useRef(false);
   const guideCancel     = useRef(false);
   const advanceTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -237,8 +250,27 @@ export default function FarsiLetterTracer({
   // celebration
   const celebAnim = useRef(new Animated.Value(0)).current;
 
-  const dotTargets  = letter.dots ?? [];
-  const activeDot   = dotTargets[dotIndex];
+  const traceMeta = useMemo(() => {
+    const imageId = TRACE_IMAGE_ID[letter.id] ?? letter.id;
+    return VAZIR_TRACE_LETTERS.find(item => item.id === imageId);
+  }, [letter.id]);
+  const dotTargets = useMemo(
+    () => {
+      const sourceDots = letter.dots?.length
+        ? letter.dots
+        : traceMeta?.dots?.length
+          ? traceMeta.dots.map(dot => ({ x: dot.x * vb.width, y: dot.y * vb.height }))
+          : [];
+      return sourceDots;
+    },
+    [letter.dots, traceMeta, vb.height, vb.width],
+  );
+  const isSegmentedSin = letter.id === 'sin';
+  const traceTolerance = isSegmentedSin ? Math.max(tolerance * 1.45, 44) : tolerance;
+  const traceStartGate = isSegmentedSin ? Math.max(28, traceTolerance * 0.9) : Math.max(18, tolerance * 0.8);
+  const maxProgressJump = isSegmentedSin ? 0.42 : 0.18;
+  const dotTolerance = Math.max(tolerance * 1.2, Math.min(boardSize * 0.14, 60));
+  const activeDotTolerance = Math.max(dotTolerance * 1.15, Math.min(boardSize * 0.17, 72));
 
   // ── Pulse loop (for start dot) ──
   useEffect(() => {
@@ -303,7 +335,7 @@ export default function FarsiLetterTracer({
     setPhase('guide');
     setActiveStroke(0);
     setStrokeProg(strokes.map(() => 0));
-    setDotIndex(0);
+    setCompletedDots([]);
     setHint('مسیر را دنبال کن');
     setSuccess(false);
     setShowCeleb(false);
@@ -356,12 +388,22 @@ export default function FarsiLetterTracer({
     if (phase !== 'trace' && phase !== 'dots') return;
 
     if (phase === 'dots') {
-      if (!activeDot) return;
-      if (distance(point, activeDot) <= tolerance) {
-        const next = dotIndex + 1;
-        setDotIndex(next);
-        setHint(next >= dotTargets.length ? 'آفرین!' : 'نقطه بعدی');
-        if (next >= dotTargets.length) finishLetter();
+      if (dotTouchConsumed.current) return;
+      const nextDotIndex = completedDots.length;
+      const nextDot = dotTargets[nextDotIndex];
+      if (!nextDot) {
+        finishLetter();
+        return;
+      }
+
+      if (distance(point, nextDot) <= activeDotTolerance) {
+        dotTouchConsumed.current = true;
+        const next = [...completedDots, nextDotIndex];
+        setCompletedDots(next);
+        setHint(next.length >= dotTargets.length ? 'آفرین!' : 'نقطه بعدی');
+        if (next.length >= dotTargets.length) finishLetter();
+      } else {
+        setHint('همین نقطه را بزن');
       }
       return;
     }
@@ -372,10 +414,11 @@ export default function FarsiLetterTracer({
     const samples = st.samples;
     const curProg = strokeProg[activeStroke] ?? 0;
     const startPt = pts[0]!;
-    const gate = Math.max(18, tolerance * 0.8);
+    const requiredPt = curProg > 0.03 ? pointAtProgress(pts, curProg) : startPt;
+    const gate = traceStartGate;
 
     if (!strokeArmed.current) {
-      if (distance(point, startPt) <= gate) {
+      if (distance(point, requiredPt) <= gate) {
         strokeArmed.current = true;
       } else {
         setHint('از نقطه سبز شروع کن');
@@ -387,8 +430,9 @@ export default function FarsiLetterTracer({
       point,
       samples,
       currentProgress: curProg,
-      tolerance,
+      tolerance: traceTolerance,
       startTolerance: gate,
+      maxProgressJump,
     });
 
     if (validation.accepted) {
@@ -398,8 +442,7 @@ export default function FarsiLetterTracer({
       setStrokeProg(next);
       setHint('');
 
-      if (progress >= 0.95) {
-        pointerActive.current  = false;
+      if (progress >= COMPLETE_PROGRESS) {
         strokeArmed.current    = false;
         const nextStroke = activeStroke + 1;
         if (nextStroke < strokes.length) {
@@ -421,10 +464,14 @@ export default function FarsiLetterTracer({
   function handleDown(event: any) {
     if (phase === 'guide' || success) return;
     pointerActive.current = true;
+    dotTouchConsumed.current = false;
     const pt = extractPoint(event, scaleX, scaleY);
     if (phase === 'trace') {
-      const startPt = strokes[activeStroke]?.points?.[0];
-      if (!startPt || distance(pt, startPt) > Math.max(18, tolerance * 0.8)) {
+      const st = strokes[activeStroke];
+      const curProg = strokeProg[activeStroke] ?? 0;
+      const startPt = st?.points?.[0];
+      const requiredPt = st && curProg > 0.03 ? pointAtProgress(st.points, curProg) : startPt;
+      if (!requiredPt || distance(pt, requiredPt) > traceStartGate) {
         pointerActive.current = false;
         strokeArmed.current = false;
         setHint('از نقطه سبز شروع کن');
@@ -440,7 +487,10 @@ export default function FarsiLetterTracer({
     updateTrace(extractPoint(event, scaleX, scaleY));
   }
 
-  function handleUp() { pointerActive.current = false; }
+  function handleUp() {
+    pointerActive.current = false;
+    dotTouchConsumed.current = false;
+  }
 
   // Guide pencil position
   const guidePoint = useMemo(() => {
@@ -457,6 +507,21 @@ export default function FarsiLetterTracer({
     return angleBetween(pts[i-1] ?? pts[0]!, pts[i] ?? pts[pts.length-1]!);
   }, [guideTick, strokes]);
 
+  const activeMarkerPoint = useMemo(() => {
+    const st = strokes[activeStroke];
+    if (!st) return { x: 0, y: 0 };
+    return pointAtProgress(st.points, strokeProg[activeStroke] ?? 0);
+  }, [activeStroke, strokeProg, strokes]);
+
+  const activeMarkerAngle = useMemo(() => {
+    const st = strokes[activeStroke];
+    if (!st) return 0;
+    const pts = st.points;
+    if (pts.length < 2) return 0;
+    const i = Math.max(1, Math.floor((strokeProg[activeStroke] ?? 0) * (pts.length - 1)));
+    return angleBetween(pts[i - 1] ?? pts[0]!, pts[i] ?? pts[pts.length - 1]!);
+  }, [activeStroke, strokeProg, strokes]);
+
   // Progress for each stroke (guide vs trace mode)
   const progFor = (si: number) => {
     if (phase === 'guide') {
@@ -468,6 +533,7 @@ export default function FarsiLetterTracer({
   };
 
   const col = letter.color ?? '#FF7AA7';
+  const traceImage = traceMeta?.image;
 
   return (
     <View
@@ -488,22 +554,19 @@ export default function FarsiLetterTracer({
     >
       {/* Subtle radial background glow */}
       <View style={[styles.boardGlow, { backgroundColor: `${col}0C` }]} />
+      {traceImage ? (
+        <View pointerEvents="none" style={styles.traceGhostImageWrap}>
+          <Image
+            source={traceImage}
+            style={[styles.traceGhostImage, { tintColor: `${col}42` }]}
+            resizeMode="contain"
+          />
+        </View>
+      ) : null}
 
       <Svg width={boardSize} height={boardSize} viewBox={letter.viewBox} accessible accessibilityLabel={`Trace the Farsi letter ${letter.letter}`}>
-        <Defs>
-          <LinearGradient id={`grad${letter.id}`} x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={col} stopOpacity="0.7" />
-            <Stop offset="1" stopColor={col} stopOpacity="1" />
-          </LinearGradient>
-        </Defs>
-
-        <Path d={letter.outlinePath} fill="rgba(255,255,255,0.92)" />
-        <Path d={letter.outlinePath} fill="none" stroke="rgba(127,113,166,0.26)" strokeWidth={5} />
-        <Path d={letter.outlinePath} fill="none" stroke="rgba(255,255,255,0.98)" strokeWidth={1.5} />
-
         {strokes.map((st, si) => {
           const prog = progFor(si);
-          const completed = pathSegmentPath(st.points, prog);
 
           return (
             <G key={st.id}>
@@ -516,15 +579,7 @@ export default function FarsiLetterTracer({
                     anim={guideAnim}
                     opacity={0.18}
                   />
-                  <Path
-                    d={st.path}
-                    stroke="rgba(78,69,101,0.22)"
-                    strokeWidth={GUIDE_W + 8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="none"
-                  />
-                  {buildDashedPaths(st.points).map((seg, dashIndex) => (
+                  {buildDashedPaths(st.points, DASH, GAP, letter.dashStops).map((seg, dashIndex) => (
                     <Path
                       key={`${st.id}-dash-${dashIndex}`}
                       d={seg}
@@ -540,54 +595,39 @@ export default function FarsiLetterTracer({
               ) : (
                 // Trace phase: show static dashed guide (faint) underneath user trail
                 <G>
-                  <Path d={st.path} stroke="rgba(78,69,101,0.22)" strokeWidth={GUIDE_W + 8}
-                    strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                  {buildDashedPaths(st.points).map((seg, dashIndex) => (
-                    <Path
-                      key={`${st.id}-trace-dash-${dashIndex}`}
-                      d={seg}
-                      stroke={prog < 0.98 ? col : 'rgba(78,69,101,0.55)'}
+                  {buildDashedPaths(st.points, DASH, GAP, letter.dashStops).map((seg, dashIndex, dashes) => {
+                    const dashProgress = ((dashIndex + 1) / Math.max(1, dashes.length)) * COMPLETE_PROGRESS;
+                    const isTraced = prog >= dashProgress;
+                    return (
+                      <Path
+                        key={`${st.id}-trace-dash-${dashIndex}`}
+                        d={seg}
+                        stroke={isTraced ? col : 'rgba(78,69,101,0.58)'}
+                        strokeWidth={GUIDE_W}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                        opacity={isTraced ? 0.98 : 0.78}
+                      />
+                    );
+                  })}
+                  {letter.extraDashSegments?.map((seg, extraIndex) => (
+                    <Line
+                      key={`${st.id}-extra-${seg.id ?? extraIndex}`}
+                      x1={getExtraSegmentPoints(seg, vb).x1}
+                      y1={getExtraSegmentPoints(seg, vb).y1}
+                      x2={getExtraSegmentPoints(seg, vb).x2}
+                      y2={getExtraSegmentPoints(seg, vb).y2}
+                      stroke={col}
                       strokeWidth={GUIDE_W}
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      fill="none"
-                      opacity={prog < 0.98 ? 0.96 : 0.55}
+                      opacity={0.98}
                     />
                   ))}
                 </G>
               )}
 
-              {/* Completed user trail */}
-              {completed && phase !== 'guide' ? (
-                <Path
-                  d={completed}
-                  stroke={success ? '#24C878' : `url(#grad${letter.id})`}
-                  strokeWidth={TRAIL_W}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                  opacity={0.95}
-                />
-              ) : null}
-
-              {/* Start dot — pulsing ring */}
-              {si === 0 && (phase === 'trace' || phase === 'dots') && !success ? (
-                <G>
-                  {/* outer pulse rendered as Animated.View overlay (below) */}
-                  <Circle
-                    cx={st.points[0]?.x ?? 0}
-                    cy={st.points[0]?.y ?? 0}
-                    r={START_R}
-                    fill="#24C878"
-                  />
-                  <Circle
-                    cx={st.points[0]?.x ?? 0}
-                    cy={st.points[0]?.y ?? 0}
-                    r={START_R * 0.44}
-                    fill="white"
-                  />
-                </G>
-              ) : null}
             </G>
           );
         })}
@@ -607,11 +647,14 @@ export default function FarsiLetterTracer({
         {phase === 'dots' && !success
           ? dotTargets.map((dot, di) => (
               <G key={`dot-${di}`}>
-                <Circle cx={dot.x} cy={dot.y} r={9}
-                  fill={di < dotIndex ? '#24C878' : '#49A6FF'}
-                  opacity={di <= dotIndex ? 1 : 0.7}
+                <Circle
+                  cx={dot.x}
+                  cy={dot.y}
+                  r={di === completedDots.length ? 13 : 9}
+                  fill={completedDots.includes(di) ? '#24C878' : 'rgba(78,69,101,0.58)'}
+                  opacity={completedDots.includes(di) ? 1 : di === completedDots.length ? 0.95 : 0.82}
                 />
-                <Circle cx={dot.x} cy={dot.y} r={4} fill="white" />
+                <Circle cx={dot.x} cy={dot.y} r={di === completedDots.length ? 5 : 4} fill="white" />
               </G>
             ))
           : null}
@@ -630,30 +673,37 @@ export default function FarsiLetterTracer({
       {/* Overlay (pointer / hints) */}
       <View style={styles.overlay} pointerEvents="none">
 
-        {/* Animated pencil pointer during guide phase */}
+        {/* Animated pointer during guide phase */}
         {phase === 'guide' ? (
           <Animated.View style={[styles.pencilWrap, {
-            left:  guidePoint.x * scaleX - 28,
-            top:   guidePoint.y * scaleY - 28,
+            left:  guidePoint.x * scaleX - POINT_MARKER_SIZE / 2,
+            top:   guidePoint.y * scaleY - POINT_MARKER_SIZE * POINT_MARKER_TIP_ANCHOR_Y,
             transform: [
-              { rotate: `${guideAngle + 45}deg` },
+              { rotate: `${guideAngle - 90}deg` },
               { scale: pulse.interpolate({ inputRange:[0,1], outputRange:[0.94,1.06] }) },
             ],
           }]}>
-            <View style={styles.pencilEmoji}>
-              <Text style={styles.pencilEmojiText}>✏️</Text>
-            </View>
+            <Image
+              source={neliWorldAssets.ui.point}
+              style={styles.pencilPointImage}
+              resizeMode="contain"
+            />
           </Animated.View>
         ) : null}
 
-        {/* Pulsing halo around start dot */}
-        {phase === 'trace' && (strokeProg[activeStroke] ?? 0) < 0.06 ? (
-          <Animated.View style={[styles.startHalo, {
-            left: (strokes[activeStroke]?.points?.[0]?.x ?? 0) * scaleX - 22,
-            top:  (strokes[activeStroke]?.points?.[0]?.y ?? 0) * scaleY - 22,
-            transform: [{ scale: pulse.interpolate({ inputRange:[0,1], outputRange:[1,1.35] }) }],
-            backgroundColor: '#24C878',
-          }]} />
+        {/* Start marker image aligned to the current path point */}
+        {phase === 'trace' && !success ? (
+          <Animated.View style={[styles.pointMarkerWrap, {
+            left: activeMarkerPoint.x * scaleX - POINT_MARKER_SIZE / 2,
+            top:  activeMarkerPoint.y * scaleY - POINT_MARKER_SIZE * POINT_MARKER_TIP_ANCHOR_Y,
+            transform: [{ rotate: `${activeMarkerAngle - 90}deg` }],
+          }]} pointerEvents="none">
+            <Image
+              source={neliWorldAssets.ui.point}
+              style={styles.pointMarker}
+              resizeMode="contain"
+            />
+          </Animated.View>
         ) : null}
 
         {/* Hint text */}
@@ -714,6 +764,28 @@ function parseViewBox(vb: string) {
   return { width: w, height: h };
 }
 
+function getExtraSegmentPoints(
+  seg: { x1: number; y1: number; x2: number; y2: number; rotation?: number },
+  vb: { width: number; height: number },
+) {
+  const x1 = seg.x1 * vb.width;
+  const y1 = seg.y1 * vb.height;
+  const x2 = seg.x2 * vb.width;
+  const y2 = seg.y2 * vb.height;
+  if (seg.rotation == null) return { x1, y1, x2, y2 };
+
+  const cx = (x1 + x2) / 2;
+  const cy = (y1 + y2) / 2;
+  const dx = (x2 - x1) / 2;
+  const dy = (y2 - y1) / 2;
+  const rad = seg.rotation * Math.PI / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const rx = dx * cos - dy * sin;
+  const ry = dx * sin + dy * cos;
+  return { x1: cx - rx, y1: cy - ry, x2: cx + rx, y2: cy + ry };
+}
+
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
@@ -733,37 +805,36 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     borderRadius: 32,
   },
+  traceGhostImageWrap: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  traceGhostImage: {
+    width: '100%',
+    height: '100%',
+    opacity: 0.42,
+  },
   overlay: {
     ...StyleSheet.absoluteFillObject,
   },
   pencilWrap: {
     position: 'absolute',
-    width: 56,
-    height: 56,
+    width: POINT_MARKER_SIZE,
+    height: POINT_MARKER_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pencilEmoji: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
+  pencilPointImage: {
+    width: POINT_MARKER_SIZE,
+    height: POINT_MARKER_SIZE,
   },
-  pencilEmojiText: {
-    fontSize: 30,
-  },
-  startHalo: {
+  pointMarkerWrap: {
     position: 'absolute',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    opacity: 0.38,
+    width: POINT_MARKER_SIZE,
+    height: POINT_MARKER_SIZE,
+  },
+  pointMarker: {
+    width: POINT_MARKER_SIZE,
+    height: POINT_MARKER_SIZE,
   },
   hintBubble: {
     position: 'absolute',

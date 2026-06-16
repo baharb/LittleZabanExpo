@@ -109,7 +109,6 @@ const HA: TraceStroke = [
 ];
 
 const DAL: TraceStroke = [
-  [0.77, 0.23],
   [0.71, 0.28],
   [0.64, 0.33],
   [0.56, 0.38],
@@ -117,7 +116,13 @@ const DAL: TraceStroke = [
   [0.39, 0.47],
   [0.3, 0.49],
   [0.22, 0.49],
-  [0.16, 0.46],
+  [0.17, 0.468],
+  [0.13, 0.462],
+];
+
+const ZHE: TraceStroke = [
+  ...DAL,
+  [0.09, 0.458],
 ];
 
 const SIN: TraceStroke = [
@@ -271,35 +276,35 @@ const YE: TraceStroke = [
 
 export const VAZIR_TRACE_LETTERS: VazirTraceItem[] = [
   { id: 'alef', image: IMAGE_BY_ID.alef, strokes: [VERTICAL], dots: [] },
-  { id: 'be', image: IMAGE_BY_ID.be, strokes: [BOWL], dots: [{ x: 0.52, y: 0.86 }] },
-  { id: 'pe', image: IMAGE_BY_ID.pe, strokes: [BOWL], dots: [{ x: 0.42, y: 0.87 }, { x: 0.52, y: 0.91 }, { x: 0.62, y: 0.87 }] },
-  { id: 'te', image: IMAGE_BY_ID.te, strokes: [BOWL], dots: [{ x: 0.41, y: 0.12 }, { x: 0.59, y: 0.12 }] },
-  { id: 'se', image: IMAGE_BY_ID.se, strokes: [BOWL], dots: [{ x: 0.38, y: 0.11 }, { x: 0.5, y: 0.1 }, { x: 0.62, y: 0.11 }] },
-  { id: 'jim', image: IMAGE_BY_ID.jim, strokes: [JIM], dots: [{ x: 0.53, y: 0.84 }] },
-  { id: 'che', image: IMAGE_BY_ID.che, strokes: [JIM], dots: [{ x: 0.42, y: 0.86 }, { x: 0.53, y: 0.9 }, { x: 0.64, y: 0.86 }] },
-  { id: 'he-jimi', image: IMAGE_BY_ID['he-jimi'], strokes: [HA], dots: [] },
-  { id: 'khe', image: IMAGE_BY_ID.khe, strokes: [HA], dots: [{ x: 0.62, y: 0.16 }] },
+  { id: 'be', image: IMAGE_BY_ID.be, strokes: [BOWL], dots: [{ x: 0.5, y: 0.732 }] },
+  { id: 'pe', image: IMAGE_BY_ID.pe, strokes: [BOWL], dots: [{ x: 0.431, y: 0.661 }, { x: 0.498, y: 0.755 }, { x: 0.565, y: 0.661 }] },
+  { id: 'te', image: IMAGE_BY_ID.te, strokes: [BOWL], dots: [{ x: 0.435, y: 0.267 }, { x: 0.556, y: 0.267 }] },
+  { id: 'se', image: IMAGE_BY_ID.se, strokes: [BOWL], dots: [{ x: 0.498, y: 0.221 }, { x: 0.431, y: 0.316 }, { x: 0.565, y: 0.316 }] },
+  { id: 'jim', image: IMAGE_BY_ID.jim, strokes: [JIM], dots: [{ x: 0.512, y: 0.565 }] },
+  { id: 'che', image: IMAGE_BY_ID.che, strokes: [JIM], dots: [{ x: 0.486, y: 0.526 }, { x: 0.555, y: 0.62 }, { x: 0.622, y: 0.526 }] },
+  { id: 'he-jimi', image: IMAGE_BY_ID['he-jimi'], strokes: [JIM], dots: [] },
+  { id: 'khe', image: IMAGE_BY_ID.khe, strokes: [HA], dots: [{ x: 0.585, y: 0.148 }] },
   { id: 'dal', image: IMAGE_BY_ID.dal, strokes: [DAL], dots: [] },
-  { id: 'zal', image: IMAGE_BY_ID.zal, strokes: [DAL], dots: [{ x: 0.52, y: 0.12 }] },
+  { id: 'zal', image: IMAGE_BY_ID.zal, strokes: [DAL], dots: [{ x: 0.397, y: 0.172 }] },
   { id: 're', image: IMAGE_BY_ID.re, strokes: [DAL], dots: [] },
-  { id: 'ze', image: IMAGE_BY_ID.ze, strokes: [DAL], dots: [{ x: 0.52, y: 0.12 }] },
-  { id: 'zhe', image: IMAGE_BY_ID.zhe, strokes: [DAL], dots: [{ x: 0.4, y: 0.11 }, { x: 0.52, y: 0.1 }, { x: 0.64, y: 0.11 }] },
+  { id: 'ze', image: IMAGE_BY_ID.ze, strokes: [DAL], dots: [{ x: 0.564, y: 0.174 }] },
+  { id: 'zhe', image: IMAGE_BY_ID.zhe, strokes: [ZHE], dots: [{ x: 0.485, y: 0.251 }, { x: 0.55, y: 0.158 }, { x: 0.614, y: 0.251 }] },
   { id: 'sin', image: IMAGE_BY_ID.sin, strokes: [SIN], dots: [] },
-  { id: 'shin', image: IMAGE_BY_ID.shin, strokes: [SIN], dots: [{ x: 0.38, y: 0.12 }, { x: 0.5, y: 0.11 }, { x: 0.62, y: 0.12 }] },
+  { id: 'shin', image: IMAGE_BY_ID.shin, strokes: [SIN], dots: [{ x: 0.568, y: 0.25 }, { x: 0.52, y: 0.317 }, { x: 0.613, y: 0.317 }] },
   { id: 'sad', image: IMAGE_BY_ID.sad, strokes: [SAD], dots: [] },
-  { id: 'zad', image: IMAGE_BY_ID.zad, strokes: [SAD], dots: [{ x: 0.52, y: 0.12 }] },
+  { id: 'zad', image: IMAGE_BY_ID.zad, strokes: [SAD], dots: [{ x: 0.568, y: 0.255 }] },
   { id: 'ta', image: IMAGE_BY_ID.ta, strokes: [SAD], dots: [] },
-  { id: 'za', image: IMAGE_BY_ID.za, strokes: [SAD], dots: [{ x: 0.52, y: 0.12 }] },
+  { id: 'za', image: IMAGE_BY_ID.za, strokes: [SAD], dots: [{ x: 0.555, y: 0.243 }] },
   { id: 'eyn', image: IMAGE_BY_ID.eyn, strokes: [EYN], dots: [] },
-  { id: 'gheyn', image: IMAGE_BY_ID.gheyn, strokes: [EYN], dots: [{ x: 0.56, y: 0.12 }] },
-  { id: 'fe', image: IMAGE_BY_ID.fe, strokes: [FE], dots: [{ x: 0.53, y: 0.16 }] },
-  { id: 'ghaf', image: IMAGE_BY_ID.ghaf, strokes: [FE], dots: [{ x: 0.46, y: 0.15 }, { x: 0.6, y: 0.15 }] },
+  { id: 'gheyn', image: IMAGE_BY_ID.gheyn, strokes: [EYN], dots: [{ x: 0.487, y: 0.138 }] },
+  { id: 'fe', image: IMAGE_BY_ID.fe, strokes: [FE], dots: [{ x: 0.637, y: 0.183 }] },
+  { id: 'ghaf', image: IMAGE_BY_ID.ghaf, strokes: [FE], dots: [{ x: 0.588, y: 0.146 }, { x: 0.695, y: 0.146 }] },
   { id: 'kaf', image: IMAGE_BY_ID.kaf, strokes: [KAF_TOP, KAF_BODY], dots: [] },
   { id: 'gaf', image: IMAGE_BY_ID.gaf, strokes: [KAF_TOP, KAF_BODY], dots: [] },
   { id: 'lam', image: IMAGE_BY_ID.lam, strokes: [LAM], dots: [] },
   { id: 'mim', image: IMAGE_BY_ID.mim, strokes: [MIM], dots: [] },
-  { id: 'noon', image: IMAGE_BY_ID.noon, strokes: [NOON], dots: [] },
+  { id: 'noon', image: IMAGE_BY_ID.noon, strokes: [NOON], dots: [{ x: 0.495, y: 0.3545 }] },
   { id: 'vav', image: IMAGE_BY_ID.vav, strokes: [VAV], dots: [] },
   { id: 'he', image: IMAGE_BY_ID.he, strokes: [HE], dots: [] },
-  { id: 'ye', image: IMAGE_BY_ID.ye, strokes: [YE], dots: [{ x: 0.4, y: 0.9 }, { x: 0.6, y: 0.9 }] },
+  { id: 'ye', image: IMAGE_BY_ID.ye, strokes: [YE], dots: [] },
 ] as const;

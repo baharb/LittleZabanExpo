@@ -501,6 +501,7 @@ export const neliWorldAssets = {
     paintbrush: require('../../assets/neli-world/ui-icons/paintbrush.png'),
     pause: require('../../assets/neli-world/ui-icons/ui/pause.png'),
     play: require('../../assets/neli-world/ui-icons/ui/play.png'),
+    point: require('../../assets/neli-world/ui-icons/point.png'),
     restart: require('../../assets/neli-world/ui-icons/restart.png'),
     rainbow: require('../../assets/neli-world/ui-icons/rainbow.png'),
     settings: require('../../assets/neli-world/ui-icons/settings.png'),
