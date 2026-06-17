@@ -102,7 +102,7 @@ export const FARSI_LETTERS: FarsiLetter[] = [
   // س
   { id:'sin',   letter:'س', nameFa:'سین',  nameEn:'Sin',   exampleFa:'سیب',       exampleEn:'Apple',     exampleIcon:'🍎',  viewBox:VB, outlinePath:OUTLINES['sin'], color:'#FF6B6B', strokes:[
     s('main-1', 'M 173.0 70.0 C 174.0 84.0 168.0 99.0 158.0 101.0', 1, at([0.45,0.8])),
-    s('main-2', 'M 148.0 101.0 C 148.0 104.0 139.0 104.0 141.0 98.0 ', 2, at([0.45,0.8])),
+    s('main-2', 'M 148.0 101.0 C 148.0 104.0 139.0 104.0 141.0 98.0', 2, at([0.45,0.8])),
     s('main-3', 'M 136.5 87.0 L 136.5 70.0', 3, at([0.45,0.8])),
     s('main-4', 'M 125.5 75.0 L 125.5 92.0', 4, at([0.45,0.8])),
     s('main-5', 'M 123.2 98.1 L 116.4 102.5', 5, at([0.45,0.8])),
