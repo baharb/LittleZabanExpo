@@ -27,6 +27,7 @@ export type FarsiLetter = {
   dots?: { x: number; y: number }[];
   dashStops?: Array<[number, number]>;
   extraDashSegments?: Array<{ id?: string; x1: number; y1: number; x2: number; y2: number; rotation?: number }>;
+  segmentLabels?: Array<{ x: number; y: number; label: number }>;
   color?: string;
 };
 
@@ -52,6 +53,17 @@ const RE = TRACE.re;
 const ZE = TRACE.ze;
 const ZHE = TRACE.zhe;
 const SIN = TRACE.sin;
+const SIN_CUSTOM_SEGMENTS = [
+  'M 173.0 70.0 C 174.0 84.0 168.0 99.0 158.0 101.0', // 1
+  'M 148.0 101.0 C 148.0 104.0 139.0 104.0 141.0 98.0', // 2
+  'M 135.0 84.0 L 135.0 60.5', // 3
+  'M 125.5 60.5 L 125.5 84.0', // 4
+  'M 125.5 88.0 C 125.5 90.2 123.0 93.0 120.5 94.5', // 5
+  'M 108.0 101.0 C 108.0 104.0 99.0 104.0 101.0 98.0', // 6
+  'M 96.5 87.0 L 96.5 70.0', // 7
+  'M 85.5 75.0 L 85.5 92.0', // 8
+  'M 86.0 100.0 C 86.0 100.0 84.0 126.0 72.0 130.0 C 56.0 136.0 39.0 130.0 30.0 117.0 C 24.0 107.0 24.0 92.0 31.0 82.0', // 9
+];
 const SHIN = TRACE.shin;
 const SAD = TRACE.sad;
 const ZAD = TRACE.zad;
@@ -101,16 +113,16 @@ export const FARSI_LETTERS: FarsiLetter[] = [
   { id:'zhe',   letter:'ژ', nameFa:'ژِ',   nameEn:'Zhe',   exampleFa:'ژاله',      exampleEn:'Dew',       exampleIcon:'💧',  viewBox:VB, outlinePath:OUTLINES['zhe'], color:'#FF64B8', strokes:[s('main',ZHE,1,at([0.2,0.55,0.85]))], dots:[{x:97,y:50.2},{x:110,y:31.6},{x:122.7,y:50.2}] },
   // س
   { id:'sin',   letter:'س', nameFa:'سین',  nameEn:'Sin',   exampleFa:'سیب',       exampleEn:'Apple',     exampleIcon:'🍎',  viewBox:VB, outlinePath:OUTLINES['sin'], color:'#FF6B6B', strokes:[
-    s('main-1', 'M 173.0 70.0 C 174.0 84.0 168.0 99.0 158.0 101.0', 1, at([0.45,0.8])),
-    s('main-2', 'M 148.0 101.0 C 148.0 104.0 139.0 104.0 141.0 98.0', 2, at([0.45,0.8])),
-    s('main-3', 'M 136.5 87.0 L 136.5 70.0', 3, at([0.45,0.8])),
-    s('main-4', 'M 125.5 75.0 L 125.5 92.0', 4, at([0.45,0.8])),
-    s('main-5', 'M 123.2 98.1 L 116.4 102.5', 5, at([0.45,0.8])),
-    s('main-6', 'M 103.3 101.7 L 100.1 98.1', 6, at([0.45,0.8])),
-    s('main-7', 'M 97.0 85.9 L 97.0 74.4', 7, at([0.45,0.8])),
-    s('main-8', 'M 86.0 75.0 L 86.0 92.0', 8, at([0.45,0.8])),
-    s('main-9', 'M 86.0 100.0 C 86.0 100.0 84.0 126.0 72.0 130.0 C 56.0 136.0 39.0 130.0 30.0 117.0 C 24.0 107.0 24.0 92.0 31.0 82.0', 9, at([0.45,0.8])),
-  ] },
+    s('main-1', SIN_CUSTOM_SEGMENTS[0]!, 1, at([0.45,0.8])),
+    s('main-2', SIN_CUSTOM_SEGMENTS[1]!, 2, at([0.45,0.8])),
+    s('main-3', SIN_CUSTOM_SEGMENTS[2]!, 3, at([0.45,0.8])),
+    s('main-4', SIN_CUSTOM_SEGMENTS[3]!, 4, at([0.45,0.8])),
+    s('main-5', SIN_CUSTOM_SEGMENTS[4]!, 5, at([0.45,0.8])),
+    s('main-6', SIN_CUSTOM_SEGMENTS[5]!, 6, at([0.45,0.8])),
+    s('main-7', SIN_CUSTOM_SEGMENTS[6]!, 7, at([0.45,0.8])),
+    s('main-8', SIN_CUSTOM_SEGMENTS[7]!, 8, at([0.45,0.8])),
+    s('main-9', SIN_CUSTOM_SEGMENTS[8]!, 9, at([0.45,0.8])),
+  ], segmentLabels:[{x:135,y:63,label:3},{x:126,y:63,label:4},{x:120,y:99,label:5}] },
   // ش
   { id:'shin',  letter:'ش', nameFa:'شین',  nameEn:'Shin',  exampleFa:'شیر',       exampleEn:'Lion',      exampleIcon:'🦁',  viewBox:VB, outlinePath:OUTLINES['shin'], color:'#FF80C0', strokes:[s('main',SIN,1,at([0.18,0.46,0.76]))], dots:[{x:113.6,y:50},{x:104,y:63.3},{x:122.6,y:63.3}] },
   // ص
@@ -150,3 +162,10 @@ export const FARSI_LETTERS: FarsiLetter[] = [
 export const FARSI_LETTER_BY_ID = Object.fromEntries(
   FARSI_LETTERS.map(item => [item.id, item])
 ) as Record<string, FarsiLetter>;
+
+
+
+
+
+
+

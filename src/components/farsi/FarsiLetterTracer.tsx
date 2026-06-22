@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import Svg, { Circle, G, Line, Path } from 'react-native-svg';
+import Svg, { Circle, G, Line, Path, Text as SvgText } from 'react-native-svg';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
 import { FarsiLetter } from '../../data/farsiLetters';
 import { VAZIR_TRACE_LETTERS } from '../../screens/interactive/vazirmatnTraceData';
@@ -62,6 +62,7 @@ const COMPLETE_PROGRESS = 0.95;
 const AnimPath    = Animated.createAnimatedComponent(Path);
 const TRACE_IMAGE_ID: Record<string, string> = {
   haa: 'he-jimi',
+  heh: 'he',
   nun: 'noon',
   taa: 'ta',
   zaa: 'za',
@@ -266,9 +267,9 @@ export default function FarsiLetterTracer({
     [letter.dots, traceMeta, vb.height, vb.width],
   );
   const isSegmentedSin = letter.id === 'sin';
-  const traceTolerance = isSegmentedSin ? Math.max(tolerance * 1.45, 44) : tolerance;
-  const traceStartGate = isSegmentedSin ? Math.max(28, traceTolerance * 0.9) : Math.max(18, tolerance * 0.8);
-  const maxProgressJump = isSegmentedSin ? 0.42 : 0.18;
+  const traceTolerance = isSegmentedSin ? Math.max(tolerance * 1.2, 40) : Math.max(tolerance, 34);
+  const traceStartGate = isSegmentedSin ? Math.max(24, traceTolerance * 0.86) : Math.max(18, Math.max(tolerance, 34) * 0.78);
+  const maxProgressJump = isSegmentedSin ? 0.3 : 0.22;
   const dotTolerance = Math.max(tolerance * 1.2, Math.min(boardSize * 0.14, 60));
   const activeDotTolerance = Math.max(dotTolerance * 1.15, Math.min(boardSize * 0.17, 72));
 
@@ -291,7 +292,7 @@ export default function FarsiLetterTracer({
     guideLoop.current = Animated.loop(
       Animated.timing(guideAnim, {
         toValue:  1,
-        duration: 1600,
+        duration: 1100,
         easing:   Easing.linear,
         useNativeDriver: true,
       }),
@@ -347,7 +348,7 @@ export default function FarsiLetterTracer({
     startGuideAnim();
 
     // Animate the pencil dot across the path
-    const durations = strokes.map(st => clamp(polylineLength(st.points) * 5.5, 700, 1400));
+    const durations = strokes.map(st => clamp(polylineLength(st.points) * 4.2, 520, 1100));
     let si = 0;
     let tStart = Date.now();
 
@@ -370,7 +371,7 @@ export default function FarsiLetterTracer({
       if (prog >= 1) {
         si++;
         tStart = Date.now();
-        setTimeout(tick, 140);
+        setTimeout(tick, 80);
       } else {
         requestAnimationFrame(tick);
       }
@@ -668,6 +669,22 @@ export default function FarsiLetterTracer({
               </G>
             ))
           : null}
+        {letter.segmentLabels?.length
+          ? letter.segmentLabels.map(seg => (
+              <SvgText
+                key={`seg-label-${seg.label}`}
+                x={seg.x}
+                y={seg.y}
+                fill={col}
+                fontSize={13}
+                fontWeight="700"
+                textAnchor="middle"
+                alignmentBaseline="middle"
+              >
+                {seg.label}
+              </SvgText>
+            ))
+          : null}
       </Svg>
 
       {/* Overlay (pointer / hints) */}
@@ -911,3 +928,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
+
