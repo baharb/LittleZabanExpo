@@ -2,9 +2,9 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Image, ImageBackground, LayoutAnimation, PanResponder, Platform, StyleSheet, Text, TouchableOpacity, UIManager, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
-import Svg, { Circle, Polygon } from 'react-native-svg';
 import TopBar from '../../components/TopBar';
-import CelebrationOverlay from '../../components/CelebrationOverlay';
+import CelebrationOverlay from '../../components/celebration/CelebrationOverlay';
+import { useCelebration } from '../../components/celebration/useCelebration';
 import { AppContext } from '../../store/AppContext';
 import { useNav } from '../../store/NavContext';
 import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
@@ -15,8 +15,6 @@ type StageSize = { width: number; height: number };
 type Rect = { x: number; y: number; w: number; h: number };
 const TTS = (l: string) => ({ fa: 'fa-IR', ar: 'fa-IR', zh: 'zh-CN', ko: 'ko-KR', fr: 'fr-FR', es: 'es-ES' } as any)[l] ?? 'en-US';
 const RATE = (l: string) => (l === 'fa' || l === 'ar' ? 0.65 : 0.8);
-const CELEBRATION_PARTICLE_COUNT = 160;
-const CELEBRATION_BURST_MS = 3600;
 const SETTLE_MS = 600;
 const PLANET_NAME_EN: Record<string, string> = {
   mercury: 'Mercury',
@@ -45,157 +43,6 @@ function clamp(n: number, min: number, max: number) {
 
 function animatePlanetSettle() {
   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-}
-
-function StarSparkle({
-  primaryColor,
-  innerColor,
-  coreColor,
-}: {
-  primaryColor: string;
-  innerColor: string;
-  coreColor: string;
-}) {
-  return (
-    <Svg width="100%" height="100%" viewBox="0 0 100 100">
-      <Circle cx="50" cy="50" r="36" fill={primaryColor} opacity="0.22" />
-      <Circle cx="50" cy="50" r="28" fill={innerColor} opacity="0.3" />
-      <Polygon
-        points="50,2 61,32 92,35 68,54 76,86 50,68 24,86 32,54 8,35 39,32"
-        fill={primaryColor}
-        opacity="0.95"
-      />
-      <Polygon
-        points="50,10 58,34 86,37 64,53 71,78 50,64 29,78 36,53 14,37 42,34"
-        fill={innerColor}
-      />
-      <Polygon
-        points="50,22 56,42 77,43 60,55 66,75 50,63 34,75 40,55 23,43 44,42"
-        fill={coreColor}
-        opacity="0.98"
-      />
-      <Circle cx="50" cy="50" r="9" fill={coreColor} />
-    </Svg>
-  );
-}
-
-type CelebrationStarSpec = {
-  id: number;
-  spawnX: number;
-  spawnY: number;
-  vx: number;
-  vy: number;
-  gravity: number;
-  size: number;
-  delay: number;
-  primaryColor: string;
-  innerColor: string;
-  coreColor: string;
-  glowColor: string;
-  spinRate: number;
-};
-
-function BurstCelebration({
-  particles,
-  stageWidth,
-  stageHeight,
-  progress,
-}: {
-  particles: CelebrationStarSpec[];
-  stageWidth: number;
-  stageHeight: number;
-  progress: Animated.Value;
-}) {
-  if (!particles.length) return null;
-  return (
-    <>
-      {particles.map(p => (
-        <BurstParticle
-          key={p.id}
-          p={p}
-          stageWidth={stageWidth}
-          stageHeight={stageHeight}
-          progress={progress}
-        />
-      ))}
-    </>
-  );
-}
-
-function BurstParticle({
-  p,
-  stageWidth,
-  stageHeight,
-  progress,
-}: {
-  p: CelebrationStarSpec;
-  stageWidth: number;
-  stageHeight: number;
-  progress: Animated.Value;
-}) {
-  const totalMs = CELEBRATION_BURST_MS;
-  const pStart = p.delay / totalMs;
-  const pEnd = 1;
-  const tSec = (pEnd - pStart) * totalMs / 1000;
-
-  const endX = p.vx * tSec;
-  const endY = p.vy * tSec + 0.5 * p.gravity * tSec * tSec;
-
-  const fadeInEnd  = pStart + (pEnd - pStart) * 0.04;
-  const fadeOutStart = pStart + (pEnd - pStart) * 0.82;
-
-  const translateX = progress.interpolate({
-    inputRange: [pStart, pEnd],
-    outputRange: [0, endX],
-    extrapolate: 'clamp',
-  });
-  const translateY = progress.interpolate({
-    inputRange: [pStart, pEnd],
-    outputRange: [0, endY],
-    extrapolate: 'clamp',
-  });
-  const opacity = progress.interpolate({
-    inputRange: [pStart, fadeInEnd, fadeOutStart, pEnd],
-    outputRange: [0, 1, 1, 0],
-    extrapolate: 'clamp',
-  });
-  const rotate = progress.interpolate({
-    inputRange: [pStart, pEnd],
-    outputRange: ['0deg', `${p.spinRate * 360}deg`],
-    extrapolate: 'clamp',
-  });
-  const scale = progress.interpolate({
-    inputRange: [pStart, pStart + (pEnd - pStart) * 0.1, pEnd],
-    outputRange: [0.3, 1.0, 0.8],
-    extrapolate: 'clamp',
-  });
-
-  const sz = p.size;
-
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[
-        styles.blinkStar,
-        {
-          left: p.spawnX - sz / 2,
-          top: p.spawnY - sz / 2,
-          width: sz,
-          height: sz,
-          opacity,
-          transform: [{ translateX }, { translateY }, { scale }, { rotate }],
-        },
-      ]}
-    >
-      <View style={[styles.starGlow, { shadowColor: p.glowColor }]}>
-        <StarSparkle
-          primaryColor={p.primaryColor}
-          innerColor={p.innerColor}
-          coreColor={p.coreColor}
-        />
-      </View>
-    </Animated.View>
-  );
 }
 
 async function safeImpact() {
@@ -458,8 +305,7 @@ export default function SolarSystemPuzzleGame() {
   const [placedCount, setPlacedCount] = useState(0);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [placedIds, setPlacedIds] = useState<string[]>([]);
-  const [celebrationActive, setCelebrationActive] = useState(false);
-  const [celebrationSeed, setCelebrationSeed] = useState(1);
+  const celebration = useCelebration();
   const celebrationPlayedRef = useRef(false);
   const placedIdsRef = useRef<string[]>([]);
   const placedCountRef = useRef(0);
@@ -481,8 +327,13 @@ export default function SolarSystemPuzzleGame() {
   const startCelebration = () => {
     if (celebrationPlayedRef.current || !stageSize.width || !stageSize.height) return;
     celebrationPlayedRef.current = true;
-    setCelebrationSeed(prev => prev + 1);
-    setCelebrationActive(true);
+    celebration.play({
+      message: 'آفرین! 🌟',
+      subMessage: 'Well done!',
+      color: '#FFE034',
+      durationMs: 2800,
+      particleCount: 156,
+    });
   };
   const handlePlaced = () => {
     setActiveId(null);
@@ -504,7 +355,6 @@ export default function SolarSystemPuzzleGame() {
 
   useEffect(() => {
     if (allPlaced) return;
-    setCelebrationActive(false);
     celebrationPlayedRef.current = false;
   }, [allPlaced]);
 
@@ -559,14 +409,7 @@ export default function SolarSystemPuzzleGame() {
               )) : null}
             </View>
 
-            <CelebrationOverlay
-              active={celebrationActive}
-              width={stageSize.width}
-              height={stageSize.height}
-              seed={celebrationSeed}
-              particleCount={240}
-              onComplete={() => setCelebrationActive(false)}
-            />
+            <CelebrationOverlay ref={celebration.ref} />
 
             <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
               {draggableLayout.map(planet => (
@@ -617,21 +460,6 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
     overflow: 'hidden',
-  },
-  blinkStar: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 40,
-  },
-  starGlow: {
-    width: '100%',
-    height: '100%',
-    shadowColor: 'rgba(255, 244, 170, 1)',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 30,
-    elevation: 18,
   },
   bgStarGlow: {
     width: '100%',
@@ -739,4 +567,3 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
-

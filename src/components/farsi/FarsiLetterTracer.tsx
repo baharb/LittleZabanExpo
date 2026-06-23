@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import Svg, { Circle, G, Line, Path, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, G, Line, Path } from 'react-native-svg';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
 import { FarsiLetter } from '../../data/farsiLetters';
 import { VAZIR_TRACE_LETTERS } from '../../screens/interactive/vazirmatnTraceData';
@@ -669,22 +669,7 @@ export default function FarsiLetterTracer({
               </G>
             ))
           : null}
-        {letter.segmentLabels?.length
-          ? letter.segmentLabels.map(seg => (
-              <SvgText
-                key={`seg-label-${seg.label}`}
-                x={seg.x}
-                y={seg.y}
-                fill={col}
-                fontSize={13}
-                fontWeight="700"
-                textAnchor="middle"
-                alignmentBaseline="middle"
-              >
-                {seg.label}
-              </SvgText>
-            ))
-          : null}
+
       </Svg>
 
       {/* Overlay (pointer / hints) */}
@@ -928,4 +913,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
+
 

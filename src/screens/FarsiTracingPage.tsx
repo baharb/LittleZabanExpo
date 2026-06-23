@@ -1,11 +1,11 @@
 import React, { useContext, useMemo, useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import * as Speech from 'expo-speech';
 import TopBar from '../components/TopBar';
 import { AppContext } from '../store/AppContext';
 import { useNav } from '../store/NavContext';
 import { FARSI_LETTERS } from '../data/farsiLetters';
+import { FA_AUDIO_KEYS, makeAlphabetAudioKey, playFaAudio, playFaAudioSequence, stopFaAudio } from '../utils/faAudio';
 import FarsiLetterTracer from '../components/farsi/FarsiLetterTracer';
 import LetterSelectorModal from '../components/farsi/LetterSelectorModal';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
@@ -32,43 +32,55 @@ export default function FarsiTracingPage() {
   }, [compact, height, width]);
 
   const goToLetter = (nextIndex: number) => {
+    void stopFaAudio();
     setIndex(nextIndex);
     setLetterComplete(false);
     setGuideToken(token => token + 1);
   };
 
-  const playLetterSound = (letterId: string) => {
+  const playLetterSound = async (letterId: string) => {
     if (!soundOn) return;
-    const item = FARSI_LETTERS.find(entry => entry.id === letterId);
-    if (!item) return;
     try {
-      Speech.stop();
-      Speech.speak(`${item.nameFa}. ${item.exampleFa ?? ''}`, { language: 'fa-IR', rate: 0.7 });
-      if (lang !== 'fa' && lang !== 'ar') {
-        setTimeout(() => {
-          Speech.speak(`${item.nameEn}. ${item.exampleEn ?? ''}`, { language: 'en-US', rate: 0.8 });
-        }, 200);
+      const played = await playFaAudioSequence([
+        FA_AUDIO_KEYS.guidance.startHere,
+        makeAlphabetAudioKey('name', letterId),
+      ], 180);
+      if (!played) {
+        const item = FARSI_LETTERS.find(entry => entry.id === letterId);
+        if (item) {
+          // Fallback: keep the page usable even when a file is missing.
+          void playFaAudio(makeAlphabetAudioKey('name', letterId));
+        }
       }
     } catch {
-      // Placeholder hook: safe to swap for a real letter audio player later.
+      const item = FARSI_LETTERS.find(entry => entry.id === letterId);
+      if (!item) return;
     }
   };
 
-  const playSuccessSound = () => {
+  const playSuccessSound = async () => {
     if (!soundOn) return;
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await playFaAudioSequence([
+        FA_AUDIO_KEYS.feedback.afarin,
+        makeAlphabetAudioKey('example', letter.id),
+      ], 220);
     } catch {
-      // Placeholder hook for a future success sound.
+      // Fallback to a light haptic-only success if audio is unavailable.
     }
   };
 
-  const playTryAgainSound = () => {
+  const playTryAgainSound = async () => {
     if (!soundOn) return;
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await playFaAudioSequence([
+        FA_AUDIO_KEYS.feedback.tryAgain,
+        FA_AUDIO_KEYS.guidance.followPath,
+      ], 180);
     } catch {
-      // Placeholder hook for a future gentle retry sound.
+      // Fallback to a light haptic-only retry if audio is unavailable.
     }
   };
 
@@ -83,9 +95,10 @@ export default function FarsiTracingPage() {
     goToLetter(index - 1);
   };
   const reset = () => {
+    void stopFaAudio();
     setLetterComplete(false);
     setGuideToken(token => token + 1);
-    playTryAgainSound();
+    void playTryAgainSound();
   };
 
   return (

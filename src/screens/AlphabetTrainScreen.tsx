@@ -17,6 +17,7 @@ import TopBar from '../components/TopBar';
 import { ALPHABETS, EXAMPLE_IMAGE_BY_ID } from './VideoShowsScreen';
 import { useNav } from '../store/NavContext';
 import { useSpeech } from '../hooks/useSpeech';
+import { makeAlphabetAudioKey, playFaAudio, stopFaAudio } from '../utils/faAudio';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
 import { characterAssets } from '../assets/characterAssets';
 import { ff } from '../theme/fonts';
@@ -660,7 +661,14 @@ export default function AlphabetTrainScreen() {
     const letterTimer = setTimeout(() => {
       setRevealedIndex(current => Math.max(current, index));
       stopRef.current();
-      speakRef.current(`${trainItems[index].letter}، مثل ${trainItems[index].wordFa}. ${trainItems[index].hintFa}`);
+      void stopFaAudio();
+      const item = trainItems[index];
+      if (!item) return;
+      void playFaAudio(makeAlphabetAudioKey('trace', item.id)).then(played => {
+        if (!played) {
+          speakRef.current(`${item.letter}? ??? ${item.wordFa}. ${item.hintFa}`);
+        }
+      });
     }, 325);
     const imageTimer = setTimeout(() => {
       setImageRevealedIndex(current => Math.max(current, index));
@@ -681,6 +689,7 @@ export default function AlphabetTrainScreen() {
   };
 
   const close = () => {
+    void stopFaAudio();
     stop();
     goBack();
   };

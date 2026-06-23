@@ -1,15 +1,13 @@
 ﻿import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, ImageBackground, PanResponder, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import * as Speech from 'expo-speech';
 import TopBar from '../../components/TopBar';
 import { AppContext } from '../../store/AppContext';
 import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
 import { dir, ff } from '../../theme/fonts';
 import { neliWorldAssets, roomBackgroundPickers } from '../../assets/neliWorldAssets';
+import { FA_AUDIO_KEYS, playFaAudioSequence, stopFaAudio } from '../../utils/faAudio';
 
-const TTS = (l: string) => ({ fa: 'fa-IR', ar: 'fa-IR', zh: 'zh-CN', ko: 'ko-KR', fr: 'fr-FR', es: 'es-ES' } as any)[l] ?? 'en-US';
-const RATE = (l: string) => (l === 'fa' || l === 'ar' ? 0.65 : 0.8);
 const NUM = 10;
 
 const FOAM_POINTS = [
@@ -171,10 +169,9 @@ export default function ToothBrushGame() {
   }, [done]);
 
   useEffect(() => {
-    Speech.stop();
+    void stopFaAudio();
     const id = setTimeout(() => {
-      const text = isFa ? 'دندان‌ها را مسواک بزن!' : lang === 'fr' ? 'Brosse tes dents!' : lang === 'es' ? 'Cepilla los dientes!' : 'Brush your teeth!';
-      Speech.speak(text, { language: TTS(lang), rate: RATE(lang), pitch: 1.16 });
+      void playFaAudioSequence([FA_AUDIO_KEYS.toothbrush.brushLilaTeeth], 100);
     }, 650);
     return () => clearTimeout(id);
   }, [isFa, lang]);
@@ -202,8 +199,7 @@ export default function ToothBrushGame() {
         setShowSparkles(true);
         sparklePulse.setValue(0);
         requestAnimationFrame(() => placeBrushNearHead());
-        Speech.stop();
-        Speech.speak(isFa ? 'تمیز شد!' : 'It is clean now!', { language: TTS(lang), rate: RATE(lang), pitch: 1.12 });
+        void playFaAudioSequence([FA_AUDIO_KEYS.toothbrush.cleanNow], 100);
       }, 160);
     }, 120);
     completionTimerRef.current = setTimeout(() => {
