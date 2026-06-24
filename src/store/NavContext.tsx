@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 export type Screen =
   | { name: 'Splash' }
+  | { name: 'AccountSetup' }
+  | { name: 'SettingsUnlock' }
   | { name: 'Age' }
   | { name: 'Main'; tab?: string }
   | { name: 'Section'; id: string }

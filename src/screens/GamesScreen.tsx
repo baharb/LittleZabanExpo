@@ -32,7 +32,6 @@ const GAMES: Tile[] = [
   { id: 'animals', route: { name: 'FeedAnimals' }, en: 'Feed Animals', fa: 'غذا بده', descEn: 'Drag food to animals', descFa: 'غذا را به حیوان بده', kind: 'animal', color: '#22C55E', accent: '#FACC15', group: 'play' },
   { id: 'cook', route: { name: 'Cooking' }, en: 'Cooking', fa: 'آشپزی', descEn: 'Make fun recipes', descFa: 'غذا درست کن', kind: 'cook', color: '#FB923C', accent: '#FACC15', group: 'play' },
   { id: 'coloring', route: { name: 'Coloring' }, en: 'Painting', fa: 'نقاشی', descEn: 'Paint picture pages', descFa: 'صفحه‌ها را رنگ کن', kind: 'paint', color: '#A855F7', accent: '#FF80C0', group: 'play' },
-  { id: 'iranPuzzle', route: { name: 'IranPuzzle' }, en: 'Iran Puzzle', fa: 'پازل ایران', descEn: 'Drag the provinces', descFa: 'استان‌ها را جابجا کن', kind: 'iranPuzzle', color: '#F97316', accent: '#FFF0E2', group: 'learn' },
   { id: 'solarPuzzle', route: { name: 'SolarPuzzle' }, en: 'Solar System', fa: 'منظومه خورشیدی', descEn: 'Place each planet', descFa: 'هر سیاره را بگذار', kind: 'solarPuzzle', color: '#38BDF8', accent: '#EAF7FF', group: 'learn' },
   { id: 'interactiveTracing', route: { name: 'InteractiveFarsiTrace' }, en: 'Farsi Tracing', fa: 'تمرین نوشتن', descEn: 'Trace Persian letters', descFa: 'حروف را قدم به قدم بکش', kind: 'firstTracing', color: '#19BDF2', accent: '#FFE66D', group: 'alphabet' },
   { id: 'alphabet', route: { name: 'AlphabetShow' }, en: 'Alphabet Show', fa: 'نمایش الفبا', descEn: 'Letters, words, and motion', descFa: 'حرف، واژه و حرکت', kind: 'alphabet', color: '#8B5CF6', accent: '#38BDF8', group: 'alphabet' },
@@ -40,7 +39,7 @@ const GAMES: Tile[] = [
   { id: 'memory', route: { name: 'Game', gameId: 'memory' }, en: 'Memory Match', fa: 'بازی حافظه', descEn: 'Find pairs', descFa: 'جفت‌ها را پیدا کن', kind: 'memory', color: '#6C4EFF', accent: '#FACC15', group: 'learn' },
   { id: 'quiz', route: { name: 'Game', gameId: 'quiz' }, en: 'Word Quiz', fa: 'مسابقه کلمه', descEn: 'See and choose', descFa: 'ببین و انتخاب کن', kind: 'quiz', color: '#38BDF8', accent: '#A855F7', group: 'learn' },
   { id: 'colors', route: { name: 'Game', gameId: 'colormatch' }, en: 'Color Play', fa: 'بازی رنگ', descEn: 'Match playful colors', descFa: 'رنگ درست را پیدا کن', kind: 'color', color: '#EC4899', accent: '#FACC15', group: 'learn' },
-  { id: 'counting', route: { name: 'Game', gameId: 'counting' }, en: 'Counting', fa: 'شمارش', descEn: 'Count with pictures', descFa: 'با تصویر بشمار', kind: 'count', color: '#FACC15', accent: '#6C4EFF', group: 'learn' },
+  { id: 'counting', route: { name: 'Game', gameId: 'counting' }, en: 'Counting', fa: 'شمارش', descEn: 'Count with pictures', descFa: 'با تصویر بشمار', kind: 'count', color: '#F72585', accent: '#FFE45E', group: 'learn' },
 ];
 
 const GROUPS = [
@@ -58,12 +57,12 @@ function TileArt({ kind, color, accent, characterId, width, height }: { kind: Ki
         <View style={styles.sceneWash} />
         <CharacterAvatar
           characterId="neli"
-          size={118}
+          size={106}
           talking
           talkPattern="home"
           talkMouthScale={0.86}
           talkMouthOffsetXPercent={0.46}
-          talkMouthOffsetY={0}
+          talkMouthOffsetY={2}
           floating={false}
           style={styles.sceneNeliLarge}
         />
@@ -191,7 +190,19 @@ function TileArt({ kind, color, accent, characterId, width, height }: { kind: Ki
       <Image source={solarPlanetSource('mars')} style={[styles.solarPreviewPlanet, styles.solarPreviewMars]} resizeMode="contain" />
     </ImageBackground>
   );
-  if (kind === 'count') return <View style={styles.art}>{[0, 1, 2].map(i => <View key={i} style={[styles.countBall, { backgroundColor: i === 1 ? accent : color, left: 40 + i * 32 }]} />)}</View>;
+  if (kind === 'count') {
+    return (
+      <View style={styles.countingScene}>
+        <View style={styles.countingGlow} />
+        <Text style={[styles.countingNumber, styles.countingNumberOne]}>۱</Text>
+        <Text style={[styles.countingNumber, styles.countingNumberTwo]}>۲</Text>
+        <Text style={[styles.countingNumber, styles.countingNumberThree]}>۳</Text>
+        <Text style={[styles.countingNumber, styles.countingNumberFive]}>۵</Text>
+        <Text style={[styles.countingNumber, styles.countingNumberSeven]}>۷</Text>
+        <Image source={characterAssets.aidin.poses.waving} style={styles.countingOwl} resizeMode="contain" />
+      </View>
+    );
+  }
   if (kind === 'culture') return <View style={styles.art}><View style={[styles.book, { backgroundColor: color }]} /><View style={[styles.sun, { backgroundColor: accent }]} /></View>;
   return <View style={styles.art}><View style={[styles.face, { backgroundColor: color }]}><View style={styles.eyeLeft} /><View style={styles.eyeRight} /><View style={styles.smile} /></View><View style={[styles.chat, { backgroundColor: accent }]} /></View>;
 }
@@ -290,7 +301,7 @@ const styles = StyleSheet.create({
   solarCardStarOne: { position: 'absolute', left: 28, top: 34, width: 4, height: 4, borderRadius: 2, backgroundColor: '#FFF7C2' },
   solarCardStarTwo: { position: 'absolute', right: 42, top: 26, width: 5, height: 5, borderRadius: 3, backgroundColor: '#BFEAFF' },
   solarCardStarThree: { position: 'absolute', right: 72, bottom: 58, width: 3, height: 3, borderRadius: 2, backgroundColor: '#FFEFB0' },
-  sceneNeliLarge: { position: 'absolute', width: 177, height: 231, alignSelf: 'center', bottom: -40.2 },
+  sceneNeliLarge: { position: 'absolute', width: 159, height: 208, alignSelf: 'center', bottom: -42 },
   sceneGiraffe: { position: 'absolute', width: 172.2, height: 218.4, alignSelf: 'center', bottom: -14 },
   tileGiraffe: { position: 'absolute', width: 172.2, height: 218.4, alignSelf: 'center', bottom: -14 },
   tileBrush: { position: 'absolute', width: 54, height: 54, left: 12, bottom: 14, transform: [{ rotate: '-18deg' }] },
@@ -518,9 +529,21 @@ const styles = StyleSheet.create({
   roof: { width: 0, height: 0, borderLeftWidth: 42, borderRightWidth: 42, borderBottomWidth: 38, borderLeftColor: 'transparent', borderRightColor: 'transparent' },
   house: { width: 70, height: 48, borderRadius: 12, backgroundColor: '#FFFFFF' },
   door: { position: 'absolute', bottom: 23, width: 18, height: 28, borderRadius: 7 },
-  countBall: { position: 'absolute', width: 30, height: 30, borderRadius: 15 },
+  countingScene: { flex: 1, width: '100%', height: '100%', backgroundColor: '#F72585', overflow: 'hidden' },
+  countingGlow: { position: 'absolute', width: 190, height: 190, borderRadius: 95, right: -42, top: -72, backgroundColor: 'rgba(255,228,94,0.28)' },
+  countingOwl: { position: 'absolute', width: 154, height: 190, right: 18, bottom: -8 },
+  countingNumber: { position: 'absolute', fontFamily: 'Vazirmatn_800ExtraBold', color: '#FFFFFF', textShadowColor: 'rgba(83,13,62,0.22)', textShadowOffset: { width: 0, height: 3 }, textShadowRadius: 2 },
+  countingNumberOne: { left: 23, top: 18, fontSize: 38, transform: [{ rotate: '-10deg' }] },
+  countingNumberTwo: { left: 83, top: 48, fontSize: 28, color: '#FFE45E', transform: [{ rotate: '8deg' }] },
+  countingNumberThree: { left: 27, top: 96, fontSize: 31, color: '#75F2E0', transform: [{ rotate: '7deg' }] },
+  countingNumberFive: { right: 20, top: 14, fontSize: 26, color: '#FFE45E', transform: [{ rotate: '12deg' }] },
+  countingNumberSeven: { left: 100, bottom: 42, fontSize: 24, color: '#FFFFFF', transform: [{ rotate: '-8deg' }] },
   book: { width: 68, height: 74, borderRadius: 14 },
   sun: { position: 'absolute', right: 41, top: 25, width: 32, height: 32, borderRadius: 16 },
   tileTalkCharacter: { position: 'absolute', right: 10, bottom: -10, width: 92, height: 120 },
   tileDressCharacter: { position: 'absolute', right: 10, bottom: 2, width: 92, height: 120 },
 });
+
+
+
+

@@ -310,7 +310,7 @@ export const neliWorldAssets = {
       sunglassesBlack: require('../../assets/neli-world/clothes/sunglasses_black.png'),
       sunglassesGold: require('../../assets/neli-world/clothes/sunglasses_gold.png'),
       sunglassesPink: require('../../assets/neli-world/clothes/sunglasses_pink.png'),
-      sunhat: require('../../assets/neli-world/clothes/sunhat_yellow.png.hq.tmp.png'),
+      sunhat: require('../../assets/neli-world/clothes/sunhat_yellow.png'),
       sunhatCream: require('../../assets/neli-world/clothes/sunhat_cream.png'),
       sweater: require('../../assets/neli-world/clothes/sweater_green.png'),
   },

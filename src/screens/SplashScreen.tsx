@@ -16,8 +16,8 @@ const RUNNING_FRAMES = [
 ];
 
 export default function SplashScreen() {
-  const { navigate } = useNav();
-  const { lang } = useContext(AppContext);
+  const { reset } = useNav();
+  const { lang, authReady, hasAccount } = useContext(AppContext);
   const { width, height } = useWindowDimensions();
   const isFa = lang === 'fa' || lang === 'ar';
   const landscape = width > height;
@@ -58,13 +58,14 @@ export default function SplashScreen() {
     });
 
     const timer = setTimeout(() => {
-      navigate({ name: 'Main', tab: 'Games' });
+      if (!authReady) return;
+      reset(hasAccount ? { name: 'Main', tab: 'Games' } : { name: 'AccountSetup' });
     }, 3100);
     return () => {
       clearTimeout(timer);
       waveLoop.stop();
     };
-  }, [navigate, neliFloat, neliRunX, neliSize, titleOpacity, titleY, width]);
+  }, [authReady, hasAccount, neliFloat, neliRunX, neliSize, reset, titleOpacity, titleY, width]);
 
   return (
     <ImageBackground source={splashSource} style={styles.root} resizeMode="cover">

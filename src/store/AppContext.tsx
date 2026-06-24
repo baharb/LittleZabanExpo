@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createPasswordSalt, derivePasswordVerifier } from '../utils/passwordHash';
 
 export type Lang = 'en' | 'fa' | 'fr' | 'es' | 'zh' | 'ko' | 'ar';
 
@@ -31,6 +32,10 @@ interface AppContextType {
   pathProgress: number; setPathProgress: (n: number) => void;
   parentPin: string; setParentPin: (p: string) => void;
   selectedCharacterId: string; setSelectedCharacter: (id: string) => void;
+  authReady: boolean; hasAccount: boolean; accountContact: string | null;
+  activateAccount: (contact: string, password: string) => Promise<void>;
+  verifySettingsPassword: (password: string) => boolean;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
@@ -47,6 +52,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [pathProgress, setPathProgressState] = useState(0);
   const [parentPin, setParentPinState] = useState('1234');
   const [selectedCharacterId, setSelectedCharacterState] = useState('neli');
+  const [authReady, setAuthReady] = useState(false);
+  const [accountContact, setAccountContact] = useState<string | null>(null);
+  const [passwordSalt, setPasswordSalt] = useState('');
+  const [passwordVerifier, setPasswordVerifier] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -63,8 +72,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (s.pathProgress) setPathProgressState(s.pathProgress);
           if (s.parentPin) setParentPinState(s.parentPin);
           if (s.selectedCharacterId) setSelectedCharacterState(s.selectedCharacterId);
+          if (s.accountContact) setAccountContact(s.accountContact);
+          if (s.passwordSalt) setPasswordSalt(s.passwordSalt);
+          if (s.passwordVerifier) setPasswordVerifier(s.passwordVerifier);
         }
-      } catch {}
+      } catch {
+        // Keep first-run setup available when persisted state cannot be read.
+      } finally {
+        setAuthReady(true);
+      }
     })();
   }, []);
 
@@ -86,6 +102,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setPathProgress = (n: number) => { setPathProgressState(n); save({ pathProgress: n }); };
   const setParentPin = (p: string) => { setParentPinState(p); save({ parentPin: p }); };
   const setSelectedCharacter = (id: string) => { setSelectedCharacterState(id); save({ selectedCharacterId: id }); };
+  const activateAccount = async (contact: string, password: string) => {
+    const salt = createPasswordSalt();
+    const verifier = derivePasswordVerifier(password, salt);
+    setAccountContact(contact);
+    setPasswordSalt(salt);
+    setPasswordVerifier(verifier);
+    await save({ accountContact: contact, passwordSalt: salt, passwordVerifier: verifier });
+  };
+  const verifySettingsPassword = (password: string) => Boolean(passwordSalt && passwordVerifier) && derivePasswordVerifier(password, passwordSalt) === passwordVerifier;
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!verifySettingsPassword(currentPassword)) return false;
+    const salt = createPasswordSalt();
+    const verifier = derivePasswordVerifier(newPassword, salt);
+    setPasswordSalt(salt);
+    setPasswordVerifier(verifier);
+    await save({ passwordSalt: salt, passwordVerifier: verifier });
+    return true;
+  };
 
   return (
     <AppContext.Provider value={{
@@ -97,6 +131,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       pathProgress, setPathProgress,
       parentPin, setParentPin,
       selectedCharacterId, setSelectedCharacter,
+      authReady, hasAccount: Boolean(accountContact && passwordVerifier), accountContact,
+      activateAccount, verifySettingsPassword, changePassword,
     }}>
       {children}
     </AppContext.Provider>

@@ -53,12 +53,12 @@ function ActionScene({
         <View style={styles.sceneWash} />
         <CharacterAvatar
           characterId="neli"
-          size={118}
+          size={106}
           talking
           talkPattern="home"
           talkMouthScale={0.86}
           talkMouthOffsetXPercent={0.46}
-          talkMouthOffsetY={0}
+          talkMouthOffsetY={2}
           floating={false}
           style={styles.sceneNeliLarge}
         />
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   sceneImage: { width: '100%', height: '100%' },
   sceneImageCover: { width: '100%', height: '100%' },
   sceneWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(44, 20, 74, 0.10)' },
-  sceneNeliLarge: { position: 'absolute', width: 177, height: 231, alignSelf: 'center', bottom: -40.2 },
+  sceneNeliLarge: { position: 'absolute', width: 159, height: 208, alignSelf: 'center', bottom: -42 },
   sceneNeliSmall: { position: 'absolute', width: 104, height: 136, right: 8, bottom: 10 },
   sceneGiraffe: { position: 'absolute', width: 116, height: 150, right: 8, bottom: 14 },
   sceneGiraffeCentered: { position: 'absolute', width: 172.2, height: 218.4, alignSelf: 'center', bottom: -14 },
@@ -296,4 +296,8 @@ const styles = StyleSheet.create({
   gameArt: { width: 76, height: 64, alignItems: 'center', justifyContent: 'center' },
   gameDot: { position: 'absolute', width: 36, height: 36, borderRadius: 18 },
 });
+
+
+
+
 

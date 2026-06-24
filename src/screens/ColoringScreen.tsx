@@ -16,7 +16,7 @@ import { AppContext } from '../store/AppContext';
 import { useNav } from '../store/NavContext';
 import { ff } from '../theme/fonts';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
-
+import { speakWithGeneratedVoice } from '../utils/faAudio';
 type Point = { x: number; y: number };
 type Stroke = { points: Point[]; color: string; size: number };
 
@@ -33,26 +33,27 @@ type PaintingScene = {
 type Crayon = {
   color: string;
   label: string;
+  labelFa: string;
   sprite: any;
 };
 
 const CRAYONS: Crayon[] = [
-  { color: '#F43F1D', label: 'Red', sprite: require('../../assets/neli-world/painting/crayons/crayon_red.png') },
-  { color: '#FF7A1A', label: 'Orange', sprite: require('../../assets/neli-world/painting/crayons/crayon_orange.png') },
-  { color: '#FFB020', label: 'Amber', sprite: require('../../assets/neli-world/painting/crayons/crayon_amber.png') },
-  { color: '#F7E31A', label: 'Yellow', sprite: require('../../assets/neli-world/painting/crayons/crayon_yellow.png') },
-  { color: '#8CD62A', label: 'Lime', sprite: require('../../assets/neli-world/painting/crayons/crayon_lime.png') },
-  { color: '#1FB34A', label: 'Green', sprite: require('../../assets/neli-world/painting/crayons/crayon_green.png') },
-  { color: '#20B8C7', label: 'Teal', sprite: require('../../assets/neli-world/painting/crayons/crayon_teal.png') },
-  { color: '#4DD0E1', label: 'Aqua', sprite: require('../../assets/neli-world/painting/crayons/crayon_aqua.png') },
-  { color: '#1E45D8', label: 'Blue', sprite: require('../../assets/neli-world/painting/crayons/crayon_blue.png') },
-  { color: '#4B5CFF', label: 'Indigo', sprite: require('../../assets/neli-world/painting/crayons/crayon_indigo.png') },
-  { color: '#9B30FF', label: 'Purple', sprite: require('../../assets/neli-world/painting/crayons/crayon_purple.png') },
-  { color: '#E91E63', label: 'Pink', sprite: require('../../assets/neli-world/painting/crayons/crayon_pink.png') },
-  { color: '#FF5F7A', label: 'Rose', sprite: require('../../assets/neli-world/painting/crayons/crayon_rose.png') },
-  { color: '#8D6E63', label: 'Brown', sprite: require('../../assets/neli-world/painting/crayons/crayon_brown.png') },
-  { color: '#9E9E9E', label: 'Gray', sprite: require('../../assets/neli-world/painting/crayons/crayon_gray.png') },
-  { color: '#263238', label: 'Black', sprite: require('../../assets/neli-world/painting/crayons/crayon_black.png') },
+  { color: '#F43F1D', label: 'Red', labelFa: 'قرمز', sprite: require('../../assets/neli-world/painting/crayons/crayon_red.png') },
+  { color: '#FF7A1A', label: 'Orange', labelFa: 'نارنجی', sprite: require('../../assets/neli-world/painting/crayons/crayon_orange.png') },
+  { color: '#FFB020', label: 'Amber', labelFa: 'کهربایی', sprite: require('../../assets/neli-world/painting/crayons/crayon_amber.png') },
+  { color: '#F7E31A', label: 'Yellow', labelFa: 'زرد', sprite: require('../../assets/neli-world/painting/crayons/crayon_yellow.png') },
+  { color: '#8CD62A', label: 'Lime', labelFa: 'لیمویی', sprite: require('../../assets/neli-world/painting/crayons/crayon_lime.png') },
+  { color: '#1FB34A', label: 'Green', labelFa: 'سبز', sprite: require('../../assets/neli-world/painting/crayons/crayon_green.png') },
+  { color: '#20B8C7', label: 'Teal', labelFa: 'سبزآبی', sprite: require('../../assets/neli-world/painting/crayons/crayon_teal.png') },
+  { color: '#4DD0E1', label: 'Aqua', labelFa: 'فیروزه‌ای', sprite: require('../../assets/neli-world/painting/crayons/crayon_aqua.png') },
+  { color: '#1E45D8', label: 'Blue', labelFa: 'آبی', sprite: require('../../assets/neli-world/painting/crayons/crayon_blue.png') },
+  { color: '#4B5CFF', label: 'Indigo', labelFa: 'نیلی', sprite: require('../../assets/neli-world/painting/crayons/crayon_indigo.png') },
+  { color: '#9B30FF', label: 'Purple', labelFa: 'بنفش', sprite: require('../../assets/neli-world/painting/crayons/crayon_purple.png') },
+  { color: '#E91E63', label: 'Pink', labelFa: 'صورتی', sprite: require('../../assets/neli-world/painting/crayons/crayon_pink.png') },
+  { color: '#FF5F7A', label: 'Rose', labelFa: 'رز', sprite: require('../../assets/neli-world/painting/crayons/crayon_rose.png') },
+  { color: '#8D6E63', label: 'Brown', labelFa: 'قهوه‌ای', sprite: require('../../assets/neli-world/painting/crayons/crayon_brown.png') },
+  { color: '#9E9E9E', label: 'Gray', labelFa: 'خاکستری', sprite: require('../../assets/neli-world/painting/crayons/crayon_gray.png') },
+  { color: '#263238', label: 'Black', labelFa: 'مشکی', sprite: require('../../assets/neli-world/painting/crayons/crayon_black.png') },
 ];
 
 const BRUSH_SIZES = [17, 26, 36] as const;
@@ -370,7 +371,6 @@ function CrayonButton({
 }) {
   return (
     <TouchableOpacity
-      onPressIn={onPress}
       onPress={onPress}
       activeOpacity={0.9}
       hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
@@ -505,13 +505,22 @@ export default function ColoringScreen() {
     currentStroke.current = null;
     setPointer(prev => ({ ...prev, visible: false }));
   }, []);
+  const speakCrayon = useCallback((crayon: Crayon) => {
+    const text = isFa ? crayon.labelFa : crayon.label;
+    void speakWithGeneratedVoice(text, isFa ? 'fa-IR' : 'en-US', {
+      interrupt: true,
+      rate: 0.9,
+      pitch: isFa ? 1.15 : 1.05,
+    });
+  }, [isFa]);
 
-  const selectCrayon = useCallback((color: string) => {
-    setSelectedColor(color);
-    selectedColorRef.current = color;
+  const selectCrayon = useCallback((crayon: Crayon) => {
+    setSelectedColor(crayon.color);
+    selectedColorRef.current = crayon.color;
     currentStroke.current = null;
     setPointer(prev => ({ ...prev, visible: false }));
-  }, []);
+    speakCrayon(crayon);
+  }, [speakCrayon]);
 
   const openScene = useCallback(
     (index: number) => {
@@ -705,7 +714,7 @@ export default function ColoringScreen() {
                   top={index * crayonRowStep}
                   height={crayonTapHeight}
                   sprite={crayon.sprite}
-                  onPress={() => selectCrayon(crayon.color)}
+                  onPress={() => selectCrayon(crayon)}
                 />
               ))}
             </View>

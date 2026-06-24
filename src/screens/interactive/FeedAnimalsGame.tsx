@@ -19,6 +19,7 @@ import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
 import TopBar from '../../components/TopBar';
 import { dir, ff } from '../../theme/fonts';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
+import { speakWithGeneratedVoice } from '../../utils/faAudio';
 
 type AnimalId = 'monkey' | 'rabbit' | 'cat' | 'panda' | 'bear' | 'giraffe';
 type FoodId = 'carrot' | 'fish' | 'banana' | 'apple' | 'honey' | 'bamboo';
@@ -329,6 +330,7 @@ function FoodTile({
   size,
   disabled,
   onAttempt,
+  onSpeak,
   resetToken,
 }: {
   food: Food;
@@ -336,6 +338,7 @@ function FoodTile({
   size: number;
   disabled: boolean;
   onAttempt: (food: Food, point: Point, from: Point) => void;
+  onSpeak: (food: Food) => void;
   resetToken: number;
 }) {
   const drag = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
@@ -353,6 +356,7 @@ function FoodTile({
         onMoveShouldSetPanResponder: () => !disabled,
         onPanResponderGrant: () => {
           setPressed(true);
+          onSpeak(food);
         },
         onPanResponderMove: (_evt: any, gestureState: PanResponderGestureState) => {
           drag.setValue({ x: gestureState.dx, y: gestureState.dy });
@@ -374,7 +378,7 @@ function FoodTile({
           Animated.spring(drag, { toValue: { x: 0, y: 0 }, useNativeDriver: true }).start();
         },
       }),
-    [disabled, drag, food, onAttempt, size, slot.h, slot.w, slot.x, slot.y],
+    [disabled, drag, food, onAttempt, onSpeak, size, slot.h, slot.w, slot.x, slot.y],
   );
 
   return (
@@ -527,6 +531,14 @@ export default function FeedAnimalsGame() {
     stop();
     speakFarsiOnly(fa, () => {
       if (!isFa) setTimeout(() => speakInLang(en, lang), 220);
+    });
+  };
+
+  const speakFood = (food: Food) => {
+    void speakWithGeneratedVoice(food.fa, 'fa-IR', {
+      interrupt: true,
+      rate: 0.84,
+      pitch: 1.12,
     });
   };
 
@@ -737,6 +749,7 @@ export default function FeedAnimalsGame() {
                 size={foodSize}
                 disabled={disabled}
                 onAttempt={handleAttempt}
+                onSpeak={speakFood}
                 resetToken={resetToken}
               />
             );

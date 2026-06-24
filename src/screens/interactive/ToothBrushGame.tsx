@@ -142,6 +142,7 @@ export default function ToothBrushGame() {
   const lilaRef = useRef<View>(null);
   const gameAreaRef = useRef<any>(null);
   const brushStartedRef = useRef(false);
+  const brushCuePlayedRef = useRef(false);
   const lastBubblePointRef = useRef({ x: 0, y: 0, active: false });
   const bubbleClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -171,8 +172,8 @@ export default function ToothBrushGame() {
   useEffect(() => {
     void stopFaAudio();
     const id = setTimeout(() => {
-      void playFaAudioSequence([FA_AUDIO_KEYS.toothbrush.brushLilaTeeth], 100);
-    }, 650);
+      void playFaAudioSequence([FA_AUDIO_KEYS.toothbrush.brushTeeth, FA_AUDIO_KEYS.toothbrush.brushLilaTeeth], 110);
+    }, 450);
     return () => clearTimeout(id);
   }, [isFa, lang]);
 
@@ -199,7 +200,7 @@ export default function ToothBrushGame() {
         setShowSparkles(true);
         sparklePulse.setValue(0);
         requestAnimationFrame(() => placeBrushNearHead());
-        void playFaAudioSequence([FA_AUDIO_KEYS.toothbrush.cleanNow], 100);
+        void playFaAudioSequence([FA_AUDIO_KEYS.feedback.afarin], 100);
       }, 160);
     }, 120);
     completionTimerRef.current = setTimeout(() => {
@@ -377,6 +378,10 @@ export default function ToothBrushGame() {
     onMoveShouldSetPanResponder: () => !doneRef.current,
     onPanResponderGrant: e => {
       setBrushing(true);
+      if (!brushCuePlayedRef.current) {
+        brushCuePlayedRef.current = true;
+        void playFaAudioSequence([FA_AUDIO_KEYS.toothbrush.brushTeeth], 100);
+      }
       const pageX = e.nativeEvent.pageX;
       const pageY = e.nativeEvent.pageY;
       lastBubblePointRef.current = { x: pageX, y: pageY, active: true };
@@ -404,6 +409,7 @@ export default function ToothBrushGame() {
     cleanedRef.current = empty;
     doneRef.current = false;
     brushStartedRef.current = false;
+    brushCuePlayedRef.current = false;
     lastBubblePointRef.current = { x: 0, y: 0, active: false };
     if (bubbleClearTimerRef.current) clearTimeout(bubbleClearTimerRef.current);
     if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
@@ -429,10 +435,10 @@ export default function ToothBrushGame() {
       <ImageBackground source={sceneSource} style={styles.scene} resizeMode="cover">
         <TopBar title="Brush Teeth" titleFa="مسواک زدن" showClose dark topInset={10} />
 
-        {!showSparkles ? (
+        {!showSparkles && !done ? (
           <View style={styles.promptPill}>
             <Text style={[styles.progressTitle, dir(lang), { fontFamily: isFa ? ff('fa', 'black') : ff(lang, 'black') }]}>
-              {done ? (isFa ? 'همه دندان‌ها تمیز شد' : 'All teeth are clean') : (isFa ? 'دندان‌های لیلا را مسواک بزن' : 'Brush Lila’s teeth')}
+              {isFa ? 'دندان‌های لیلا را مسواک بزن' : "Brush Lila's teeth"}
             </Text>
           </View>
         ) : null}
@@ -612,18 +618,10 @@ export default function ToothBrushGame() {
         </Animated.View>
 
         <View style={styles.bottomControls} />
-
-        <Animated.View style={[styles.doneCard, { transform: [{ translateY: doneSlide }], opacity: finishVisible ? 1 : 0 }]}>
-          <Image source={neliWorldAssets.ui.ok} style={styles.doneIcon} resizeMode="contain" />
-          <Text style={[styles.doneTxt, { fontFamily: ff(lang, 'black') }]}>
-            {isFa ? 'تمیز شد!' : 'It is clean now!'}
-          </Text>
-        </Animated.View>
       </ImageBackground>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#4CD5ED' },
   scene: { flex: 1 },
@@ -710,8 +708,4 @@ const styles = StyleSheet.create({
   },
   bottomControls: { paddingBottom: 14, alignItems: 'center' },
   sparkleBadge: { position: 'absolute', top: 12, right: 10, width: 76, height: 76, zIndex: 6 },
-  doneCard: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#FFFFFF', borderTopLeftRadius: 34, borderTopRightRadius: 34, padding: 22, alignItems: 'center', gap: 12, zIndex: 30 },
-  doneIcon: { width: 72, height: 72 },
-  doneTxt: { fontSize: 20, fontWeight: '900', color: '#112B4C', textAlign: 'center' },
 });
-

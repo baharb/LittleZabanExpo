@@ -1,7 +1,8 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Platform, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
+import { resolveFaVoiceKey, speakWithGeneratedVoice } from '../../utils/faAudio';
+import * as Haptics from 'expo-haptics';
 import { AppContext } from '../../store/AppContext';
 import { FA, ff } from '../../theme/fonts';
 import { C } from '../../theme/colors';
@@ -57,6 +58,40 @@ const ALPHABET_POOL: LetterItem[] = [
 ];
 
 const SIMPLE_LETTER_IDS = new Set(['alef', 'be', 'pe', 'te', 'dal', 're', 'sin', 'mim', 'nun', 'kaf', 'lam', 'vav']);
+const MEMORY_LETTER_ROMANIZED: Record<string, string> = {
+  alef: 'alef',
+  be: 'be',
+  pe: 'pe',
+  te: 'te',
+  se: 'se',
+  jim: 'jim',
+  che: 'che',
+  he: 'he',
+  khe: 'khe',
+  dal: 'dal',
+  zal: 'zal',
+  re: 're',
+  ze: 'ze',
+  sin: 'sin',
+  shin: 'shin',
+  sad: 'sad',
+  zad: 'zad',
+  ta: 'ta',
+  za: 'za',
+  eyn: 'eyn',
+  gheyn: 'gheyn',
+  fe: 'fe',
+  qaf: 'qaf',
+  kaf: 'kaf',
+  gaf: 'gaf',
+  lam: 'lam',
+  mim: 'mim',
+  nun: 'nun',
+  vav: 'vav',
+  he2: 'he',
+  ye: 'ye',
+};
+
 
 type Card = {
   id: string;
@@ -137,8 +172,14 @@ function makeFoundOrder(deck: Card[]): LetterItem[] {
 }
 
 function speakLetter(item: LetterItem) {
+  if (resolveFaVoiceKey(item.name || item.char)) {
+    void speakWithGeneratedVoice(item.name || item.char, 'fa-IR', { rate: 0.68, pitch: 1.14, interrupt: true });
+    return;
+  }
   Speech.stop();
-  Speech.speak(item.name, { language: 'fa-IR', rate: 0.65, pitch: 1.18 });
+  setTimeout(() => {
+    Speech.speak(MEMORY_LETTER_ROMANIZED[item.id] ?? item.name ?? item.char, { language: 'en-US', rate: 0.72, pitch: 1.0 });
+  }, 120);
 }
 
 function CardBack() {
@@ -281,7 +322,7 @@ export default function MemoryGame() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setLastMatched(first.item);
       setFoundLetters(prev => (prev.some(item => item.id === first.item.id) ? prev : [...prev, first.item]));
-      speakLetter(first.item);
+      setTimeout(() => speakLetter(first.item), 180);
 
       const next = cardsRef.current.map((card, i) => (i === a || i === b ? { ...card, matched: true, flipped: true } : card));
       const levelDone = next.every(card => card.matched);
@@ -539,13 +580,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   foundChip: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     borderWidth: 2,
     backgroundColor: 'rgba(255,255,255,0.90)',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingTop: 6,
   },
   foundChipHidden: {
     opacity: 0.18,
@@ -555,15 +597,15 @@ const styles = StyleSheet.create({
   },
   foundChipText: {
     fontFamily: FA.black,
-    fontSize: 18,
-    lineHeight: 16,
+    fontSize: 20,
+    lineHeight: 30,
     marginTop: 0,
-    transform: [{ translateY: 3 }],
-    includeFontPadding: false,
+    transform: [{ translateY: -1 }],
+    includeFontPadding: true,
     textAlign: 'center',
   },
   foundChipAlef: {
-    transform: [{ translateY: 5 }],
+    transform: [{ translateY: -2 }],
   },
   levelLine: {
     color: 'rgba(255,255,255,0.82)',
@@ -579,14 +621,15 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   matchedBanner: {
-    minHeight: 88,
+    minHeight: 116,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
     paddingHorizontal: 20,
+    paddingTop: 12,
   },
   matchedBannerPlaceholder: {
-    height: 88,
+    height: 116,
     marginBottom: 12,
   },
   matchedLabel: {
@@ -597,8 +640,8 @@ const styles = StyleSheet.create({
   },
   matchedLetter: {
     fontFamily: FA.black,
-    fontSize: 52,
-    lineHeight: 58,
+    fontSize: 48,
+    lineHeight: 72,
     textAlign: 'center',
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
   },
@@ -648,12 +691,14 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+    overflow: 'visible',
+    paddingTop: 4,
   },
   cardLetter: {
     fontFamily: FA.black,
     textAlign: 'center',
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
+    transform: [{ translateY: 2 }],
   },
   winCaption: {
     color: C.white,

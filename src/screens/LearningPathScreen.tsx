@@ -8,6 +8,7 @@ import { SOLAR_SYSTEM_BACKGROUND, SOLAR_SYSTEM_PLANETS } from '../assets/solarSy
 import { AppContext } from '../store/AppContext';
 import { useNav } from '../store/NavContext';
 import { dir, ff } from '../theme/fonts';
+import { speakWithGeneratedVoice } from '../utils/faAudio';
 
 type PathStep = {
   id: string;
@@ -43,7 +44,7 @@ function planet(id: string) {
   return SOLAR_SYSTEM_PLANETS.find(item => item.id === id)?.source ?? SOLAR_SYSTEM_PLANETS[0].source;
 }
 
-function StepArt({ type, color }: { type: string; color: string }) {
+function StepArt({ type, color, lang, onSpeakSolarPlanet }: { type: string; color: string; lang: string; onSpeakSolarPlanet?: (planetId: string) => void }) {
   const map: Record<string, any> = {
     letters: neliWorldAssets.ui.book,
     numbers: neliWorldAssets.ui.trophy,
@@ -91,12 +92,25 @@ function StepArt({ type, color }: { type: string; color: string }) {
   }
 
   if (type === 'solarPuzzle') {
+    const speakPlanet = (planetId: string) => {
+      const item = SOLAR_SYSTEM_PLANETS.find(p => p.id === planetId);
+      if (!item) return;
+      const spokenName = lang === 'fa' || lang === 'ar' ? item.labelFa : item.id.charAt(0).toUpperCase() + item.id.slice(1);
+      void speakWithGeneratedVoice(spokenName, lang === 'fa' || lang === 'ar' ? 'fa-IR' : 'en-US', { interrupt: true, rate: 0.78, pitch: 1.12 });
+      onSpeakSolarPlanet?.(planetId);
+    };
     return (
       <ImageBackground source={SOLAR_SYSTEM_BACKGROUND} style={styles.artStage} imageStyle={styles.artBg}>
         <View style={styles.solarWash} />
-        <Image source={planet('jupiter')} style={[styles.solarPlanet, styles.jupiter]} resizeMode="contain" />
-        <Image source={planet('earth')} style={[styles.solarPlanet, styles.earth]} resizeMode="contain" />
-        <Image source={planet('saturn')} style={[styles.solarPlanet, styles.saturn]} resizeMode="contain" />
+        <TouchableOpacity activeOpacity={0.82} onPressIn={() => speakPlanet('jupiter')} style={[styles.solarPlanetTap, styles.jupiter]}>
+          <Image source={planet('jupiter')} style={styles.solarPlanetFill} resizeMode="contain" />
+        </TouchableOpacity>
+        <TouchableOpacity activeOpacity={0.82} onPressIn={() => speakPlanet('earth')} style={[styles.solarPlanetTap, styles.earth]}>
+          <Image source={planet('earth')} style={styles.solarPlanetFill} resizeMode="contain" />
+        </TouchableOpacity>
+        <TouchableOpacity activeOpacity={0.82} onPressIn={() => speakPlanet('saturn')} style={[styles.solarPlanetTap, styles.saturn]}>
+          <Image source={planet('saturn')} style={styles.solarPlanetFill} resizeMode="contain" />
+        </TouchableOpacity>
       </ImageBackground>
     );
   }
@@ -134,10 +148,10 @@ function StepArt({ type, color }: { type: string; color: string }) {
 
 export default function LearningPathScreen() {
   const { lang, completedSections, stars, pathProgress, setPathProgress, selectedCharacterId } = useContext(AppContext);
+  const isFa = lang === 'fa' || lang === 'ar';
   const { navigate } = useNav();
   const { width, height } = useWindowDimensions();
   const ui = Math.min(width / 1024, height / 640);
-  const isFa = lang === 'fa' || lang === 'ar';
   const featured = PATH.filter(step => FEATURED_IDS.includes(step.id));
   const regular = PATH.filter(step => !FEATURED_IDS.includes(step.id));
 
@@ -157,6 +171,12 @@ export default function LearningPathScreen() {
   };
 
   const progress = Math.min(100, Math.round(((pathProgress + 1) / PATH.length) * 100));
+
+  const speakSolarPlanet = (planetId: string) => {
+    const item = SOLAR_SYSTEM_PLANETS.find(p => p.id === planetId);
+    if (!item) return;
+    void speakWithGeneratedVoice(item.labelFa, isFa ? 'fa-IR' : 'en-US', { interrupt: true, rate: isFa ? 0.78 : 0.86, pitch: 1.12 });
+  };
 
   return (
     <View style={styles.root}>
@@ -202,7 +222,7 @@ export default function LearningPathScreen() {
                 activeOpacity={locked ? 1 : 0.88}
               >
                 <View style={[styles.featureArt, { backgroundColor: locked ? '#E7E2F2' : step.soft }]}>
-                  <StepArt type={locked ? 'locked' : step.art} color={step.color} />
+                  <StepArt type={locked ? 'locked' : step.art} color={step.color} lang={lang} onSpeakSolarPlanet={step.id === 'solarPuzzle' ? speakSolarPlanet : undefined} />
                 </View>
                 <View style={styles.featureText}>
                   <Text style={[styles.featureTitle, { fontFamily: ff(lang, 'black') }, dir(lang)]} numberOfLines={1}>
@@ -234,7 +254,7 @@ export default function LearningPathScreen() {
                 activeOpacity={locked ? 1 : 0.88}
               >
                 <View style={[styles.thumb, { backgroundColor: locked ? '#E7E2F2' : step.soft }]}>
-                  <StepArt type={locked ? 'locked' : step.art} color={step.color} />
+                  <StepArt type={locked ? 'locked' : step.art} color={step.color} lang={lang} onSpeakSolarPlanet={step.id === 'solarPuzzle' ? speakSolarPlanet : undefined} />
                 </View>
                 <View style={styles.cardCopy}>
                   <Text style={[styles.cardTitle, { fontFamily: ff(lang, 'black') }, dir(lang)]} numberOfLines={1}>
@@ -406,6 +426,8 @@ const styles = StyleSheet.create({
   },
   iranPuzzleLabel: { color: '#F97316', fontSize: 12, letterSpacing: 0.8 },
   solarWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(2, 8, 32, 0.08)' },
+  solarPlanetTap: { position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  solarPlanetFill: { width: '100%', height: '100%' },
   solarPlanet: {
     position: 'absolute',
     shadowColor: '#FFFFFF',
@@ -417,4 +439,5 @@ const styles = StyleSheet.create({
   earth: { width: 38, height: 38, left: 28, top: 50 },
   saturn: { width: 72, height: 52, right: 62, bottom: 26 },
 });
+
 

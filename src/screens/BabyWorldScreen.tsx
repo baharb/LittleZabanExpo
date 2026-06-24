@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   talkSceneWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(44, 20, 74, 0.10)' },
   talkSceneWater: { position: 'absolute', left: 12, bottom: 10, width: 60, height: 60 },
   talkSceneVoice: { position: 'absolute', left: 16, top: 12, width: 44, height: 44 },
-  talkSceneNeli: { position: 'absolute', right: 10, bottom: 4, width: 120, height: 138 },
+  talkSceneNeli: { position: 'absolute', right: 10, bottom: -18, width: 120, height: 138 },
   talkCopyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   talkIcon: { width: 68, height: 68 },
   talkFace: { width: 68, height: 62, borderRadius: 31, backgroundColor: '#6C4EFF' },
@@ -239,3 +239,6 @@ const styles = StyleSheet.create({
   drop: { position: 'absolute', top: 16, width: 12, height: 34, borderRadius: 8, transform: [{ rotate: '18deg' }] },
   wordBubble: { width: 50, height: 50, borderRadius: 25 },
 });
+
+
+

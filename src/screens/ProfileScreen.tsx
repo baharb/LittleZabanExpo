@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import { Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import React, { useContext, useState } from 'react';
+import { Image, ImageBackground, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import TopBar from '../components/TopBar';
 import CharacterAvatar from '../components/CharacterAvatar';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
@@ -8,12 +8,36 @@ import { useNav } from '../store/NavContext';
 import { dir, ff } from '../theme/fonts';
 
 export default function ProfileScreen() {
-  const { settingsLang, setSettingsLang, stars, streak, badges, completedSections, age, setAge, selectedCharacterId } = useContext(AppContext);
+  const { settingsLang, setSettingsLang, stars, streak, badges, completedSections, age, setAge, selectedCharacterId, accountContact, changePassword } = useContext(AppContext);
   const { navigate } = useNav();
   const { width, height } = useWindowDimensions();
   const ui = Math.min(width / 390, height / 844);
   const lang = settingsLang;
   const isFa = lang === 'fa';
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordStatus, setPasswordStatus] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+
+  const handlePasswordChange = async () => {
+    if (newPassword.length < 6) {
+      setPasswordStatus({ type: 'error', text: isFa ? 'رمز جدید باید حداقل ۶ کاراکتر باشد.' : 'New password must be at least 6 characters.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordStatus({ type: 'error', text: isFa ? 'تکرار رمز جدید یکسان نیست.' : 'New password confirmation does not match.' });
+      return;
+    }
+    const changed = await changePassword(currentPassword, newPassword);
+    if (!changed) {
+      setPasswordStatus({ type: 'error', text: isFa ? 'رمز فعلی درست نیست.' : 'Current password is incorrect.' });
+      return;
+    }
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordStatus({ type: 'success', text: isFa ? 'رمز عبور تغییر کرد.' : 'Password changed.' });
+  };
 
   return (
     <View style={styles.root}>
@@ -48,6 +72,54 @@ export default function ProfileScreen() {
           <Text style={[styles.languageNote, { fontFamily: ff(lang, 'regular') }, dir(lang)]}>
             {isFa ? 'این انتخاب فقط زبان صفحه‌های تنظیمات و راهنما را تغییر می‌دهد. بازی‌ها همیشه فارسی هستند.' : 'This only changes Settings and Help pages. Games always stay in Persian.'}
           </Text>
+        </View>
+
+
+        <View style={[styles.panel, { borderRadius: Math.max(22, Math.round(26 * ui)), padding: Math.max(14, Math.round(16 * ui)) }]}>
+          <Text style={[styles.sectionTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(16, Math.round(18 * ui)) }, dir(lang)]}>
+            {isFa ? 'حساب والدین' : 'Parent account'}
+          </Text>
+          <Text style={styles.accountContact}>{accountContact}</Text>
+          <View style={styles.passwordForm}>
+            <TextInput
+              value={currentPassword}
+              onChangeText={value => { setCurrentPassword(value); setPasswordStatus(null); }}
+              placeholder={isFa ? 'رمز فعلی' : 'Current password'}
+              placeholderTextColor="#8B80A8"
+              secureTextEntry
+              textContentType="password"
+              style={[styles.passwordInput, { fontFamily: ff(lang, 'regular') }]}
+            />
+            <View style={styles.passwordRow}>
+              <TextInput
+                value={newPassword}
+                onChangeText={value => { setNewPassword(value); setPasswordStatus(null); }}
+                placeholder={isFa ? 'رمز جدید' : 'New password'}
+                placeholderTextColor="#8B80A8"
+                secureTextEntry
+                textContentType="newPassword"
+                style={[styles.passwordInput, styles.passwordHalf, { fontFamily: ff(lang, 'regular') }]}
+              />
+              <TextInput
+                value={confirmPassword}
+                onChangeText={value => { setConfirmPassword(value); setPasswordStatus(null); }}
+                placeholder={isFa ? 'تکرار رمز جدید' : 'Confirm new password'}
+                placeholderTextColor="#8B80A8"
+                secureTextEntry
+                textContentType="newPassword"
+                style={[styles.passwordInput, styles.passwordHalf, { fontFamily: ff(lang, 'regular') }]}
+                onSubmitEditing={handlePasswordChange}
+              />
+            </View>
+            {passwordStatus ? (
+              <Text style={[styles.passwordStatus, passwordStatus.type === 'success' ? styles.passwordSuccess : styles.passwordError, { fontFamily: ff(lang, 'bold') }]}>
+                {passwordStatus.text}
+              </Text>
+            ) : null}
+            <TouchableOpacity style={styles.changePasswordButton} onPress={handlePasswordChange} activeOpacity={0.84}>
+              <Text style={[styles.changePasswordText, { fontFamily: ff(lang, 'black') }]}>{isFa ? 'تغییر رمز عبور' : 'Change password'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ImageBackground source={neliWorldAssets.rooms.bedroom} style={[styles.hero, { height: Math.max(200, Math.round(220 * ui)), borderRadius: Math.max(26, Math.round(30 * ui)), padding: Math.max(12, Math.round(16 * ui)) }]} imageStyle={styles.heroImage}>
@@ -172,6 +244,16 @@ const styles = StyleSheet.create({
   languageText: { color: '#5C4B78', fontSize: 11, marginTop: 2, textAlign: 'center' },
   languageTextActive: { color: '#221044' },
   languageNote: { color: '#6B5A89', fontSize: 11.5, lineHeight: 18, marginTop: 10 },
+  accountContact: { color: '#7C3AED', fontFamily: 'Nunito_700Bold', fontSize: 13, textAlign: 'right', marginBottom: 11 },
+  passwordForm: { gap: 9 },
+  passwordRow: { flexDirection: 'row-reverse', gap: 9 },
+  passwordInput: { height: 52, borderRadius: 16, backgroundColor: '#F3F0F8', borderWidth: 2, borderColor: '#DED7EA', paddingHorizontal: 14, color: '#2D1B69', textAlign: 'right', fontSize: 13 },
+  passwordHalf: { flex: 1 },
+  passwordStatus: { fontSize: 12, textAlign: 'right' },
+  passwordError: { color: '#D73737' },
+  passwordSuccess: { color: '#0B9362' },
+  changePasswordButton: { height: 50, borderRadius: 17, backgroundColor: '#7C3AED', alignItems: 'center', justifyContent: 'center' },
+  changePasswordText: { color: '#FFFFFF', fontSize: 14 },
   settingsGrid: { gap: 10 },
   settingsButton: { minHeight: 76, borderRadius: 20, padding: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
   ageSettings: { flexDirection: 'column', alignItems: 'stretch' },

@@ -660,18 +660,21 @@ export default function AlphabetTrainScreen() {
     setImageRevealedIndex(current => Math.min(current, index - 1));
     const letterTimer = setTimeout(() => {
       setRevealedIndex(current => Math.max(current, index));
-      stopRef.current();
-      void stopFaAudio();
       const item = trainItems[index];
       if (!item) return;
-      void playFaAudio(makeAlphabetAudioKey('trace', item.id)).then(played => {
-        if (!played) {
-          speakRef.current(`${item.letter}? ??? ${item.wordFa}. ${item.hintFa}`);
-        }
-      });
+      stopRef.current();
+      void (async () => {
+        await stopFaAudio();
+        const played = await playFaAudio(makeAlphabetAudioKey('name', item.id), { interrupt: false });
+        if (!played) speakRef.current(item.letter);
+      })();
     }, 325);
     const imageTimer = setTimeout(() => {
       setImageRevealedIndex(current => Math.max(current, index));
+      const item = trainItems[index];
+      if (!item) return;
+      stopRef.current();
+      void stopFaAudio().then(() => speakRef.current(item.wordFa));
     }, 750);
     const nextTimer = playing
       ? setTimeout(() => setIndex(current => (current + 1) % trainItems.length), 1540)

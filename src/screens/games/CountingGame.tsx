@@ -1,11 +1,11 @@
 import React, { useContext, useState } from 'react';
 import { Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import * as Speech from 'expo-speech';
 import TopBar from '../../components/TopBar';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
 import { characterAssets } from '../../assets/characterAssets';
 import { AppContext } from '../../store/AppContext';
+import { speakWithGeneratedVoice } from '../../utils/faAudio';
 import { C } from '../../theme/colors';
 import { dir, ff } from '../../theme/fonts';
 
@@ -60,9 +60,8 @@ export default function CountingGame() {
     const number = index + 1;
     setCountedItems(prev => [...prev, index]);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Speech.stop();
-    Speech.speak(isFa ? `${FA_NUMBERS[index]} ${round.set.fa}` : `${number} ${round.set.en}`, {
-      language: isFa ? 'fa-IR' : 'en-US',
+    void speakWithGeneratedVoice(isFa ? FA_NUMBERS[number - 1] ?? String(number) : `${number} ${round.set.en}`, isFa ? 'fa-IR' : 'en-US', {
+      interrupt: true,
       rate: isFa ? 0.68 : 0.82,
       pitch: 1.18,
     });
@@ -76,8 +75,18 @@ export default function CountingGame() {
       addStars(2);
       setScore(prev => prev + 1);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void speakWithGeneratedVoice(FA_NUMBERS[round.count - 1] ?? String(round.count), 'fa-IR', {
+        interrupt: true,
+        rate: 0.74,
+        pitch: 1.14,
+      });
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      void speakWithGeneratedVoice(`اشتباه بود، جواب درست ${FA_NUMBERS[round.count - 1] ?? round.count}`, 'fa-IR', {
+        interrupt: true,
+        rate: 0.72,
+        pitch: 1.12,
+      });
     }
     setTimeout(() => {
       setFeedback(null);
@@ -228,16 +237,15 @@ const styles = StyleSheet.create({
     maxWidth: 620,
     minHeight: 220,
     borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.36)',
+    backgroundColor: 'transparent',
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignContent: 'center',
     justifyContent: 'center',
     gap: 18,
-    paddingHorizontal: 28,
-    paddingVertical: 22,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.7)',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    borderWidth: 0,
   },
   countItem: {
     width: 82,
@@ -254,11 +262,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 34,
     paddingTop: 12,
     paddingBottom: 18,
-    backgroundColor: 'rgba(255,255,255,0.78)',
-    borderTopLeftRadius: 34,
-    borderTopRightRadius: 34,
-    borderTopWidth: 2,
-    borderColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: 'transparent',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderTopWidth: 0,
   },
   options: { flexDirection: 'row', justifyContent: 'center', gap: 16 },
   numBtn: {

@@ -13,6 +13,8 @@ import { AppProvider } from './src/store/AppContext';
 import { NavProvider, NavContext } from './src/store/NavContext';
 
 import SplashScreen        from './src/screens/SplashScreen';
+import AccountSetupScreen  from './src/screens/AccountSetupScreen';
+import SettingsUnlockScreen from './src/screens/SettingsUnlockScreen';
 import AgeScreen           from './src/screens/AgeScreen';
 import MainTabs            from './src/screens/MainTabs';
 import SectionScreen       from './src/screens/SectionScreen';
@@ -50,6 +52,8 @@ function Router() {
   const { screen } = useContext(NavContext);
   switch (screen.name) {
     case 'Splash':           return <SplashScreen />;
+    case 'AccountSetup':     return <AccountSetupScreen />;
+    case 'SettingsUnlock':   return <SettingsUnlockScreen />;
     case 'Age':              return <AgeScreen />;
     case 'Main':             return <MainTabs initialTab={screen.tab} />;
     case 'BabyWorld':        return <BabyWorldScreen />;

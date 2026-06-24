@@ -496,7 +496,7 @@ export default function CookingGame() {
   }, [recipeIdx]);
 
   useEffect(() => {
-    say(`نوبت ${current.fa} است.`, `Now add ${current.en}.`);
+    say(`بعدی: ${current.fa}`, `Next: ${current.en}`);
   }, [current.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refreshStageOrigin = () => {
@@ -533,7 +533,6 @@ export default function CookingGame() {
         y: target.y + target.h * 0.28 - ingredientSize / 2,
       },
     });
-    say(ingredient.fa, ingredient.en);
 
     if (step >= recipe.steps.length - 1) {
       setDone(true);

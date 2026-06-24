@@ -17,7 +17,7 @@ export default function LangBar({ buttonSize = 56, iconSize = 44 }: Props) {
 
   const openSettings = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    navigate({ name: 'Main', tab: 'Profile' });
+    navigate({ name: 'SettingsUnlock' });
   };
 
   return (

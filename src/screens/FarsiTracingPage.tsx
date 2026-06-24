@@ -62,10 +62,7 @@ export default function FarsiTracingPage() {
     if (!soundOn) return;
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await playFaAudioSequence([
-        FA_AUDIO_KEYS.feedback.afarin,
-        makeAlphabetAudioKey('example', letter.id),
-      ], 220);
+      void playFaAudio(FA_AUDIO_KEYS.feedback.afarin, { interrupt: false });
     } catch {
       // Fallback to a light haptic-only success if audio is unavailable.
     }

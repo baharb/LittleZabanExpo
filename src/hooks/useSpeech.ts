@@ -6,14 +6,15 @@
 import { useContext, useRef } from 'react';
 import * as Speech from 'expo-speech';
 import { AppContext } from '../store/AppContext';
+import { tryPlayGeneratedFaVoice } from '../utils/faAudio';
 
 export const LANG_TAG: Record<string, string> = {
-  fa:'fa-IR', en:'en-US', fr:'fr-FR',
-  es:'es-ES', ar:'ar-SA', zh:'zh-CN', ko:'ko-KR',
+  fa: 'fa-IR', en: 'en-US', fr: 'fr-FR',
+  es: 'es-ES', ar: 'ar-SA', zh: 'zh-CN', ko: 'ko-KR',
 };
 export const LANG_RATE: Record<string, number> = {
-  fa:0.65, ar:0.68, zh:0.76, ko:0.76,
-  en:0.80, fr:0.80, es:0.80,
+  fa: 0.65, ar: 0.68, zh: 0.76, ko: 0.76,
+  en: 0.80, fr: 0.80, es: 0.80,
 };
 const PITCH = 1.18;
 let voiceCache: Speech.Voice[] | null = null;
@@ -37,117 +38,99 @@ export function useSpeech() {
 
   const stop = () => { Speech.stop(); active.current = false; };
 
-  const _speak = (text: string, tag: string, rate: number, onDone?: ()=>void) => {
-    Speech.stop();
-    active.current = true;
-    getBestVoice(tag).then(voiceOptions => {
-      if (!active.current) return;
-      Speech.speak(text, {
-        ...voiceOptions, rate, pitch: PITCH,
-        onDone:  ()=>{ active.current=false; onDone?.(); },
-        onError: ()=>{ active.current=false; onDone?.(); },
-      });
+  const speakSegment = async (
+    text: string,
+    tag: string,
+    rate: number,
+    onDone?: () => void,
+    interrupt = true,
+  ) => {
+    if (interrupt) Speech.stop();
+    const played = await tryPlayGeneratedFaVoice(text, { interrupt, awaitFinish: true });
+    if (played) {
+      onDone?.();
+      return true;
+    }
+    const voiceOptions = await getBestVoice(tag);
+    if (!active.current) return false;
+    Speech.speak(text, {
+      ...voiceOptions,
+      rate,
+      pitch: PITCH,
+      onDone: () => { onDone?.(); },
+      onError: () => { onDone?.(); },
     });
+    return false;
   };
 
   /** Speak item: primary language first, then translation */
-  const speakItem = (item:{fa:string;en:string;[k:string]:string}, onDone?:()=>void) => {
+  const speakItem = (item: { fa: string; en: string; [k: string]: string }, onDone?: () => void) => {
     stop();
-    const isPfa = lang==='fa'||lang==='ar';
-    const pri   = isPfa ? item.fa : (item[lang]??item.en);
-    const priTag= isPfa ? 'fa-IR' : (LANG_TAG[lang]??'en-US');
-    const priRate= LANG_RATE[lang]??0.80;
-    const sec   = isPfa ? item.en : item.fa;
-    const secTag= isPfa ? 'en-US' : 'fa-IR';
-    const secRate= isPfa ? LANG_RATE.en : LANG_RATE.fa;
+    const isPfa = lang === 'fa' || lang === 'ar';
+    const pri = isPfa ? item.fa : (item[lang] ?? item.en);
+    const priTag = isPfa ? 'fa-IR' : (LANG_TAG[lang] ?? 'en-US');
+    const priRate = LANG_RATE[lang] ?? 0.80;
+    const sec = isPfa ? item.en : item.fa;
+    const secTag = isPfa ? 'en-US' : 'fa-IR';
+    const secRate = isPfa ? LANG_RATE.en : LANG_RATE.fa;
 
     active.current = true;
-    getBestVoice(priTag).then(priVoice => {
+    speakSegment(pri, priTag, priRate, () => {
       if (!active.current) return;
-      Speech.speak(pri, {
-      ...priVoice, rate:priRate, pitch:PITCH,
-      onDone:()=>{
-        if(!active.current) return;
-        getBestVoice(secTag).then(secVoice => {
-          setTimeout(()=>{
-            if(!active.current) return;
-            Speech.speak(sec,{
-              ...secVoice, rate:secRate, pitch:PITCH,
-              onDone:()=>{ active.current=false; onDone?.(); },
-              onError:()=>{ active.current=false; onDone?.(); },
-            });
-          },380);
-        });
-      },
-      onError:()=>{
-        active.current=false;
-        // Fallback: English only
-        if(isPfa&&item.en) Speech.speak(item.en,{language:'en-US',rate:LANG_RATE.en,pitch:PITCH,onDone:onDone,onError:onDone});
-        else onDone?.();
-      },
-    });
-    });
+      setTimeout(() => {
+        if (!active.current) return;
+        void speakSegment(sec, secTag, secRate, () => {
+          active.current = false;
+          onDone?.();
+        }, false);
+      }, 380);
+    }, false);
   };
 
   /** Speak Farsi only */
-  const speakFarsiOnly = (text:string, onDone?:()=>void) => {
-    _speak(text, 'fa-IR', LANG_RATE.fa, onDone);
+  const speakFarsiOnly = (text: string, onDone?: () => void) => {
+    stop(); active.current = true;
+    speakSegment(text, 'fa-IR', LANG_RATE.fa, () => { active.current = false; onDone?.(); });
   };
 
   /** Speak in current UI language */
-  const speakText = (text:string, onDone?:()=>void) => {
-    _speak(text, LANG_TAG[lang]??'en-US', LANG_RATE[lang]??0.80, onDone);
+  const speakText = (text: string, onDone?: () => void) => {
+    stop(); active.current = true;
+    speakSegment(text, LANG_TAG[lang] ?? 'en-US', LANG_RATE[lang] ?? 0.80, () => { active.current = false; onDone?.(); });
   };
 
   /** Speak letter - always with stop+delay to prevent repeat bug */
-  const speakLetter = (name:string, letterLang?:string) => {
-    Speech.stop(); active.current=false;
-    const useLang = letterLang??lang;
-    const tag  = LANG_TAG[useLang]??'en-US';
-    const rate = LANG_RATE[useLang]??0.68;
-    setTimeout(()=>{
-      active.current=true;
-      getBestVoice(tag).then(voiceOptions => {
-        if (!active.current) return;
-        Speech.speak(name,{
-        ...voiceOptions, rate, pitch:PITCH,
-        onDone:()=>{ active.current=false; },
-        onError:()=>{ active.current=false; },
-      });
-      });
-    },120);
+  const speakLetter = (name: string, letterLang?: string) => {
+    Speech.stop(); active.current = false;
+    const useLang = letterLang ?? lang;
+    const tag = LANG_TAG[useLang] ?? 'en-US';
+    const rate = LANG_RATE[useLang] ?? 0.68;
+    setTimeout(() => {
+      active.current = true;
+      speakSegment(name, tag, rate, () => { active.current = false; });
+    }, 120);
   };
 
   /** Speak in any given language */
-  const speakInLang = (text:string, langCode:string, onDone?:()=>void) => {
-    _speak(text, LANG_TAG[langCode]??'en-US', LANG_RATE[langCode]??0.80, onDone);
+  const speakInLang = (text: string, langCode: string, onDone?: () => void) => {
+    stop(); active.current = true;
+    speakSegment(text, LANG_TAG[langCode] ?? 'en-US', LANG_RATE[langCode] ?? 0.80, () => { active.current = false; onDone?.(); });
   };
 
   /** Farsi first, then current language */
-  const speakBilingual = (fa:string, other:string, otherLang?:string, onDone?:()=>void) => {
-    stop(); active.current=true;
-    const tag  = LANG_TAG[otherLang??lang]??'en-US';
-    const rate = LANG_RATE[otherLang??lang]??0.80;
-    getBestVoice('fa-IR').then(faVoice => {
+  const speakBilingual = (fa: string, other: string, otherLang?: string, onDone?: () => void) => {
+    stop(); active.current = true;
+    const tag = LANG_TAG[otherLang ?? lang] ?? 'en-US';
+    const rate = LANG_RATE[otherLang ?? lang] ?? 0.80;
+    speakSegment(fa, 'fa-IR', LANG_RATE.fa, () => {
       if (!active.current) return;
-      Speech.speak(fa,{
-      ...faVoice, rate:LANG_RATE.fa, pitch:PITCH,
-      onDone:()=>{
-        if(!active.current) return;
-        getBestVoice(tag).then(otherVoice => {
-          setTimeout(()=>{
-            Speech.speak(other,{...otherVoice,rate,pitch:PITCH,
-              onDone:()=>{ active.current=false; onDone?.(); },
-              onError:()=>{ active.current=false; onDone?.(); },
-            });
-          },350);
-        });
-      },
-      onError:()=>{
-        active.current=false;
-        Speech.speak(other,{language:tag,rate,pitch:PITCH,onDone:onDone,onError:onDone});
-      },
-    });
+      setTimeout(() => {
+        if (!active.current) return;
+        void speakSegment(other, tag, rate, () => {
+          active.current = false;
+          onDone?.();
+        }, false);
+      }, 350);
     });
   };
 
