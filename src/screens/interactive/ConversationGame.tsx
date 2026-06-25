@@ -175,7 +175,7 @@ const CHOICE_IMAGES: Partial<Record<Choice['kind'], any>> = {
 function NeliTalkCharacter({ size }: { size: number }) {
   return (
     <View style={{ width: size, height: size * 1.18, alignItems: 'center', justifyContent: 'center' }}>
-      <BlinkingNeliImage size={size} height={size * 1.18} preview overlayOffsetY={size * 0.01} />
+      <BlinkingNeliImage size={size} height={size * 1.18} preview overlayOffsetX={size * 0.01} overlayOffsetY={size * 0.025} />
     </View>
   );
 }
@@ -216,7 +216,7 @@ export default function ConversationGame() {
   const isFa = lang === 'fa' || lang === 'ar';
   const isLandscape = width > height;
   const backgroundSource = roomBackgroundPickers.talkPlay(width, height);
-  const avatarSize = Math.min(Math.max(width * 0.26, 250), isLandscape ? 360 : 320);
+  const avatarSize = Math.min(Math.max(width * 0.26, 250), isLandscape ? 360 : 320) * 1.02;
   const choices = useMemo(() => shuffle(scene.choices), [scene.id]);
   const choiceCardWidth = useMemo(() => {
     const labels = choices.map(choice => choiceLabel(choice, lang));

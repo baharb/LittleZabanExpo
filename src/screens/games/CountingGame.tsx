@@ -28,8 +28,8 @@ const objectTransforms: Array<any[]> = [
   [{ translateY: -18 }, { rotate: '3deg' }],
 ];
 
-const FA_NUMBERS = ['یک', 'دو', 'سه', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه', 'ده'];
-const FA_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+const FA_NUMBERS = ['\u06cc\u06a9', '\u062f\u0648', '\u0633\u0647', '\u0686\u0647\u0627\u0631', '\u067e\u0646\u062c', '\u0634\u0634', '\u0647\u0641\u062a', '\u0647\u0634\u062a', '\u0646\u0647', '\u062f\u0647'];
+const FA_DIGITS = ['\u06f0', '\u06f1', '\u06f2', '\u06f3', '\u06f4', '\u06f5', '\u06f6', '\u06f7', '\u06f8', '\u06f9'];
 
 function toFaDigits(value: number | string) {
   return String(value).replace(/\d/g, digit => FA_DIGITS[Number(digit)]);
@@ -82,7 +82,7 @@ export default function CountingGame() {
       });
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      void speakWithGeneratedVoice(`اشتباه بود، جواب درست ${FA_NUMBERS[round.count - 1] ?? round.count}`, 'fa-IR', {
+      void speakWithGeneratedVoice(`\u0628\u0648\u062f ${FA_NUMBERS[round.count - 1] ?? round.count}`, 'fa-IR', {
         interrupt: true,
         rate: 0.72,
         pitch: 1.12,
@@ -161,8 +161,8 @@ export default function CountingGame() {
 
         {feedback !== null ? (
           <View style={[styles.feedback, feedback ? styles.feedbackGood : styles.feedbackBad]}>
-            <Text style={[styles.feedbackText, { fontFamily: ff(lang, 'black') }]}>
-              {feedback ? (isFa ? 'درست بود!' : 'That is right!') : (isFa ? `${round.count} تا بود` : `It was ${round.count}`)}
+            <Text style={[styles.feedbackText, { fontFamily: ff(isFa ? 'fa' : lang, 'black') }]}>
+              {feedback ? (isFa ? '\u062f\u0631\u0633\u062a \u0628\u0648\u062f!' : 'That is right!') : (isFa ? `\u0628\u0648\u062f ${toFaDigits(round.count)}` : `It was ${round.count}`)}
             </Text>
           </View>
         ) : null}

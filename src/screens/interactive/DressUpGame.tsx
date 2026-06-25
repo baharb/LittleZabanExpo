@@ -104,7 +104,7 @@ const getOverlayLayer = (slot: Slot) => {
   if (slot === 'pants') return 40;
   if (slot === 'boots') return 45;
   if (isShoesSlot(slot)) return 46;
-  if (isDressSlot(slot)) return 50;
+  if (isDressSlot(slot)) return 70;
   return 10;
 };
 
@@ -272,7 +272,7 @@ function getLandingPoint(slot: Slot, imgSize: number) {
   const artSize = Math.round(Math.min(itemW, itemH) * (isSunglasses ? 3.96 : isHat ? 1.8 : isBoots ? 1.08 : isDress ? 1.18 : 1.2));
   const overlayW = isDress ? Math.max(itemW, artSize) : itemW;
   const overlayH = isDress ? Math.max(itemH, artSize * 1.08) : itemH;
-  const xOffset = isDress ? imgSize * 0.008 : isSunglasses ? itemW * 0.03 : 0;
+  const xOffset = isDress ? imgSize * 0.008 : isSunglasses ? itemW * 0.03 - imgSize * 0.01 : 0;
   const yOffset = isDress ? imgSize * 0.106 : isSunglasses ? itemH * 0.75 : 0;
   if (isBoots) return { x: map.cx * imgSize - overlayW / 2 + overlayW * 0.105 + overlayW / 2, y: map.cy * imgSize - overlayH / 2 + overlayH / 2 };
   return { x: map.cx * imgSize + xOffset, y: map.cy * imgSize + yOffset };
@@ -368,8 +368,8 @@ function BootsOverlay({ imgSize, anim }: { imgSize: number; anim: Animated.Value
         top: boots.cy * imgSize - bootsH / 2 + bootsH * 0.05,
         width: bootsW,
         height: bootsH,
-        zIndex: 45,
-        elevation: 45,
+        zIndex: 65,
+        elevation: 65,
         overflow: 'visible',
         transform: [
           { scale: anim.interpolate({ inputRange: [0, 0.65, 1], outputRange: [0, 1.12, 1] }) },
@@ -513,11 +513,11 @@ function getClosetPlacement(items: OutfitItem[], item: OutfitItem): ClosetPlacem
   const artSize = Math.round(Math.min(itemW, itemH) * (isSunglasses ? 3.96 : isHat ? 1.8 : isBoots ? 1.08 : isDress ? 1.180 : 1.2));
   const overlayW = isDress ? Math.max(itemW, artSize) : itemW;
   const overlayH = isDress ? Math.max(itemH, artSize * 1.08) : itemH;
-  const xOffset = isDress ? imgSize * 0.008 : isSunglasses ? itemW * 0.03 : 0;
-  const yOffset = isDress ? imgSize * 0.1060 : isSunglasses ? itemH * 0.75 : isShoes ? imgSize * 0.02 : 0;
+  const xOffset = isDress ? imgSize * 0.008 : isSunglasses ? itemW * 0.03 - imgSize * 0.01 : 0;
+  const yOffset = isDress ? imgSize * 0.1060 : isSunglasses ? itemH * 0.75 : isShoes ? -imgSize * 0.02 : 0;
   const wornClipHeight = isHat ? artSize * 0.72 : artSize;
   const wornLift = isHat ? -artSize * 0.12 : 0;
-  const overlayDepth = isShoesSlot(item.slot) ? 75 : getOverlayLayer(item.slot);
+  const overlayDepth = isShoesSlot(item.slot) ? 65 : getOverlayLayer(item.slot);
 
   return (
     <Animated.View
@@ -733,8 +733,10 @@ export default function DressUpGame() {
   const [flight, setFlight] = useState<FlightPath | null>(null);
 
   const outfit = OUTFITS[outfitIdx];
-  const imgSize = Math.min(Math.max(width * 0.26, 250), isLandscape ? 360 : 320);
-  const imgHeight = imgSize * 1.18;
+  const imgSize = Math.min(Math.max(width * 0.3, 250), isLandscape ? 360 : 320) * 1.03;
+  const imgHeight = imgSize * 1.22;
+  const neliVisualSize = imgSize * 1.07;
+  const neliVisualHeight = neliVisualSize * 1.22;
   const clothingSize = Math.max(76, Math.min(isLandscape ? width * 0.078 : width * 0.15, 96));
   const outfitHatItems = outfit.items.filter(item => isHatSlot(item.slot));
   const outfitDressItems = outfit.items.filter(item => isDressSlot(item.slot));
@@ -993,18 +995,32 @@ export default function DressUpGame() {
                 onLayout={syncNeliTarget}
               >
                 <Animated.View style={{ width: imgSize, height: imgHeight, transform: [{ scale: neliScale }] }}>
-                  <CharacterAvatar characterId="neli" size={imgSize} floating={false} blink={false} />
-                  <View pointerEvents="none" style={styles.neliBlinkOverlay}>
-                    <BlinkingNeliImage
-                      size={imgSize}
-                      height={imgHeight}
-                      showBase={false}
-                      introVisibleMs={800}
-                      repeatMs={3000}
-                      blinkClosedMs={700}
-                      overlayOffsetX={-imgSize * 0.003}
-                      overlayOffsetY={imgSize * 0.01}
-                    />
+                  <View
+                    pointerEvents="none"
+                    style={{
+                      position: 'absolute',
+                      left: -(neliVisualSize - imgSize) / 2,
+                      bottom: -imgSize * 0.02,
+                      width: neliVisualSize,
+                      height: neliVisualHeight,
+                      zIndex: 1,
+                      elevation: 1,
+                    }}
+                  >
+                    <CharacterAvatar characterId="neli" size={neliVisualSize} floating={false} blink={false} />
+                    <View pointerEvents="none" style={styles.neliBlinkOverlay}>
+                      <BlinkingNeliImage
+                        size={neliVisualSize}
+                        height={neliVisualHeight}
+                        showBase={false}
+                        overlayScale={0.99}
+                        introVisibleMs={800}
+                        repeatMs={3000}
+                        blinkClosedMs={700}
+                        overlayOffsetX={neliVisualSize * 0.012}
+                        overlayOffsetY={neliVisualSize * 0.01}
+                      />
+                    </View>
                   </View>
                   {[...outfit.items].sort((a, b) => getOverlayLayer(a.slot) - getOverlayLayer(b.slot)).map(item => {
                     if (isHatSlot(item.slot)) {

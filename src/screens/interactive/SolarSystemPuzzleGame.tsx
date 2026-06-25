@@ -3,8 +3,6 @@ import { Animated, Easing, Image, ImageBackground, LayoutAnimation, PanResponder
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
 import TopBar from '../../components/TopBar';
-import CelebrationOverlay from '../../components/celebration/CelebrationOverlay';
-import { useCelebration } from '../../components/celebration/useCelebration';
 import { AppContext } from '../../store/AppContext';
 import { useNav } from '../../store/NavContext';
 import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
@@ -13,6 +11,109 @@ import { SOLAR_SYSTEM_BACKGROUND, SOLAR_SYSTEM_PLANETS, SolarSystemPlanet } from
 
 type StageSize = { width: number; height: number };
 type Rect = { x: number; y: number; w: number; h: number };
+
+// ─── Inline celebration ───────────────────────────────────────────────────────
+
+const CELEB_EMOJIS = ['⭐','🌟','💫','✨'];
+
+type CelebStar = {
+  id: number; emoji: string;
+  startX: number; startY: number;
+  endX: number;   endY: number;
+  size: number;   spin: number;
+  delay: number; // 0..1 normalised
+  fadeIn: number; fadeOut: number;
+};
+
+function buildCelebStars(W: number, H: number): CelebStar[] {
+  const stars: CelebStar[] = [];
+  let id = 0;
+  function rnd(a: number, b: number) { return a + Math.random() * (b - a); }
+
+  const cannons = [
+    { x: W * 0.15, count: 48 },
+    { x: W * 0.50, count: 54 },
+    { x: W * 0.85, count: 48 },
+  ];
+
+  cannons.forEach(c => {
+    for (let i = 0; i < c.count; i++) {
+      const fan   = rnd(-0.72, 0.72);
+      const angle = -Math.PI / 2 + fan;
+      const g     = rnd(1400, 2000);
+      const spd   = (Math.sqrt(2 * g * H) * rnd(0.90, 1.20)) / Math.abs(Math.sin(angle));
+      const TOTAL_S = 2.8;
+      const delay   = rnd(0, 0.12); // normalised 0..1
+      const tSec    = (1 - delay) * TOTAL_S;
+      const vx = Math.cos(angle) * spd;
+      const vy = Math.sin(angle) * spd;
+      stars.push({
+        id: id++,
+        emoji: CELEB_EMOJIS[id % CELEB_EMOJIS.length]!,
+        startX: c.x + rnd(-W * 0.05, W * 0.05),
+        startY: H,
+        endX: vx * tSec,
+        endY: vy * tSec + 0.5 * g * tSec * tSec,
+        size: rnd(20, 38),
+        spin: rnd(0.5, 2) * (Math.random() > 0.5 ? 1 : -1),
+        delay,
+        fadeIn:  delay + (1 - delay) * 0.04,
+        fadeOut: delay + (1 - delay) * 0.80,
+      });
+    }
+  });
+
+  // Extra spread particles
+  for (let i = 0; i < 70; i++) {
+    const g     = rnd(1200, 1800);
+    const angle = rnd(-Math.PI * 0.9, -Math.PI * 0.1);
+    const spd   = Math.abs((Math.sqrt(2 * g * H) * rnd(0.6, 1.0)) / Math.sin(angle)) * rnd(0.5, 0.85);
+    const TOTAL_S = 2.8;
+    const delay   = rnd(0, 0.35);
+    const tSec    = (1 - delay) * TOTAL_S;
+    const vx = Math.cos(angle) * spd;
+    const vy = Math.sin(angle) * spd;
+    stars.push({
+      id: id++,
+      emoji: CELEB_EMOJIS[id % CELEB_EMOJIS.length]!,
+      startX: rnd(W * 0.05, W * 0.95),
+      startY: H,
+      endX: vx * tSec,
+      endY: vy * tSec + 0.5 * g * tSec * tSec,
+      size: rnd(16, 30),
+      spin: rnd(0.5, 2) * (Math.random() > 0.5 ? 1 : -1),
+      delay,
+      fadeIn:  delay + (1 - delay) * 0.04,
+      fadeOut: delay + (1 - delay) * 0.80,
+    });
+  }
+  return stars;
+}
+
+function CelebStarView({ star, anim }: { star: CelebStar; anim: Animated.Value }) {
+  return (
+    <Animated.Text
+      style={{
+        position: 'absolute',
+        left: star.startX - star.size / 2,
+        top:  star.startY - star.size / 2,
+        fontSize: star.size,
+        opacity: anim.interpolate({
+          inputRange:  [star.delay, star.fadeIn, star.fadeOut, 1],
+          outputRange: [0, 1, 1, 0],
+          extrapolate: 'clamp',
+        }),
+        transform: [
+          { translateX: anim.interpolate({ inputRange: [star.delay, 1], outputRange: [0, star.endX], extrapolate: 'clamp' }) },
+          { translateY: anim.interpolate({ inputRange: [star.delay, 1], outputRange: [0, star.endY], extrapolate: 'clamp' }) },
+          { rotate:     anim.interpolate({ inputRange: [star.delay, 1], outputRange: ['0deg', `${star.spin * 360}deg`], extrapolate: 'clamp' }) },
+        ],
+      }}
+    >
+      {star.emoji}
+    </Animated.Text>
+  );
+}
 const TTS = (l: string) => ({ fa: 'fa-IR', ar: 'fa-IR', zh: 'zh-CN', ko: 'ko-KR', fr: 'fr-FR', es: 'es-ES' } as any)[l] ?? 'en-US';
 const RATE = (l: string) => (l === 'fa' || l === 'ar' ? 0.65 : 0.8);
 const SETTLE_MS = 600;
@@ -305,8 +406,9 @@ export default function SolarSystemPuzzleGame() {
   const [placedCount, setPlacedCount] = useState(0);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [placedIds, setPlacedIds] = useState<string[]>([]);
-  const celebration = useCelebration();
-  const celebrationPlayedRef = useRef(false);
+  const [celebStars, setCelebStars] = useState<CelebStar[]>([]);
+  const celebAnim = useRef(new Animated.Value(0)).current;
+  const celebPlayedRef = useRef(false);
   const placedIdsRef = useRef<string[]>([]);
   const placedCountRef = useRef(0);
   const isFa = lang === 'fa' || lang === 'ar';
@@ -325,16 +427,22 @@ export default function SolarSystemPuzzleGame() {
   }, [draggableLayout]);
 
   const startCelebration = () => {
-    if (celebrationPlayedRef.current || !stageSize.width || !stageSize.height) return;
-    celebrationPlayedRef.current = true;
-    celebration.play({
-      message: 'آفرین! 🌟',
-      subMessage: 'Well done!',
-      color: '#FFE034',
-      durationMs: 2800,
-      particleCount: 156,
+    if (celebPlayedRef.current || !stageSize.width || !stageSize.height) return;
+    celebPlayedRef.current = true;
+    const stars = buildCelebStars(stageSize.width, stageSize.height);
+    setCelebStars(stars);
+    celebAnim.setValue(0);
+    Animated.timing(celebAnim, {
+      toValue: 1,
+      duration: 2800,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }).start(() => {
+      setCelebStars([]);
+      celebAnim.setValue(0);
     });
   };
+
   const handlePlaced = () => {
     setActiveId(null);
     const nextCount = Math.min(draggableLayout.length, placedCountRef.current + 1);
@@ -355,7 +463,7 @@ export default function SolarSystemPuzzleGame() {
 
   useEffect(() => {
     if (allPlaced) return;
-    celebrationPlayedRef.current = false;
+    celebPlayedRef.current = false;
   }, [allPlaced]);
 
   return (
@@ -409,7 +517,21 @@ export default function SolarSystemPuzzleGame() {
               )) : null}
             </View>
 
-            <CelebrationOverlay ref={celebration.ref} />
+            {/* Inline celebration — stars shoot up from bottom, arc across full screen */}
+        {celebStars.map(star => (
+          <CelebStarView key={star.id} star={star} anim={celebAnim} />
+        ))}
+        {celebStars.length > 0 && (
+          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.celebBadgeWrap, {
+            opacity: celebAnim.interpolate({ inputRange: [0, 0.08, 0.70, 0.90, 1], outputRange: [0, 1, 1, 0, 0], extrapolate: 'clamp' }),
+            transform: [{ scale: celebAnim.interpolate({ inputRange: [0, 0.10, 0.70, 1], outputRange: [0.3, 1.1, 1.0, 0.85], extrapolate: 'clamp' }) }],
+          }]}>
+            <View style={styles.celebBadge}>
+              <Text style={styles.celebText}>آفرین! 🌟</Text>
+              <Text style={styles.celebSub}>Well done!</Text>
+            </View>
+          </Animated.View>
+        )}
 
             <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
               {draggableLayout.map(planet => (
@@ -565,5 +687,35 @@ const styles = StyleSheet.create({
   doneText: {
     color: '#FFFFFF',
     fontSize: 14,
+  },
+  celebBadgeWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 50,
+  },
+  celebBadge: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    borderWidth: 4,
+    borderColor: '#FFE034',
+    paddingHorizontal: 40,
+    paddingVertical: 20,
+    alignItems: 'center',
+    shadowColor: '#FFE034',
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 12,
+  },
+  celebText: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#FFE034',
+  },
+  celebSub: {
+    fontSize: 15,
+    color: '#8A7A9B',
+    fontWeight: '700',
+    marginTop: 5,
   },
 });

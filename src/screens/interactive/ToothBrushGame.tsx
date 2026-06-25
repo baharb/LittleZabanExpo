@@ -1,4 +1,4 @@
-﻿import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, ImageBackground, PanResponder, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import TopBar from '../../components/TopBar';
@@ -143,6 +143,9 @@ export default function ToothBrushGame() {
   const gameAreaRef = useRef<any>(null);
   const brushStartedRef = useRef(false);
   const brushCuePlayedRef = useRef(false);
+  const brushTouchStartCleanCountRef = useRef(0);
+  const brushIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const brushIdleCuePlayedRef = useRef(false);
   const lastBubblePointRef = useRef({ x: 0, y: 0, active: false });
   const bubbleClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -182,6 +185,7 @@ export default function ToothBrushGame() {
     doneRef.current = true;
     setDone(true);
     setFinishVisible(true);
+    clearBrushIdleTimer();
     setBrushing(false);
     setStarted(true);
     addStars(3);
@@ -252,6 +256,7 @@ export default function ToothBrushGame() {
       if (bubbleClearTimerRef.current) clearTimeout(bubbleClearTimerRef.current);
       if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
       if (sparkleTimerRef.current) clearTimeout(sparkleTimerRef.current);
+      if (brushIdleTimerRef.current) clearTimeout(brushIdleTimerRef.current);
       layoutSyncTimerRefs.current.forEach(clearTimeout);
       layoutSyncTimerRefs.current = [];
     };
@@ -373,6 +378,34 @@ export default function ToothBrushGame() {
     return true;
   };
 
+  const clearBrushIdleTimer = () => {
+    if (brushIdleTimerRef.current) {
+      clearTimeout(brushIdleTimerRef.current);
+      brushIdleTimerRef.current = null;
+    }
+  };
+
+  const scheduleBrushIdleCue = () => {
+    clearBrushIdleTimer();
+    if (doneRef.current || brushIdleCuePlayedRef.current) return;
+    brushIdleTimerRef.current = setTimeout(() => {
+      const currentCleanCount = cleanedRef.current.filter(Boolean).length;
+      if (!doneRef.current && currentCleanCount < NUM && lastBubblePointRef.current.active) {
+        brushIdleCuePlayedRef.current = true;
+        void playFaAudioSequence([FA_AUDIO_KEYS.feedback.tryAgain], 100);
+      }
+    }, 900);
+  };
+
+  const handleBrushEnd = () => {
+    clearBrushIdleTimer();
+    setBrushing(false);
+    lastBubblePointRef.current.active = false;
+    const currentCleanCount = cleanedRef.current.filter(Boolean).length;
+    if (!doneRef.current && currentCleanCount < NUM) {
+      void playFaAudioSequence([FA_AUDIO_KEYS.feedback.tryAgain], 100);
+    }
+  };
   const pan = useRef(PanResponder.create({
     onStartShouldSetPanResponder: () => !doneRef.current,
     onMoveShouldSetPanResponder: () => !doneRef.current,
@@ -384,24 +417,21 @@ export default function ToothBrushGame() {
       }
       const pageX = e.nativeEvent.pageX;
       const pageY = e.nativeEvent.pageY;
+      brushTouchStartCleanCountRef.current = cleanedRef.current.filter(Boolean).length;
       lastBubblePointRef.current = { x: pageX, y: pageY, active: true };
       setBrushPosition(pageX - BRUSH_TIP_OFFSET_X, pageY - BRUSH_TIP_OFFSET_Y);
       markTeeth(pageX, pageY);
+      scheduleBrushIdleCue();
     },
     onPanResponderMove: e => {
       const pageX = e.nativeEvent.pageX;
       const pageY = e.nativeEvent.pageY;
       setBrushPosition(pageX - BRUSH_TIP_OFFSET_X, pageY - BRUSH_TIP_OFFSET_Y);
       markTeeth(pageX, pageY);
+      scheduleBrushIdleCue();
     },
-    onPanResponderRelease: () => {
-      setBrushing(false);
-      lastBubblePointRef.current.active = false;
-    },
-    onPanResponderTerminate: () => {
-      setBrushing(false);
-      lastBubblePointRef.current.active = false;
-    },
+    onPanResponderRelease: handleBrushEnd,
+    onPanResponderTerminate: handleBrushEnd,
   })).current;
 
   const resetGame = () => {
@@ -410,6 +440,9 @@ export default function ToothBrushGame() {
     doneRef.current = false;
     brushStartedRef.current = false;
     brushCuePlayedRef.current = false;
+    brushTouchStartCleanCountRef.current = 0;
+    brushIdleCuePlayedRef.current = false;
+    clearBrushIdleTimer();
     lastBubblePointRef.current = { x: 0, y: 0, active: false };
     if (bubbleClearTimerRef.current) clearTimeout(bubbleClearTimerRef.current);
     if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
@@ -418,6 +451,7 @@ export default function ToothBrushGame() {
     setDone(false);
     setFinishVisible(false);
     setShowSparkles(false);
+    clearBrushIdleTimer();
     setBrushing(false);
     setStarted(false);
     doneSlide.setValue(420);
