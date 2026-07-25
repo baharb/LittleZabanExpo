@@ -9,7 +9,7 @@ export default function ParentScreen() {
   const { goBack } = useNav();
   const { settingsLang: lang, stars, streak, completedSections, badges, parentPin, setParentPin, setAge, age } = useContext(AppContext);
   const [pin, setPin] = useState('');
-  const [unlocked, setUnlocked] = useState(false);
+  const [unlocked, setUnlocked] = useState(true);
   const [newPin, setNewPin] = useState('');
   const { width, height } = useWindowDimensions();
   const ui = Math.min(width / 390, height / 844);
@@ -79,9 +79,9 @@ export default function ParentScreen() {
         <View style={styles.panel}>
           <Text style={[styles.sectionTitle, { fontFamily: ff(lang, 'black') }, dir(lang)]}>{isFa ? 'سن کودک' : 'Child Age'}</Text>
           <View style={styles.ageRow}>
-            {[2,3,4,5,6,7,8,9,10,11,12].map(a => (
-              <TouchableOpacity key={a} style={[styles.ageBtn, age === a && styles.ageBtnActive]} onPress={() => setAge(a)}>
-                <Text style={[styles.ageTxt, age === a && styles.ageTxtActive]}>{a}</Text>
+            {([{ label: '2-3', value: 2 }, { label: '4-5', value: 4 }, { label: '6-8', value: 6 }] as const).map(({ label, value }) => (
+              <TouchableOpacity key={label} style={[styles.ageBtn, age === value && styles.ageBtnActive]} onPress={() => setAge(value)}>
+                <Text style={[styles.ageTxt, age === value && styles.ageTxtActive]}>{label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   panel: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 26, padding: 16, marginBottom: 14 },
   sectionTitle: { color: '#221044', fontSize: 18, fontWeight: '900', marginBottom: 12 },
   ageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  ageBtn: { width: 46, height: 46, borderRadius: 17, backgroundColor: '#F0EBFF', alignItems: 'center', justifyContent: 'center' },
+  ageBtn: { minWidth: 72, height: 46, borderRadius: 17, backgroundColor: '#F0EBFF', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
   ageBtnActive: { backgroundColor: '#7C3AED' },
   ageTxt: { fontFamily: ff('fa', 'bold'), color: '#221044', fontSize: 16, fontWeight: '900' },
   ageTxtActive: { color: '#fff' },

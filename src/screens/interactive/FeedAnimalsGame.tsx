@@ -19,7 +19,9 @@ import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
 import TopBar from '../../components/TopBar';
 import { dir, ff } from '../../theme/fonts';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
-import { speakWithGeneratedVoice } from '../../utils/faAudio';
+import { FA_AUDIO_KEYS, getIngredientAudioKey, playFaAudio, speakWithGeneratedVoice } from '../../utils/faAudio';
+import PopperCelebration from '../../components/PopperCelebration';
+import GameEndOverlay from '../../components/GameEndOverlay';
 
 type AnimalId = 'monkey' | 'rabbit' | 'cat' | 'panda' | 'bear' | 'giraffe';
 type FoodId = 'carrot' | 'fish' | 'banana' | 'apple' | 'honey' | 'bamboo';
@@ -498,6 +500,8 @@ export default function FeedAnimalsGame() {
 
   const [fedIds, setFedIds] = useState<FoodId[]>([]);
   const [done, setDone] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [showEndOverlay, setShowEndOverlay] = useState(false);
   const [wrong, setWrong] = useState(false);
   const [resetToken, setResetToken] = useState(0);
   const [inspectedAnimalId, setInspectedAnimalId] = useState<AnimalId | null>(null);
@@ -535,11 +539,12 @@ export default function FeedAnimalsGame() {
   };
 
   const speakFood = (food: Food) => {
-    void speakWithGeneratedVoice(food.fa, 'fa-IR', {
-      interrupt: true,
-      rate: 0.84,
-      pitch: 1.12,
-    });
+    const audioKey = getIngredientAudioKey(food.id);
+    if (audioKey) {
+      void playFaAudio(audioKey);
+    } else {
+      void speakWithGeneratedVoice(food.fa, 'fa-IR', { interrupt: true, rate: 0.84, pitch: 1.12 });
+    }
   };
 
   useEffect(() => {
@@ -557,7 +562,10 @@ export default function FeedAnimalsGame() {
   useEffect(() => {
     if (!done && fedIds.length === ANIMALS.length) {
       setDone(true);
-      say('آفرین! همه حیوان‌ها سیر شدند.', 'Great job! All the animals are full.');
+      setShowCelebration(true);
+      setTimeout(async () => {
+        await playFaAudio(FA_AUDIO_KEYS.feedback.afarin, { awaitFinish: true });
+      }, 400);
     }
   }, [done, fedIds.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -772,17 +780,14 @@ export default function FeedAnimalsGame() {
           </View>
         </View>
 
-        {done ? (
-          <View style={styles.doneRow}>
-            <TouchableOpacity style={styles.secondaryBtn} onPress={resetGame}>
-              <Text style={[styles.secondaryText, { fontFamily: ff(isFa ? 'fa' : lang, 'bold') }]}>{isFa ? 'دوباره' : 'Again'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => reset({ name: 'Main', tab: 'Games' })}>
-              <Text style={[styles.primaryText, { fontFamily: ff(isFa ? 'fa' : lang, 'bold') }]}>{isFa ? 'بازی‌ها' : 'Games'}</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
       </ImageBackground>
+      <PopperCelebration
+        visible={showCelebration}
+        onComplete={() => { setShowCelebration(false); setShowEndOverlay(true); }}
+      />
+      {showEndOverlay && (
+        <GameEndOverlay onGo={() => { setShowEndOverlay(false); reset({ name: 'Main', tab: 'Games' }); }} />
+      )}
     </View>
   );
 }

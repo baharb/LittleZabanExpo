@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import * as Haptics from 'expo-haptics';
 import {
   Animated,
   Easing,
@@ -10,6 +11,7 @@ import {
 import Svg, { Circle, G, Line, Path } from 'react-native-svg';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
 import { FarsiLetter } from '../../data/farsiLetters';
+import { FA_AUDIO_KEYS, makeAlphabetAudioKey, playFaAudio } from '../../utils/faAudio';
 import { VAZIR_TRACE_LETTERS } from '../../screens/interactive/vazirmatnTraceData';
 import {
   Point,
@@ -35,6 +37,8 @@ type Props = {
   playTryAgainSound?: () => void;
   tolerance?: number;
   autoAdvanceDelayMs?: number;
+  /** When true: on success, call onComplete immediately with no audio/celebration (parent owns the sequence) */
+  immediateComplete?: boolean;
 };
 
 type Phase = 'guide' | 'trace' | 'dots' | 'done';
@@ -104,41 +108,32 @@ function buildCelebParticles(W: number, H: number): CelebParticle[] {
 // ─── Celebration overlay ──────────────────────────────────────────────────────
 
 function CelebrationOverlay({
-  anim, color, W, H, particles,
-}: { anim: Animated.Value; color: string; W: number; H: number; particles: CelebParticle[] }) {
+  anim, W, H, particles,
+}: { anim: Animated.Value; W: number; H: number; particles: CelebParticle[] }) {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {/* آفرین badge */}
-      <Animated.View style={[styles.celebBadgeWrap, {
-        opacity: anim.interpolate({ inputRange:[0,0.1,0.72,1], outputRange:[0,1,1,0], extrapolate:'clamp' }),
-        transform:[{ scale: anim.interpolate({ inputRange:[0,0.15,0.8,1], outputRange:[0.3,1.1,1,0.8], extrapolate:'clamp' }) }],
-      }]}>
-        <View style={[styles.celebBadge, { borderColor: color, shadowColor: color }]}>
-          <Text style={[styles.celebText, { color }]}>آفرین! 🌟</Text>
-          <Text style={styles.celebSub}>Well done!</Text>
-        </View>
-      </Animated.View>
-
-      {/* Star particles — all interpolate directly from anim (no chaining) */}
       {particles.map(p => {
         const ps   = p.delay / CELEB_MS;
         const pe   = 1;
         const tSec = (pe - ps) * CELEB_MS / 1000;
         const fi   = ps + (pe - ps) * 0.06;
-        const fo   = ps + (pe - ps) * 0.82;
+        const fo   = ps + (pe - ps) * 0.84;
         return (
-          <Animated.Text key={p.id} style={{
+          <Animated.View key={p.id} style={{
             position: 'absolute',
             left:     p.x - p.size / 2,
             top:      p.y - p.size / 2,
-            fontSize: p.size,
+            width:    p.size,
+            height:   p.size,
+            borderRadius: p.size / 2,
+            backgroundColor: p.color,
             opacity:  anim.interpolate({ inputRange:[ps,fi,fo,pe], outputRange:[0,1,1,0], extrapolate:'clamp' }),
             transform:[
               { translateX: anim.interpolate({ inputRange:[ps,pe], outputRange:[0, p.vx*tSec], extrapolate:'clamp' }) },
               { translateY: anim.interpolate({ inputRange:[ps,pe], outputRange:[0, p.vy*tSec + 0.5*p.gravity*tSec*tSec], extrapolate:'clamp' }) },
               { rotate:     anim.interpolate({ inputRange:[ps,pe], outputRange:['0deg',`${p.spin*360}deg`], extrapolate:'clamp' }) },
             ],
-          }}>⭐</Animated.Text>
+          }} />
         );
       })}
     </View>
@@ -210,6 +205,7 @@ export default function FarsiLetterTracer({
   playTryAgainSound,
   tolerance = 32,
   autoAdvanceDelayMs = 0,
+  immediateComplete = false,
 }: Props) {
   const vb = parseViewBox(letter.viewBox);
   const scaleX = boardSize / vb.width;
@@ -270,8 +266,10 @@ export default function FarsiLetterTracer({
   const traceTolerance = isSegmentedSin ? Math.max(tolerance * 1.2, 40) : Math.max(tolerance, 34);
   const traceStartGate = isSegmentedSin ? Math.max(24, traceTolerance * 0.86) : Math.max(18, Math.max(tolerance, 34) * 0.78);
   const maxProgressJump = isSegmentedSin ? 0.3 : 0.22;
-  const dotTolerance = Math.max(tolerance * 1.2, Math.min(boardSize * 0.14, 60));
-  const activeDotTolerance = Math.max(dotTolerance * 1.15, Math.min(boardSize * 0.17, 72));
+  // Dot tolerance: generous enough for kids but small enough that adjacent dots
+  // (≥24 viewBox units apart for te/se) cannot be hit at the same time.
+  const dotTolerance = Math.max(tolerance * 0.65, Math.min(boardSize * 0.09, 26));
+  const activeDotTolerance = Math.max(dotTolerance * 1.25, Math.min(boardSize * 0.11, 32));
 
   // ── Pulse loop (for start dot) ──
   useEffect(() => {
@@ -315,17 +313,37 @@ export default function FarsiLetterTracer({
   // ── Celebration on success ──
   useEffect(() => {
     if (!success) return;
-    setCelebParticles(buildCelebParticles(boardSize, boardSize));
-    celebAnim.setValue(0);
-    setShowCeleb(true);
-    Animated.timing(celebAnim, {
-      toValue:  1,
-      duration: CELEB_MS,
-      easing:   Easing.linear,
-      useNativeDriver: true,
-    }).start(() => setShowCeleb(false));
-    playSuccessSound?.();
-    if (onComplete) advanceTimer.current = setTimeout(onComplete, autoAdvanceDelayMs);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    if (immediateComplete) {
+      // Parent owns audio + celebration — just fire onComplete immediately
+      onComplete?.();
+      return;
+    }
+
+    const run = async () => {
+      const nameKey = makeAlphabetAudioKey('name', letter.id);
+      // Say the letter name twice
+      await playFaAudio(nameKey, { awaitFinish: true });
+      await new Promise<void>(r => setTimeout(r, 380));
+      await playFaAudio(nameKey, { awaitFinish: true });
+      await new Promise<void>(r => setTimeout(r, 320));
+      // Launch particle celebration
+      setCelebParticles(buildCelebParticles(boardSize, boardSize));
+      celebAnim.setValue(0);
+      setShowCeleb(true);
+      Animated.timing(celebAnim, {
+        toValue: 1,
+        duration: CELEB_MS,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }).start(() => setShowCeleb(false));
+      // Say آفرین
+      void playFaAudio(FA_AUDIO_KEYS.feedback.afarin);
+      if (onComplete) advanceTimer.current = setTimeout(onComplete, autoAdvanceDelayMs);
+    };
+    void run();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [success]);
 
   function restartGuide() {
@@ -484,7 +502,8 @@ export default function FarsiLetterTracer({
   }
 
   function handleMove(event: any) {
-    if (!pointerActive.current || phase === 'guide' || success) return;
+    // Skip dots phase in move — dots must be registered by explicit tap (handleDown) only
+    if (!pointerActive.current || phase === 'guide' || phase === 'dots' || success) return;
     updateTrace(extractPoint(event, scaleX, scaleY));
   }
 
@@ -567,6 +586,7 @@ export default function FarsiLetterTracer({
 
       <Svg width={boardSize} height={boardSize} viewBox={letter.viewBox} accessible accessibilityLabel={`Trace the Farsi letter ${letter.letter}`}>
         {strokes.map((st, si) => {
+          if (success) return null; // hide strokes — letter image shown instead
           const prog = progFor(si);
 
           return (
@@ -633,44 +653,50 @@ export default function FarsiLetterTracer({
           );
         })}
 
-        {/* Done check */}
-        {success ? (
-          <G>
-            <Circle cx={vb.width/2} cy={vb.height/2} r={34} fill="#24C878" opacity={0.14} />
-            <Path
-              d={`M ${vb.width/2-14} ${vb.height/2+2} L ${vb.width/2-2} ${vb.height/2+16} L ${vb.width/2+18} ${vb.height/2-14}`}
-              stroke="#24C878" strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" fill="none"
-            />
-          </G>
-        ) : null}
+        {/* Done: nothing in SVG — letter image shown in overlay below */}
 
         {/* Dot targets for letters with dots */}
         {phase === 'dots' && !success
-          ? dotTargets.map((dot, di) => (
-              <G key={`dot-${di}`}>
-                <Circle
-                  cx={dot.x}
-                  cy={dot.y}
-                  r={di === completedDots.length ? 13 : 9}
-                  fill={completedDots.includes(di) ? '#24C878' : 'rgba(78,69,101,0.58)'}
-                  opacity={completedDots.includes(di) ? 1 : di === completedDots.length ? 0.95 : 0.82}
-                />
-                <Circle cx={dot.x} cy={dot.y} r={di === completedDots.length ? 5 : 4} fill="white" />
-              </G>
-            ))
+          ? dotTargets.map((dot, di) => {
+              const isDone   = completedDots.includes(di);
+              const isActive = di === completedDots.length;
+              return (
+                <G key={`dot-${di}`}>
+                  <Circle
+                    cx={dot.x}
+                    cy={dot.y}
+                    r={isDone ? 10 : isActive ? 9 : 7}
+                    fill={isDone ? col : isActive ? 'rgba(78,69,101,0.72)' : 'rgba(78,69,101,0.38)'}
+                    opacity={1}
+                  />
+                  <Circle cx={dot.x} cy={dot.y} r={isDone ? 4 : isActive ? 3.5 : 2.5} fill="white" opacity={0.9} />
+                </G>
+              );
+            })
           : null}
 
-        {/* Static dots shown in guide/trace phase */}
+        {/* Static dots shown in guide/trace phase (preview of where to tap) */}
         {phase !== 'dots' && dotTargets.length > 0
           ? dotTargets.map((dot, di) => (
               <G key={`sdot-${di}`}>
-                <Circle cx={dot.x} cy={dot.y} r={7} fill={col} opacity={0.85} />
-                <Circle cx={dot.x} cy={dot.y} r={3} fill="white" />
+                <Circle cx={dot.x} cy={dot.y} r={8} fill={col} opacity={0.65} />
+                <Circle cx={dot.x} cy={dot.y} r={3} fill="white" opacity={0.85} />
               </G>
             ))
           : null}
 
       </Svg>
+
+      {/* Success: show the letter example image in center */}
+      {success ? (
+        <View style={styles.successReveal} pointerEvents="none">
+          {traceImage ? (
+            <Image source={traceImage} style={styles.successImage} resizeMode="contain" />
+          ) : (
+            <Text style={[styles.successLetter, { color: col }]}>{letter.letter}</Text>
+          )}
+        </View>
+      ) : null}
 
       {/* Overlay (pointer / hints) */}
       <View style={styles.overlay} pointerEvents="none">
@@ -742,7 +768,6 @@ export default function FarsiLetterTracer({
       {showCeleb ? (
         <CelebrationOverlay
           anim={celebAnim}
-          color={col}
           W={boardSize}
           H={boardSize}
           particles={celebParticles}
@@ -884,33 +909,20 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     minWidth: 0,
   },
-  celebBadgeWrap: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
+  successReveal: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 20,
+    backgroundColor: '#FFFDF8',
   },
-  celebBadge: {
-    backgroundColor: '#fff',
-    borderRadius: 26,
-    borderWidth: 4,
-    paddingHorizontal: 36,
-    paddingVertical: 18,
-    alignItems: 'center',
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    elevation: 10,
+  successImage: {
+    width: '78%',
+    height: '78%',
   },
-  celebText: {
-    fontSize: 34,
-    fontWeight: '900',
-  },
-  celebSub: {
-    fontSize: 14,
-    color: '#8A7A9B',
-    fontWeight: '700',
-    marginTop: 4,
+  successLetter: {
+    fontSize: 120,
+    fontFamily: 'Vazirmatn_800ExtraBold',
+    textAlign: 'center',
   },
 });
 

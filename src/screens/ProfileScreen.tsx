@@ -130,7 +130,7 @@ export default function ProfileScreen() {
               {isFa ? 'پروفایل کودک' : 'Child profile'}
             </Text>
             <Text style={[styles.title, { fontFamily: ff(lang, 'black'), fontSize: Math.max(24, Math.round(27 * ui)) }, dir(lang)]}>
-              {isFa ? `${age || 4} ساله` : `Age ${age || 4}`}
+              {(() => { const a = age || 4; const r = a <= 3 ? '2-3' : a <= 5 ? '4-5' : '6-8'; return isFa ? `${r} ساله` : `Age ${r}`; })()}
             </Text>
             <Text style={[styles.sub, { fontFamily: ff(lang, 'regular'), fontSize: Math.max(12, Math.round(13 * ui)), lineHeight: Math.max(18, Math.round(19 * ui)) }, dir(lang)]}>
               {isFa ? 'فارسی، بازی، داستان و جایزه' : 'Persian play, stories, and rewards'}
@@ -167,15 +167,15 @@ export default function ProfileScreen() {
                 <Text style={[styles.settingsSub, { fontFamily: ff(lang, 'regular') }]}>{isFa ? 'سن را انتخاب کن تا فعالیت‌ها مناسب‌تر شوند' : 'Choose an age to personalize activities'}</Text>
               </View>
               <View style={styles.ageRow}>
-                {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(value => (
+                {([{ label: '2-3', value: 2 }, { label: '4-5', value: 4 }, { label: '6-8', value: 6 }] as const).map(({ label, value }) => (
                   <TouchableOpacity
-                    key={value}
+                    key={label}
                     style={[styles.ageButton, age === value && styles.ageButtonActive]}
                     onPress={() => setAge(value)}
                     activeOpacity={0.82}
                   >
                     <Text style={[styles.ageButtonText, age === value && styles.ageButtonTextActive, { fontFamily: ff('fa', 'black') }]}>
-                      {value}
+                      {label}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -188,13 +188,7 @@ export default function ProfileScreen() {
                 <Text style={[styles.settingsSub, { fontFamily: ff(lang, 'regular') }]}>{isFa ? 'سن کودک، گزارش پیشرفت و کد ورود' : 'Child age, progress report, and PIN'}</Text>
               </View>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.settingsButton, { backgroundColor: '#FFF2C7' }]} onPress={() => navigate({ name: 'Characters' })} activeOpacity={0.82}>
-              <Image source={neliWorldAssets.ui.heart} style={styles.settingsIcon} resizeMode="contain" />
-              <View style={styles.settingsCopy}>
-                <Text style={[styles.settingsTitle, { fontFamily: ff(lang, 'black') }]}>{isFa ? 'انتخاب شخصیت' : 'Choose character'}</Text>
-                <Text style={[styles.settingsSub, { fontFamily: ff(lang, 'regular') }]}>{isFa ? 'شخصیت همراه کودک را تغییر بده' : "Change the child's companion"}</Text>
-              </View>
-            </TouchableOpacity>
+            {/* Character selector hidden per #15 */}
           </View>
         </View>
 
@@ -258,7 +252,7 @@ const styles = StyleSheet.create({
   settingsButton: { minHeight: 76, borderRadius: 20, padding: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
   ageSettings: { flexDirection: 'column', alignItems: 'stretch' },
   ageRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 7, justifyContent: 'flex-start' },
-  ageButton: { width: 40, height: 40, borderRadius: 14, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  ageButton: { minWidth: 72, height: 40, borderRadius: 14, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
   ageButtonActive: { backgroundColor: '#078BFF' },
   ageButtonText: { color: '#221044', fontSize: 14 },
   ageButtonTextActive: { color: '#FFFFFF' },

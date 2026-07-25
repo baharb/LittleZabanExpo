@@ -3,10 +3,12 @@ import { Animated, Easing, Image, ImageBackground, PanResponder, StyleSheet, Tex
 import * as Haptics from 'expo-haptics';
 import TopBar from '../../components/TopBar';
 import { AppContext } from '../../store/AppContext';
+import { useNav } from '../../store/NavContext';
 import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
 import { dir, ff } from '../../theme/fonts';
 import { neliWorldAssets, roomBackgroundPickers } from '../../assets/neliWorldAssets';
 import { FA_AUDIO_KEYS, playFaAudioSequence, stopFaAudio } from '../../utils/faAudio';
+import GameEndOverlay from '../../components/GameEndOverlay';
 
 const NUM = 10;
 
@@ -117,6 +119,7 @@ function LilaBrushCharacter({
 
 export default function ToothBrushGame() {
   const { lang, addStars } = useContext(AppContext);
+  const { reset } = useNav();
   const { width, height } = useLandscapeDimensions();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
@@ -152,6 +155,7 @@ export default function ToothBrushGame() {
   const sparkleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const layoutSyncTimerRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [showSparkles, setShowSparkles] = useState(false);
+  const [showEndOverlay, setShowEndOverlay] = useState(false);
   const brushRadius = 48;
   const [mouthFrame, setMouthFrame] = useState({ x: 0, y: 0, w: 0, h: 0 });
   const isLandscape = width > height;
@@ -209,11 +213,8 @@ export default function ToothBrushGame() {
     }, 120);
     completionTimerRef.current = setTimeout(() => {
       setShowSparkles(false);
-      Animated.timing(doneSlide, { toValue: 420, duration: 250, useNativeDriver: true }).start(() => {
-        setFinishVisible(false);
-        resetGame();
-      });
-    }, 4350);
+      setShowEndOverlay(true);
+    }, 2200);
   }, [addStars, completed, done, doneSlide, isFa, lang, scale]);
 
   useEffect(() => {
@@ -392,7 +393,7 @@ export default function ToothBrushGame() {
       const currentCleanCount = cleanedRef.current.filter(Boolean).length;
       if (!doneRef.current && currentCleanCount < NUM && lastBubblePointRef.current.active) {
         brushIdleCuePlayedRef.current = true;
-        void playFaAudioSequence([FA_AUDIO_KEYS.feedback.tryAgain], 100);
+        void playFaAudioSequence([FA_AUDIO_KEYS.toothbrush.cleanNow], 100);
       }
     }, 900);
   };
@@ -403,7 +404,7 @@ export default function ToothBrushGame() {
     lastBubblePointRef.current.active = false;
     const currentCleanCount = cleanedRef.current.filter(Boolean).length;
     if (!doneRef.current && currentCleanCount < NUM) {
-      void playFaAudioSequence([FA_AUDIO_KEYS.feedback.tryAgain], 100);
+      void playFaAudioSequence([FA_AUDIO_KEYS.toothbrush.cleanNow], 100);
     }
   };
   const pan = useRef(PanResponder.create({
@@ -653,6 +654,9 @@ export default function ToothBrushGame() {
 
         <View style={styles.bottomControls} />
       </ImageBackground>
+      {showEndOverlay && (
+        <GameEndOverlay onGo={() => { setShowEndOverlay(false); reset({ name: 'Main', tab: 'Games' }); }} />
+      )}
     </View>
   );
 }

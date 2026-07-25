@@ -20,6 +20,8 @@ import { ff } from '../theme/fonts';
 import { C } from '../theme/colors';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
 import { characterAssets } from '../assets/characterAssets';
+import { FA_AUDIO_KEYS, makeAlphabetAudioKey, playFaAudio } from '../utils/faAudio';
+import PopperCelebration from '../components/PopperCelebration';
 
 type AlphabetItem = {
   id: string;
@@ -493,6 +495,7 @@ function SequentialAlphabetShowPlayer({
   const { width, height } = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const item = ALPHABETS[index];
   const exampleSource = EXAMPLE_IMAGE_BY_ID[item.id];
   const characterSource = ALPHABET_PUSHERS[index % ALPHABET_PUSHERS.length];
@@ -533,13 +536,26 @@ function SequentialAlphabetShowPlayer({
       if (!animationFinished) return;
       if (index >= ALPHABETS.length - 1) {
         setFinished(true);
+        setShowCelebration(true);
+        void playFaAudio(FA_AUDIO_KEYS.feedback.afarin).then(() => {
+          setTimeout(onClose, 3500);
+        });
         return;
       }
       timerRef.current = setTimeout(() => setIndex(current => current + 1), 120);
     });
 
-    timerRef.current = setTimeout(() => {
-      speak(`${item.letter}. ${item.wordFa}`);
+    timerRef.current = setTimeout(async () => {
+      const nameKey = makeAlphabetAudioKey('name', item.id);
+      const exampleKey = makeAlphabetAudioKey('example', item.id);
+      const nameExists = await playFaAudio(nameKey, { awaitFinish: true }).catch(() => false);
+      if (!nameExists) {
+        speak(`${item.letter}`);
+        await new Promise(r => setTimeout(r, 600));
+      }
+      await new Promise(r => setTimeout(r, 150));
+      const exampleExists = await playFaAudio(exampleKey, { awaitFinish: true }).catch(() => false);
+      if (!exampleExists) speak(item.wordFa);
     }, 1080);
 
     return () => {
@@ -550,7 +566,7 @@ function SequentialAlphabetShowPlayer({
       animationRef.current?.stop();
       animationRef.current = null;
     };
-  }, [index, item.letter, item.wordFa, motion, speak, stop]);
+  }, [index, item.letter, item.wordFa, motion, onClose, speak, stop]);
 
   const close = () => {
     stop();
@@ -560,12 +576,6 @@ function SequentialAlphabetShowPlayer({
     }
     animationRef.current?.stop();
     onClose();
-  };
-
-  const restart = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setFinished(false);
-    setIndex(0);
   };
 
   return (
@@ -630,7 +640,7 @@ function SequentialAlphabetShowPlayer({
                 width: letterSize,
                 height: letterSize,
                 borderRadius: letterSize * 0.28,
-                backgroundColor: item.color,
+                backgroundColor: 'rgba(255,255,255,0.18)',
                 transform: [
                   { translateY: letterLift },
                   {
@@ -667,29 +677,24 @@ function SequentialAlphabetShowPlayer({
             },
           ]}
         >
-          <View style={[styles.sequenceExampleImageWrap, { backgroundColor: item.accent }]}>
+          <View style={[styles.sequenceExampleImageWrap, { backgroundColor: '#FFFFFF' }]}>
             {exampleSource ? (
               <Image source={exampleSource} style={styles.sequenceExampleImage} resizeMode="contain" />
             ) : null}
           </View>
           <Text style={styles.sequenceWord}>{item.wordFa}</Text>
-          <Text style={styles.sequenceEnglish}>{item.wordEn}</Text>
         </Animated.View>
 
-        {finished ? (
-          <TouchableOpacity style={[styles.sequenceRestart, { backgroundColor: item.color }]} activeOpacity={0.86} onPress={restart}>
-            <Text style={styles.sequenceRestartText}>دوباره</Text>
-          </TouchableOpacity>
-        ) : null}
       </View>
+      <PopperCelebration visible={showCelebration} onComplete={() => setShowCelebration(false)} />
     </View>
   );
 }
 
 export default function VideoShowsScreen() {
-  const { goBack } = useNav();
+  const { reset } = useNav();
   const { speakFarsiOnly, stop } = useSpeech();
-  return <SequentialAlphabetShowPlayer onClose={goBack} speak={speakFarsiOnly} stop={stop} />;
+  return <SequentialAlphabetShowPlayer onClose={() => reset({ name: 'Main', tab: 'Games' })} speak={speakFarsiOnly} stop={stop} />;
 }
 
 const styles = StyleSheet.create({

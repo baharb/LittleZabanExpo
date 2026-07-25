@@ -1,40 +1,72 @@
-import React, { useContext, useMemo, useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Image, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import TopBar from '../components/TopBar';
 import { AppContext } from '../store/AppContext';
 import { useNav } from '../store/NavContext';
 import { FARSI_LETTERS } from '../data/farsiLetters';
-import { FA_AUDIO_KEYS, makeAlphabetAudioKey, playFaAudio, playFaAudioSequence, stopFaAudio } from '../utils/faAudio';
+import * as Speech from 'expo-speech';
+import { FA_AUDIO_KEYS, makeAlphabetAudioKey, playFaAudio, playFaAudioSequence, speakWithGeneratedVoice, stopFaAudio } from '../utils/faAudio';
 import FarsiLetterTracer from '../components/farsi/FarsiLetterTracer';
 import LetterSelectorModal from '../components/farsi/LetterSelectorModal';
+import PopperCelebration from '../components/PopperCelebration';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
+import { ALPHABET_EXAMPLE_ASSETS } from '../assets/alphabetExampleAssets';
 import { ff } from '../theme/fonts';
 import { C } from '../theme/colors';
 
 export default function FarsiTracingPage() {
   const { width, height } = useWindowDimensions();
   const { lang } = useContext(AppContext);
-  const { goBack } = useNav();
-  const [index, setIndex] = useState(0);
+  const { screen, goBack, navigate } = useNav();
+
+  // Single-letter mode: launched from a specific letter tile in GamesScreen
+  const isSingleMode = screen.name === 'InteractiveFarsiTrace' && !!screen.letterId;
+
+  const initialIndex = (() => {
+    if (isSingleMode && screen.name === 'InteractiveFarsiTrace' && screen.letterId) {
+      const i = FARSI_LETTERS.findIndex(l => l.id === screen.letterId);
+      return i >= 0 ? i : 0;
+    }
+    return 0;
+  })();
+
+  const [index, setIndex] = useState(initialIndex);
   const [gridOpen, setGridOpen] = useState(false);
   const [guideToken, setGuideToken] = useState(0);
   const [soundOn, setSoundOn] = useState(true);
   const [letterComplete, setLetterComplete] = useState(false);
+  const [showLetterReveal, setShowLetterReveal] = useState(false); // phase 1: show letter char in colored box
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [showEndOverlay, setShowEndOverlay] = useState(false);
+
+  // Prevent state updates + stop audio when the page is closed
+  const isMounted = useRef(true);
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      void stopFaAudio();
+      Speech.stop();
+    };
+  }, []);
 
   const letter = FARSI_LETTERS[index] ?? FARSI_LETTERS[0]!;
   const isFa = lang === 'fa' || lang === 'ar';
   const compact = width < 900;
   const boardSize = useMemo(() => {
-    const sidePad = compact ? 120 : 160;
-    if (compact) return Math.min(width - sidePad, height * 0.5);
+    const sidePad = isSingleMode ? (compact ? 40 : 80) : (compact ? 120 : 160);
+    if (compact) return Math.min(width - sidePad, height * 0.52);
     return Math.min(width - sidePad, height * 0.68, 520);
-  }, [compact, height, width]);
+  }, [compact, height, width, isSingleMode]);
 
   const goToLetter = (nextIndex: number) => {
     void stopFaAudio();
     setIndex(nextIndex);
     setLetterComplete(false);
+    setShowLetterReveal(false);
+    setShowCelebration(false);
     setGuideToken(token => token + 1);
   };
 
@@ -46,26 +78,15 @@ export default function FarsiTracingPage() {
         makeAlphabetAudioKey('name', letterId),
       ], 180);
       if (!played) {
-        const item = FARSI_LETTERS.find(entry => entry.id === letterId);
-        if (item) {
-          // Fallback: keep the page usable even when a file is missing.
-          void playFaAudio(makeAlphabetAudioKey('name', letterId));
-        }
+        void playFaAudio(makeAlphabetAudioKey('name', letterId));
       }
-    } catch {
-      const item = FARSI_LETTERS.find(entry => entry.id === letterId);
-      if (!item) return;
-    }
+    } catch {}
   };
 
   const playSuccessSound = async () => {
+    // used in multi-letter mode (not called by tracer directly, kept for compatibility)
     if (!soundOn) return;
-    try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      void playFaAudio(FA_AUDIO_KEYS.feedback.afarin, { interrupt: false });
-    } catch {
-      // Fallback to a light haptic-only success if audio is unavailable.
-    }
+    try { await playFaAudio(FA_AUDIO_KEYS.feedback.afarin, { awaitFinish: true }); } catch {}
   };
 
   const playTryAgainSound = async () => {
@@ -76,9 +97,7 @@ export default function FarsiTracingPage() {
         FA_AUDIO_KEYS.feedback.tryAgain,
         FA_AUDIO_KEYS.guidance.followPath,
       ], 180);
-    } catch {
-      // Fallback to a light haptic-only retry if audio is unavailable.
-    }
+    } catch {}
   };
 
   const next = () => {
@@ -94,10 +113,137 @@ export default function FarsiTracingPage() {
   const reset = () => {
     void stopFaAudio();
     setLetterComplete(false);
+    setShowLetterReveal(false);
+    setShowCelebration(false);
     setGuideToken(token => token + 1);
     void playTryAgainSound();
   };
 
+  const handleComplete = () => {
+    if (!isSingleMode) {
+      setLetterComplete(true);
+      return;
+    }
+    // Single mode: tracer's successReveal already shows the letter character.
+    // Run the full sequence: letter name ×2 → show example → example name ×2 → celebration
+    const run = async () => {
+      const nameKey    = makeAlphabetAudioKey('name', letter.id);
+      const exampleKey = makeAlphabetAudioKey('example', letter.id);
+      const pause = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+
+      // Phase 1 — show letter prominently in colored box, say name twice
+      setShowLetterReveal(true);
+      await pause(200);
+      if (!isMounted.current) return;
+      if (soundOn) {
+        await playFaAudio(nameKey, { awaitFinish: true });
+        if (!isMounted.current) return;
+        await pause(300);
+        await playFaAudio(nameKey, { awaitFinish: true });
+        if (!isMounted.current) return;
+        await pause(350);
+      } else {
+        await pause(1200);
+      }
+
+      if (!isMounted.current) return;
+      // Phase 2 — swap to example image, say example name twice
+      setShowLetterReveal(false);
+      setLetterComplete(true);
+      await pause(200);
+      if (!isMounted.current) return;
+      if (soundOn) {
+        const played = await playFaAudio(exampleKey, { awaitFinish: true });
+        if (!isMounted.current) return;
+        if (!played && letter.exampleFa) {
+          await speakWithGeneratedVoice(letter.exampleFa, 'fa-IR', { rate: 0.72, pitch: 1.14, awaitFinish: true });
+        }
+        if (!isMounted.current) return;
+        await pause(300);
+        const played2 = await playFaAudio(exampleKey, { awaitFinish: true });
+        if (!isMounted.current) return;
+        if (!played2 && letter.exampleFa) {
+          await speakWithGeneratedVoice(letter.exampleFa, 'fa-IR', { rate: 0.72, pitch: 1.14, awaitFinish: true });
+        }
+        if (!isMounted.current) return;
+        await pause(300);
+      } else {
+        await pause(1000);
+      }
+
+      if (!isMounted.current) return;
+      // Phase 3 — celebration + آفرین
+      setShowCelebration(true);
+      if (soundOn) void playFaAudio(FA_AUDIO_KEYS.feedback.afarin);
+    };
+    void run();
+  };
+
+  // ─── Single-letter mode layout ─────────────────────────────────────────────
+  if (isSingleMode) {
+    return (
+      <View style={styles.root}>
+        <TopBar
+          title={letter.nameEn}
+          titleFa={letter.nameFa}
+          showClose
+          dark
+          onBack={goBack}
+        />
+
+        <View style={styles.singleBody}>
+          {/* Box — always the same size; contents rotate through 3 phases */}
+          <View style={[styles.boardShell, { width: boardSize, height: boardSize }]}>
+            {showLetterReveal ? (
+              /* Phase 1: letter character in colored box while name is spoken */
+              <View style={[styles.exampleBox, { backgroundColor: letter.color ?? '#6C4EFF' }]}>
+                <Text style={styles.letterRevealChar}>{letter.letter}</Text>
+                <Text style={styles.letterRevealName}>{letter.nameFa}</Text>
+              </View>
+            ) : !letterComplete ? (
+              /* Tracing phase */
+              <FarsiLetterTracer
+                key={`${letter.id}-${guideToken}`}
+                letter={letter}
+                boardSize={boardSize}
+                guideReplayToken={guideToken}
+                onComplete={handleComplete}
+                onTryAgain={playTryAgainSound}
+                playLetterSound={playLetterSound}
+                playSuccessSound={playSuccessSound}
+                playTryAgainSound={playTryAgainSound}
+                immediateComplete
+              />
+            ) : (
+              /* Phase 2: example image while example name is spoken */
+              <View style={[styles.exampleBox, { backgroundColor: letter.color ?? '#6C4EFF' }]}>
+                {ALPHABET_EXAMPLE_ASSETS[letter.id]
+                  ? <Image source={ALPHABET_EXAMPLE_ASSETS[letter.id] as ImageSourcePropType} style={styles.exampleImage} resizeMode="contain" />
+                  : null}
+                <Text style={styles.exampleWord}>{letter.exampleFa ?? ''}</Text>
+              </View>
+            )}
+          </View>
+
+        </View>
+
+        <PopperCelebration
+          visible={showCelebration}
+          onComplete={() => {
+            setShowCelebration(false);
+            setShowEndOverlay(true);
+          }}
+        />
+        {showEndOverlay && (
+          <EndOverlay
+            onGo={() => { setShowEndOverlay(false); navigate({ name: 'Main' }); }}
+          />
+        )}
+      </View>
+    );
+  }
+
+  // ─── Multi-letter mode (original layout) ───────────────────────────────────
   return (
     <View style={styles.root}>
       <TopBar
@@ -126,11 +272,12 @@ export default function FarsiTracingPage() {
       />
 
       <View style={styles.body}>
-        <Text style={[styles.progressLine, { fontFamily: ff(lang, 'bold') }]}>
+        <Text style={[styles.progressLine, { fontFamily: ff(isFa ? 'fa' : lang, 'bold') }]}>
           {isFa ? `حرف ${index + 1} از ${FARSI_LETTERS.length}` : `Letter ${index + 1} of ${FARSI_LETTERS.length}`}
         </Text>
-        <Text style={[styles.subtitle, { fontFamily: ff(lang, 'black') }]}>
-          {letter.nameFa} • {letter.nameEn}
+        <Text style={styles.subtitle}>
+          <Text style={{ fontFamily: ff('fa', 'black') }}>{letter.nameFa}</Text>
+          <Text style={{ fontFamily: ff('en', 'black') }}> • {letter.nameEn}</Text>
         </Text>
 
         <View style={styles.stage}>
@@ -185,6 +332,65 @@ export default function FarsiTracingPage() {
   );
 }
 
+// ─── 5-second countdown overlay shown after celebration ───────────────────────
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const COUNTDOWN_S = 5;
+const RING_R = 30;
+const RING_C = 2 * Math.PI * RING_R;
+
+function EndOverlay({ onGo }: { onGo: () => void }) {
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: COUNTDOWN_S * 1000,
+      easing: Easing.linear,
+      useNativeDriver: false,   // SVG strokeDashoffset can't use native driver
+    }).start(({ finished }) => {
+      if (finished) onGo();
+    });
+    return () => progress.stopAnimation();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const dashoffset = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, RING_C],
+  });
+
+  return (
+    <View style={endStyles.root}>
+      <View style={endStyles.card}>
+        {/* Circular countdown timer */}
+        <Svg width={80} height={80} style={{ marginBottom: 20 }}>
+          {/* Background ring */}
+          <Circle cx={40} cy={40} r={RING_R} stroke="#E0D8FF" strokeWidth={7} fill="none" />
+          {/* Progress ring — drains over 5 seconds */}
+          <AnimatedCircle
+            cx={40}
+            cy={40}
+            r={RING_R}
+            stroke="#6C4EFF"
+            strokeWidth={7}
+            fill="none"
+            strokeDasharray={RING_C}
+            strokeDashoffset={dashoffset as any}
+            strokeLinecap="round"
+            rotation={-90}
+            origin="40,40"
+          />
+        </Svg>
+
+        <TouchableOpacity style={endStyles.btn} onPress={onGo} activeOpacity={0.82}>
+          <Text style={endStyles.btnText}>بریم بازی دیگه! 🎮</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 function NavFlash({ side, onPress, disabled }: { side: 'left' | 'right'; onPress: () => void; disabled?: boolean }) {
   const icon = side === 'left' ? neliWorldAssets.ui.back : neliWorldAssets.ui.next;
   return (
@@ -194,7 +400,6 @@ function NavFlash({ side, onPress, disabled }: { side: 'left' | 'right'; onPress
       disabled={disabled}
       activeOpacity={0.82}
       hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
-      accessibilityLabel={side === 'left' ? 'Previous letter' : 'Next letter'}
     >
       <Image source={icon} style={styles.navFlashIcon} resizeMode="contain" />
     </TouchableOpacity>
@@ -206,6 +411,63 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAFAFA',
   },
+
+  // ─── Single mode ────────────────────────────────────────────────────────────
+  singleBody: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+    gap: 20,
+  },
+  exampleBox: {
+    flex: 1,
+    width: '100%',
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+  },
+  exampleImage: {
+    width: '60%',
+    height: '50%',
+  },
+  letterRevealChar: {
+    fontFamily: ff('fa', 'black'),
+    color: '#FFFFFF',
+    fontSize: 96,
+    lineHeight: 120,
+    textAlign: 'center',
+  },
+  letterRevealName: {
+    fontFamily: ff('fa', 'black'),
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 28,
+    lineHeight: 38,
+    textAlign: 'center',
+  },
+  exampleWord: {
+    fontFamily: ff('fa', 'black'),
+    color: '#FFFFFF',
+    fontSize: 36,
+    lineHeight: 48,
+    textAlign: 'center',
+  },
+  clearBtnSingle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F0EBFF',
+    borderWidth: 2,
+    borderColor: '#D8CFFF',
+    paddingHorizontal: 22,
+    justifyContent: 'center',
+  },
+
+  // ─── Multi-letter mode ───────────────────────────────────────────────────────
   rightTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -345,5 +607,40 @@ const styles = StyleSheet.create({
   gridText: {
     color: C.purple,
     fontSize: 14,
+  },
+});
+
+// End-overlay styles (separate sheet so EndOverlay component can use it)
+const endStyles = StyleSheet.create({
+  root: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
+  },
+  card: {
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 28,
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#6C4EFF',
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
+  },
+  btn: {
+    backgroundColor: '#6C4EFF',
+    borderRadius: 28,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  btnText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontFamily: ff('fa', 'black'),
   },
 });

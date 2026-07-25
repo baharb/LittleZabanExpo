@@ -16,7 +16,7 @@ import { AppContext } from '../store/AppContext';
 import { useNav } from '../store/NavContext';
 import { ff } from '../theme/fonts';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
-import { speakWithGeneratedVoice } from '../utils/faAudio';
+import { getPaintingColorAudioKey, playFaAudio, speakWithGeneratedVoice } from '../utils/faAudio';
 type Point = { x: number; y: number };
 type Stroke = { points: Point[]; color: string; size: number };
 
@@ -506,6 +506,10 @@ export default function ColoringScreen() {
     setPointer(prev => ({ ...prev, visible: false }));
   }, []);
   const speakCrayon = useCallback((crayon: Crayon) => {
+    if (isFa) {
+      const audioKey = getPaintingColorAudioKey(crayon.label);
+      if (audioKey) { void playFaAudio(audioKey); return; }
+    }
     const text = isFa ? crayon.labelFa : crayon.label;
     void speakWithGeneratedVoice(text, isFa ? 'fa-IR' : 'en-US', {
       interrupt: true,

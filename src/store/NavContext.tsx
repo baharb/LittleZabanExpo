@@ -15,7 +15,7 @@ export type Screen =
   | { name: 'VideoShows' }
   | { name: 'AlphabetShow' }
   | { name: 'AlphabetTrain' }
-  | { name: 'InteractiveFarsiTrace' }
+  | { name: 'InteractiveFarsiTrace'; letterId?: string }
   | { name: 'FirstLettersTracing' }
   | { name: 'LearningPath' }
   | { name: 'Audiobooks' }

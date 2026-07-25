@@ -10,6 +10,13 @@ import BlinkingNeliImage from '../../components/BlinkingNeliImage';
 import TopBar from '../../components/TopBar';
 import { C } from '../../theme/colors';
 import { dir, ff } from '../../theme/fonts';
+import { FA_TEST_AUDIO } from '../../assets/faTestAudio.generated';
+import { playFaAudio } from '../../utils/faAudio';
+
+function conversationAudioKey(kind: string, type: 'prompt' | 'choice' | 'helper') {
+  const key = `conversation/${type}/${kind}` as keyof typeof FA_TEST_AUDIO;
+  return key in FA_TEST_AUDIO ? key : null;
+}
 
 type Choice = {
   id: string;
@@ -227,11 +234,16 @@ export default function ConversationGame() {
 
   const speakScene = () => {
     stop();
-    speakFarsiOnly(scene.promptFa, () => {
-      if (!isFa) {
-        setTimeout(() => speakInLang(promptFor(scene, lang), lang), 260);
-      }
-    });
+    const promptKey = conversationAudioKey(scene.id, 'prompt');
+    if (promptKey) {
+      void playFaAudio(promptKey as any).then(() => {
+        if (!isFa) setTimeout(() => speakInLang(promptFor(scene, lang), lang), 260);
+      });
+    } else {
+      speakFarsiOnly(scene.promptFa, () => {
+        if (!isFa) setTimeout(() => speakInLang(promptFor(scene, lang), lang), 260);
+      });
+    }
   };
 
   useEffect(() => {
@@ -253,12 +265,18 @@ export default function ConversationGame() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       addStars(2);
       setCorrectCount(prev => prev + 1);
-      speakFarsiOnly(choice.fa, () => {
+      const choiceKey = conversationAudioKey(choice.kind, 'choice');
+      const advance = () => {
         setTimeout(() => {
           if (idx < SCENES.length - 1) setIdx(prev => prev + 1);
           else setDone(true);
-        }, 500);
-      });
+        }, 220);
+      };
+      if (choiceKey) {
+        void playFaAudio(choiceKey as any, { awaitFinish: true }).then(advance);
+      } else {
+        speakFarsiOnly(choice.fa, advance);
+      }
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       speakInLang(isFa ? 'دوباره تلاش کن' : 'Try again', isFa ? 'fa' : lang, () => {

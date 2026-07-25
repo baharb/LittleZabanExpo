@@ -16,7 +16,7 @@ import CharacterAvatar from '../../components/CharacterAvatar';
 import BlinkingNeliImage from '../../components/BlinkingNeliImage';
 import TopBar from '../../components/TopBar';
 import { AppContext } from '../../store/AppContext';
-import { speakWithGeneratedVoice } from '../../utils/faAudio';
+import { getClothesAudioKey, playFaAudio, speakWithGeneratedVoice } from '../../utils/faAudio';
 import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
 import { dir, ff } from '../../theme/fonts';
 
@@ -794,19 +794,16 @@ export default function DressUpGame() {
   const wearItem = (item: OutfitItem, immediate = false) => {
     if (worn[item.slot]) return;
 
-    void speakWithGeneratedVoice(item.fa, 'fa-IR', {
-      interrupt: true,
-      rate: 0.65,
-      pitch: 1.16,
-      onDone: () => {
-        setTimeout(() => {
-          void speakWithGeneratedVoice(item.en, 'en-US', { interrupt: true, rate: 0.82, pitch: 1.08 });
-        }, 220);
-      },
-      onError: () => {
-        void speakWithGeneratedVoice(item.en, 'en-US', { interrupt: true, rate: 0.82, pitch: 1.08 });
-      },
-    });
+    const clothesKey = getClothesAudioKey(item.slot);
+    if (clothesKey) {
+      void playFaAudio(clothesKey);
+    } else {
+      void speakWithGeneratedVoice(item.fa, 'fa-IR', {
+        interrupt: true,
+        rate: 0.65,
+        pitch: 1.16,
+      });
+    }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Animated.sequence([

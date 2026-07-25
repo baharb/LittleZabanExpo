@@ -20,6 +20,8 @@ import { characterAssets } from '../../assets/characterAssets';
 import { dir, ff } from '../../theme/fonts';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
 import BlinkingNeliImage from '../../components/BlinkingNeliImage';
+import { getIngredientAudioKey, playFaAudio, speakWithGeneratedVoice } from '../../utils/faAudio';
+import PopperCelebration from '../../components/PopperCelebration';
 
 type IngredientKind = 'rice' | 'herb' | 'egg' | 'tomato' | 'pasta' | 'cheese' | 'water' | 'salt' | 'cucumber' | 'yogurt' | 'driedMint' | 'lemon' | 'lentils' | 'beans' | 'fish' | 'oil' | 'onion' | 'filletChickenRaw' | 'groundBeefRaw' | 'cutRawBeefForStew' | 'grapeLeaves' | 'reshtehAshRaw' | 'zereshk' | 'pizzaBread' | 'pizzaCheese' | 'lappeh' | 'mushroom' | 'bellPepper' | 'olive' | 'kalam' | 'saffron' | 'chickpea';
 type Rect = { x: number; y: number; w: number; h: number };
@@ -455,6 +457,7 @@ export default function CookingGame() {
   const [step, setStep] = useState(0);
   const [usedIds, setUsedIds] = useState<IngredientKind[]>([]);
   const [done, setDone] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const [wrong, setWrong] = useState(false);
   const [resetToken, setResetToken] = useState(0);
   const [targetRect, setTargetRect] = useState<Rect>({ x: 0, y: 0, w: 1, h: 1 });
@@ -489,6 +492,7 @@ export default function CookingGame() {
     setStep(0);
     setUsedIds([]);
     setDone(false);
+    setShowCelebration(false);
     setWrong(false);
     setFly(null);
     setBowlAdd(null);
@@ -496,7 +500,13 @@ export default function CookingGame() {
   }, [recipeIdx]);
 
   useEffect(() => {
-    say(`بعدی: ${current.fa}`, `Next: ${current.en}`);
+    const key = getIngredientAudioKey(current.id);
+    if (key) {
+      stop();
+      void playFaAudio(key);
+    } else {
+      say(`بعدی: ${current.fa}`, `Next: ${current.en}`);
+    }
   }, [current.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refreshStageOrigin = () => {
@@ -536,7 +546,14 @@ export default function CookingGame() {
 
     if (step >= recipe.steps.length - 1) {
       setDone(true);
-      setTimeout(() => say('آفرین! غذا آماده شد.', 'Great job! The food is ready.'), 650);
+      setShowCelebration(true);
+      setTimeout(async () => {
+        const readyText = `${recipe.fa} آماده شد`;
+        const played = await speakWithGeneratedVoice(readyText, 'fa-IR', { awaitFinish: true, rate: 0.80, pitch: 1.1 });
+        if (!played) {
+          say(`${recipe.fa} آماده شد`, `${recipe.en} is ready!`);
+        }
+      }, 650);
     } else {
       setStep(prev => prev + 1);
     }
@@ -552,6 +569,7 @@ export default function CookingGame() {
     setStep(0);
     setUsedIds([]);
     setDone(false);
+    setShowCelebration(false);
     setWrong(false);
     setFly(null);
     setBowlAdd(null);
@@ -751,6 +769,7 @@ export default function CookingGame() {
         ) : null}
 
       </ImageBackground>
+      <PopperCelebration visible={showCelebration} onComplete={() => setShowCelebration(false)} />
     </View>
   );
 }

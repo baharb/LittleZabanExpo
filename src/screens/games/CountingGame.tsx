@@ -5,7 +5,7 @@ import TopBar from '../../components/TopBar';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
 import { characterAssets } from '../../assets/characterAssets';
 import { AppContext } from '../../store/AppContext';
-import { speakWithGeneratedVoice } from '../../utils/faAudio';
+import { getCountingNumberAudioKey, playFaAudio, speakWithGeneratedVoice } from '../../utils/faAudio';
 import { C } from '../../theme/colors';
 import { dir, ff } from '../../theme/fonts';
 
@@ -55,16 +55,10 @@ export default function CountingGame() {
   const [countedItems, setCountedItems] = useState<number[]>([]);
   const isFa = lang === 'fa' || lang === 'ar';
 
-  const speakCount = (index: number) => {
+  const tapItem = (index: number) => {
     if (countedItems.includes(index)) return;
-    const number = index + 1;
     setCountedItems(prev => [...prev, index]);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void speakWithGeneratedVoice(isFa ? FA_NUMBERS[number - 1] ?? String(number) : `${number} ${round.set.en}`, isFa ? 'fa-IR' : 'en-US', {
-      interrupt: true,
-      rate: isFa ? 0.68 : 0.82,
-      pitch: 1.18,
-    });
   };
 
   const handleAnswer = (n: number) => {
@@ -75,18 +69,15 @@ export default function CountingGame() {
       addStars(2);
       setScore(prev => prev + 1);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      void speakWithGeneratedVoice(FA_NUMBERS[round.count - 1] ?? String(round.count), 'fa-IR', {
-        interrupt: true,
-        rate: 0.74,
-        pitch: 1.14,
-      });
+      const correctKey = getCountingNumberAudioKey(round.count);
+      if (correctKey) { void playFaAudio(correctKey); }
+      else { void speakWithGeneratedVoice(FA_NUMBERS[round.count - 1] ?? String(round.count), 'fa-IR', { interrupt: true, rate: 0.74, pitch: 1.14 }); }
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      void speakWithGeneratedVoice(`\u0628\u0648\u062f ${FA_NUMBERS[round.count - 1] ?? round.count}`, 'fa-IR', {
-        interrupt: true,
-        rate: 0.72,
-        pitch: 1.12,
-      });
+      // Say correct answer: number audio + "\u0628\u0648\u062f" prefix via TTS if no clip
+      const correctKey = getCountingNumberAudioKey(round.count);
+      if (correctKey) { void playFaAudio(correctKey); }
+      else { void speakWithGeneratedVoice(`\u0628\u0648\u062f ${FA_NUMBERS[round.count - 1] ?? round.count}`, 'fa-IR', { interrupt: true, rate: 0.72, pitch: 1.12 }); }
     }
     setTimeout(() => {
       setFeedback(null);
@@ -100,7 +91,7 @@ export default function CountingGame() {
       <ImageBackground source={neliWorldAssets.rooms.garden} style={styles.scene} imageStyle={styles.sceneImage}>
         <View style={styles.sceneWash} />
         <View style={styles.skyGlow} />
-        <TopBar title="Counting" titleFa="شمارش" showClose dark={false} rightContent={<Text style={styles.score}>{toFaDigits(score)}</Text>} />
+        <TopBar title="Counting" titleFa="شمارش" showClose dark />
 
         <View style={styles.content}>
           <View style={styles.questionPill}>
@@ -118,7 +109,7 @@ export default function CountingGame() {
                 <TouchableOpacity
                   key={`${round.set.name}-${i}`}
                   style={styles.countItem}
-                  onPress={() => speakCount(i)}
+                  onPress={() => tapItem(i)}
                   activeOpacity={counted ? 1 : 0.82}
                 >
                   <Image

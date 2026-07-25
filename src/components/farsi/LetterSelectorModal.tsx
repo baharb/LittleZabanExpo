@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FarsiLetter } from '../../data/farsiLetters';
+import { FA } from '../../theme/fonts';
 
 type Props = {
   visible: boolean;
@@ -92,12 +93,12 @@ const styles = StyleSheet.create({
   },
   letter: {
     fontSize: 32,
-    fontWeight: '900',
+    fontFamily: FA.black,
   },
   nameFa: {
     marginTop: 6,
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: FA.bold,
     color: '#2F2340',
   },
   nameEn: {

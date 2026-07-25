@@ -9,6 +9,7 @@ import CharacterAvatar from '../components/CharacterAvatar';
 import { characterAssets } from '../assets/characterAssets';
 import { neliWorldAssets, roomBackgroundPickers, roomBackgroundVariants } from '../assets/neliWorldAssets';
 import { SOLAR_SYSTEM_BACKGROUND, SOLAR_SYSTEM_PLANETS } from '../assets/solarSystemPuzzle';
+import { FARSI_LETTERS } from '../data/farsiLetters';
 import { BOX_CHARACTER_WIDTH } from '../theme/characterSizes';
 
 type Kind = 'talk' | 'dress' | 'tooth' | 'animal' | 'cook' | 'paint' | 'routine' | 'room' | 'memory' | 'quiz' | 'color' | 'count' | 'culture' | 'tracing' | 'firstTracing' | 'alphabet' | 'alphabetTrain' | 'video' | 'iranPuzzle' | 'solarPuzzle';
@@ -23,6 +24,7 @@ type Tile = {
   color: string;
   accent: string;
   group: 'play' | 'learn' | 'alphabet';
+  hidden?: boolean;
 };
 
 const GAMES: Tile[] = [
@@ -33,12 +35,12 @@ const GAMES: Tile[] = [
   { id: 'cook', route: { name: 'Cooking' }, en: 'Cooking', fa: 'آشپزی', descEn: 'Make fun recipes', descFa: 'غذا درست کن', kind: 'cook', color: '#FB923C', accent: '#FACC15', group: 'play' },
   { id: 'coloring', route: { name: 'Coloring' }, en: 'Painting', fa: 'نقاشی', descEn: 'Paint picture pages', descFa: 'صفحه‌ها را رنگ کن', kind: 'paint', color: '#A855F7', accent: '#FF80C0', group: 'play' },
   { id: 'solarPuzzle', route: { name: 'SolarPuzzle' }, en: 'Solar System', fa: 'منظومه خورشیدی', descEn: 'Place each planet', descFa: 'هر سیاره را بگذار', kind: 'solarPuzzle', color: '#38BDF8', accent: '#EAF7FF', group: 'learn' },
-  { id: 'interactiveTracing', route: { name: 'InteractiveFarsiTrace' }, en: 'Farsi Tracing', fa: 'تمرین نوشتن', descEn: 'Trace Persian letters', descFa: 'حروف را قدم به قدم بکش', kind: 'firstTracing', color: '#19BDF2', accent: '#FFE66D', group: 'alphabet' },
+  // individual letter tracing tiles are rendered dynamically from FARSI_LETTERS below
   { id: 'alphabet', route: { name: 'AlphabetShow' }, en: 'Alphabet Show', fa: 'نمایش الفبا', descEn: 'Letters, words, and motion', descFa: 'حرف، واژه و حرکت', kind: 'alphabet', color: '#8B5CF6', accent: '#38BDF8', group: 'alphabet' },
   { id: 'alphabetTrain', route: { name: 'AlphabetTrain' }, en: 'Alphabet Train', fa: 'قطار الفبا', descEn: 'Ride the letters and words', descFa: 'سوار قطار حرف‌ها شو', kind: 'alphabetTrain', color: '#06B6D4', accent: '#FACC15', group: 'alphabet' },
   { id: 'memory', route: { name: 'Game', gameId: 'memory' }, en: 'Memory Match', fa: 'بازی حافظه', descEn: 'Find pairs', descFa: 'جفت‌ها را پیدا کن', kind: 'memory', color: '#6C4EFF', accent: '#FACC15', group: 'learn' },
-  { id: 'quiz', route: { name: 'Game', gameId: 'quiz' }, en: 'Word Quiz', fa: 'مسابقه کلمه', descEn: 'See and choose', descFa: 'ببین و انتخاب کن', kind: 'quiz', color: '#38BDF8', accent: '#A855F7', group: 'learn' },
-  { id: 'colors', route: { name: 'Game', gameId: 'colormatch' }, en: 'Color Play', fa: 'بازی رنگ', descEn: 'Match playful colors', descFa: 'رنگ درست را پیدا کن', kind: 'color', color: '#EC4899', accent: '#FACC15', group: 'learn' },
+  { id: 'quiz', route: { name: 'Game', gameId: 'quiz' }, en: 'Word Quiz', fa: 'مسابقه کلمه', descEn: 'See and choose', descFa: 'ببین و انتخاب کن', kind: 'quiz', color: '#38BDF8', accent: '#A855F7', group: 'learn', hidden: true },
+  { id: 'colors', route: { name: 'Game', gameId: 'colormatch' }, en: 'Color Play', fa: 'بازی رنگ', descEn: 'Match playful colors', descFa: 'رنگ درست را پیدا کن', kind: 'color', color: '#EC4899', accent: '#FACC15', group: 'learn', hidden: true },
   { id: 'counting', route: { name: 'Game', gameId: 'counting' }, en: 'Counting', fa: 'شمارش', descEn: 'Count with pictures', descFa: 'با تصویر بشمار', kind: 'count', color: '#F72585', accent: '#FFE45E', group: 'learn' },
 ];
 
@@ -228,13 +230,29 @@ export default function GamesScreen() {
           <View key={group.id} style={styles.group}>
             <Text style={[styles.groupTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(17, Math.round(19 * ui)), marginBottom: Math.max(8, Math.round(10 * ui)) }, dir(lang)]}>{isFa ? group.fa : group.en}</Text>
             <View style={[styles.grid, { columnGap: gap, rowGap: gap }]}>
-              {GAMES.filter(game => game.group === group.id).map(game => (
+              {GAMES.filter(game => game.group === group.id && !game.hidden).map(game => (
                 <TouchableOpacity key={game.id} style={[styles.card, { width: cardW, height: Math.max(196, Math.round(207 * ui)), borderRadius: Math.max(20, Math.round(22 * ui)) }]} onPress={() => navigate(game.route)} activeOpacity={0.88}>
                   <View style={[styles.thumb, { backgroundColor: '#AEEBFF', borderRadius: Math.max(20, Math.round(22 * ui)) }]}>
                     <TileArt kind={game.kind} color={game.color} accent={game.accent} characterId={selectedCharacterId} width={width} height={height} />
                     <View style={styles.cardShade} />
                     <View style={styles.cardTextBand}>
                       <Text style={[styles.cardTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(12, Math.round(13 * ui)) }, dir(lang)]} numberOfLines={2}>{isFa ? game.fa : game.en}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+              {group.id === 'alphabet' && FARSI_LETTERS.map(letter => (
+                <TouchableOpacity
+                  key={`trace-${letter.id}`}
+                  style={[styles.card, { width: cardW, height: Math.max(196, Math.round(207 * ui)), borderRadius: Math.max(20, Math.round(22 * ui)) }]}
+                  onPress={() => navigate({ name: 'InteractiveFarsiTrace', letterId: letter.id })}
+                  activeOpacity={0.88}
+                >
+                  <View style={[styles.thumb, { borderRadius: Math.max(20, Math.round(22 * ui)), backgroundColor: letter.color ?? '#6C4EFF', alignItems: 'center', justifyContent: 'center' }]}>
+                    <Text style={{ fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: Math.max(52, Math.round(62 * ui)), lineHeight: Math.max(70, Math.round(80 * ui)) }}>{letter.letter}</Text>
+                    <View style={styles.cardShade} />
+                    <View style={styles.cardTextBand}>
+                      <Text style={[styles.cardTitle, { fontFamily: ff('fa', 'black'), fontSize: Math.max(12, Math.round(13 * ui)) }]} numberOfLines={1}>{letter.nameFa}</Text>
                     </View>
                   </View>
                 </TouchableOpacity>
