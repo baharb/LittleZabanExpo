@@ -15,9 +15,12 @@ import Svg, { Circle, Ellipse, G, Line, Path, Polygon, Polyline, Rect } from 're
 import * as Haptics from 'expo-haptics';
 import TopBar from '../components/TopBar';
 import { ALPHABETS, EXAMPLE_IMAGE_BY_ID } from './VideoShowsScreen';
+import { FARSI_LETTER_BY_ID } from '../data/farsiLetters';
+import { ALPHABET_EXAMPLE_ASSETS } from '../assets/alphabetExampleAssets';
 import { useNav } from '../store/NavContext';
 import { useSpeech } from '../hooks/useSpeech';
-import { makeAlphabetAudioKey, playFaAudio, stopFaAudio } from '../utils/faAudio';
+import { ALPHABET_AUDIO_ID_OVERRIDE, FALLBACK_LETTER_NAME_FA as GLOBAL_FALLBACK_LETTER_NAME_FA, makeAlphabetAudioKey, playFaAudio, playFaAudioOrSpeak, stopFaAudio } from '../utils/faAudio';
+import { Audio } from 'expo-av';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
 import { characterAssets } from '../assets/characterAssets';
 import { ff } from '../theme/fonts';
@@ -36,6 +39,63 @@ const LETTER_TOP_SPACE: Partial<Record<string, number>> = {
   ظ: 18,
   غ: 18,
 };
+
+// ta/za/ye (audio ids taa/zaa/ye) now have recorded "name" clips (see
+// BROKEN_ALPHABET_AUDIO in utils/faAudio.ts) — this is only a safety-net
+// fallback if playback fails at runtime, spelling out the full letter name
+// (not just the bare glyph) for TTS.
+const FALLBACK_LETTER_NAME_FA: Partial<Record<string, string>> = {
+  ta: 'طا',
+  za: 'ظا',
+  ye: 'یا',
+};
+
+// A bit brisker than the app-wide Farsi rate so the train keeps a lively
+// pace — safe to speed up because the sequence below always waits for each
+// clip to finish before revealing the next thing, so nothing gets cut off.
+const TRAIN_SPEECH_RATE = 1.2;
+// Speeds up recorded name/example clips themselves (expo-av playback
+// rate), on top of the TTS-only rate above — this is what makes the
+// bulk of letters (which use recorded audio, not TTS) noticeably
+// quicker, since that recording length is what drives how long the
+// train waits before moving to the next wagon.
+const TRAIN_AUDIO_PLAYBACK_RATE = 1.3;
+const LETTER_REVEAL_DELAY = 110;
+const IMAGE_REVEAL_GAP = 90;
+const HOLD_AFTER_EXAMPLE = 160;
+// Safety ceiling per clip: if a "finished" event never arrives (a dropped
+// audio-session callback, a background/foreground hiccup, etc.) the train
+// waits this long and then moves on anyway, instead of freezing forever.
+const AUDIO_TIMEOUT_MS = 6000;
+// The train's own "voice" — a cute, cartoonish whistle-toots sound effect
+// (not narration), played only while the little train makes its one lap
+// across the bottom of the screen and back across the top. It's stopped
+// the instant that lap finishes, right as the big train fades in to start
+// showing the alphabet, so the two never overlap.
+const TRAIN_INTRO_VOICE = require('../../assets/audio/alphabet-train-toots.mp3');
+
+const wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+
+// Races a promise against a timeout so a missed completion callback can
+// never stall the caller indefinitely.
+function withTimeout<T>(promise: Promise<T>, ms: number, timeoutValue: T): Promise<T> {
+  return new Promise<T>(resolve => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        resolve(timeoutValue);
+      }
+    }, ms);
+    promise.then(value => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        resolve(value);
+      }
+    });
+  });
+}
 
 const INTRO_WAGON_COUNT = 12;
 const INTRO_RIDERS = [
@@ -71,7 +131,11 @@ function ExampleArt({ item }: { item: AlphabetItem }) {
 }
 
 function ExampleImage({ item }: { item: AlphabetItem }) {
-  const source = EXAMPLE_IMAGE_BY_ID[item.id];
+  // Use the same example image the Alphabet Tracing pages use for this
+  // letter (keyed by the recorded-audio id, same id space as farsiLetters.ts)
+  // so the Train and Tracing always show the same picture for a letter.
+  const audioId = ALPHABET_AUDIO_ID_OVERRIDE[item.id] ?? item.id;
+  const source = ALPHABET_EXAMPLE_ASSETS[audioId] ?? EXAMPLE_IMAGE_BY_ID[item.id];
   if (!source) return <ExampleArt item={item} />;
   return <Image source={source} style={styles.exampleImage} resizeMode="contain" />;
 }
@@ -376,7 +440,7 @@ function useTrainMotion(
       offset.setValue(initialOffset);
       return;
     }
-    const duration = hasEntered.current ? 308 : 1800;
+    const duration = hasEntered.current ? 80 : 450;
     Animated.timing(offset, { toValue: target, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(({ finished }) => {
       if (finished && !hasEntered.current) {
         hasEntered.current = true;
@@ -557,6 +621,10 @@ export default function AlphabetTrainScreen() {
   const { width, height } = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(true);
+  // Once the train has shown every letter one time through, stop looping —
+  // show a brief closing countdown (matching the other games) and head back
+  // instead of repeating forever.
+  const [showEndOverlay, setShowEndOverlay] = useState(false);
   const [introDone, setIntroDone] = useState(false);
   const [mainTrainEntered, setMainTrainEntered] = useState(false);
   const [revealedIndex, setRevealedIndex] = useState(-1);
@@ -616,73 +684,170 @@ export default function AlphabetTrainScreen() {
     introBottomX.setValue(-introTrainWidth - 80);
     introTopX.setValue(width + 80);
 
+    // Play the train's cute whistle-toots voice for exactly this lap: start
+    // it now (the little train is about to drive in) and stop it the
+    // moment the Animated.sequence below finishes, which is also when the
+    // big train fades in and starts revealing letters. Track the Sound
+    // instance in a local (not state) so this can't retrigger the effect.
+    let introSound: Audio.Sound | undefined;
+    let introSoundStopped = false;
+    const stopIntroSound = () => {
+      if (introSoundStopped) return;
+      introSoundStopped = true;
+      const soundToStop = introSound;
+      if (soundToStop) {
+        void soundToStop
+          .stopAsync()
+          .catch(() => {})
+          .then(() => soundToStop.unloadAsync())
+          .catch(() => {});
+      }
+    };
+    void (async () => {
+      try {
+        const { sound } = await Audio.Sound.createAsync(TRAIN_INTRO_VOICE, { shouldPlay: true });
+        if (introSoundStopped) {
+          // The intro already finished (or this effect re-ran) before the
+          // clip finished loading — don't let it start playing now.
+          void sound.unloadAsync();
+          return;
+        }
+        introSound = sound;
+        sound.setOnPlaybackStatusUpdate(status => {
+          if (status.isLoaded && status.didJustFinish) void sound.unloadAsync();
+        });
+      } catch {}
+    })();
+
     Animated.sequence([
       Animated.timing(introBottomX, {
         toValue: width + 80,
-        duration: 7081,
+        duration: 2400,
         easing: Easing.linear,
         useNativeDriver: true,
       }),
       Animated.parallel([
         Animated.timing(introTurn, {
           toValue: 1,
-          duration: 520,
+          duration: 400,
           easing: Easing.inOut(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(introTopX, {
           toValue: width + 20,
-          duration: 520,
+          duration: 400,
           easing: Easing.inOut(Easing.cubic),
           useNativeDriver: true,
         }),
       ]),
       Animated.timing(introTopX, {
         toValue: -introTrainWidth - 80,
-        duration: 7081,
+        duration: 2400,
         easing: Easing.linear,
         useNativeDriver: true,
       }),
       Animated.timing(mainTrainOpacity, {
         toValue: 1,
-        duration: 260,
+        duration: 200,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start(({ finished }) => {
+      // The little train's lap is over (or was interrupted) — the big
+      // train is about to (or already did) fade in, so the train's voice
+      // turns off here no matter what.
+      stopIntroSound();
       if (finished) setIntroDone(true);
     });
+
+    return () => {
+      stopIntroSound();
+    };
   }, [introBottomX, introTopX, introTrainWidth, introTurn, mainTrainOpacity, width]);
 
   useEffect(() => {
     if (!introDone || !mainTrainEntered) return undefined;
+    let cancelled = false;
     setRevealedIndex(current => Math.min(current, index - 1));
     setImageRevealedIndex(current => Math.min(current, index - 1));
-    const letterTimer = setTimeout(() => {
+
+    const item = trainItems[index];
+    if (!item) return undefined;
+
+    const audioId = ALPHABET_AUDIO_ID_OVERRIDE[item.id] ?? item.id;
+
+    void (async () => {
+      stopRef.current();
+      await stopFaAudio();
+      await wait(LETTER_REVEAL_DELAY);
+      if (cancelled) return;
       setRevealedIndex(current => Math.max(current, index));
-      const item = trainItems[index];
-      if (!item) return;
-      stopRef.current();
-      void (async () => {
-        await stopFaAudio();
-        const played = await playFaAudio(makeAlphabetAudioKey('name', item.id), { interrupt: false });
-        if (!played) speakRef.current(item.letter);
-      })();
-    }, 325);
-    const imageTimer = setTimeout(() => {
+
+      // Say the full letter name — always let it finish before moving on
+      // (bounded by AUDIO_TIMEOUT_MS so a missed "finished" event, or one of
+      // the handful of known-broken recorded clips, can never stall the
+      // train — playFaAudioOrSpeak already swaps those for TTS).
+      await withTimeout(
+        playFaAudioOrSpeak(
+          makeAlphabetAudioKey('name', audioId),
+          FALLBACK_LETTER_NAME_FA[item.id] ?? GLOBAL_FALLBACK_LETTER_NAME_FA[audioId] ?? item.letter,
+          {
+            interrupt: false,
+            awaitFinish: true,
+            rate: TRAIN_SPEECH_RATE,
+            // Also speeds up the recorded clip itself (not just the TTS
+            // fallback) — shouldCorrectPitch keeps the voice sounding
+            // natural instead of sped-up/chipmunky.
+            playbackStatus: { rate: TRAIN_AUDIO_PLAYBACK_RATE, shouldCorrectPitch: true },
+          },
+        ),
+        AUDIO_TIMEOUT_MS,
+        true,
+      );
+      if (cancelled) return;
+
+      await wait(IMAGE_REVEAL_GAP);
+      if (cancelled) return;
       setImageRevealedIndex(current => Math.max(current, index));
-      const item = trainItems[index];
-      if (!item) return;
-      stopRef.current();
-      void stopFaAudio().then(() => speakRef.current(item.wordFa));
-    }, 750);
-    const nextTimer = playing
-      ? setTimeout(() => setIndex(current => (current + 1) % trainItems.length), 1540)
-      : null;
+
+      // Say the example word using the same recorded clip + example text
+      // (and the same rate/pitch) that the Alphabet Tracing pages use for
+      // this letter, so the Train's voice, image, and word all match
+      // Tracing. playFaAudioOrSpeak already falls back to TTS for any
+      // letter with no (or a known-broken) recorded example clip, exactly
+      // like Tracing does, so audio and picture never drift apart.
+      const tracingLetter = FARSI_LETTER_BY_ID[audioId];
+      const exampleText = tracingLetter?.exampleFa ?? item.wordFa;
+      await withTimeout(
+        playFaAudioOrSpeak(
+          makeAlphabetAudioKey('example', audioId),
+          exampleText,
+          {
+            interrupt: false,
+            awaitFinish: true,
+            rate: 0.95,
+            pitch: 1.14,
+            playbackStatus: { rate: TRAIN_AUDIO_PLAYBACK_RATE, shouldCorrectPitch: true },
+          },
+        ),
+        AUDIO_TIMEOUT_MS,
+        true,
+      );
+      if (cancelled) return;
+
+      await wait(HOLD_AFTER_EXAMPLE);
+      if (cancelled || !playing) return;
+      if (index >= trainItems.length - 1) {
+        setShowEndOverlay(true);
+      } else {
+        setIndex(current => current + 1);
+      }
+    })();
+
     return () => {
-      clearTimeout(letterTimer);
-      clearTimeout(imageTimer);
-      if (nextTimer) clearTimeout(nextTimer);
+      cancelled = true;
+      stopRef.current();
+      void stopFaAudio();
     };
   }, [index, introDone, mainTrainEntered, playing, trainItems]);
 
@@ -836,9 +1001,91 @@ export default function AlphabetTrainScreen() {
           <Image source={neliWorldAssets.ui.next} style={styles.controlIcon} resizeMode="contain" />
         </TouchableOpacity>
       </View>
+
+      {showEndOverlay && <TrainEndOverlay onGo={close} />}
     </View>
   );
 }
+
+const AnimatedTrainRing = Animated.createAnimatedComponent(Circle);
+const TRAIN_END_COUNTDOWN_S = 5;
+const TRAIN_END_RING_R = 30;
+const TRAIN_END_RING_C = 2 * Math.PI * TRAIN_END_RING_R;
+
+// Shown once the train has played through every letter one time — mirrors
+// the closing countdown used by the other games instead of looping forever.
+function TrainEndOverlay({ onGo }: { onGo: () => void }) {
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: TRAIN_END_COUNTDOWN_S * 1000,
+      easing: Easing.linear,
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (finished) onGo();
+    });
+    return () => progress.stopAnimation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const dashoffset = progress.interpolate({ inputRange: [0, 1], outputRange: [0, TRAIN_END_RING_C] });
+
+  return (
+    <View style={endOverlayStyles.root}>
+      <View style={endOverlayStyles.card}>
+        <Svg width={80} height={80} style={{ marginBottom: 20 }}>
+          <Circle cx={40} cy={40} r={TRAIN_END_RING_R} stroke="#E0D8FF" strokeWidth={7} fill="none" />
+          <AnimatedTrainRing
+            cx={40}
+            cy={40}
+            r={TRAIN_END_RING_R}
+            stroke="#6C4EFF"
+            strokeWidth={7}
+            fill="none"
+            strokeDasharray={TRAIN_END_RING_C}
+            strokeDashoffset={dashoffset as any}
+            strokeLinecap="round"
+            rotation={-90}
+            origin="40,40"
+          />
+        </Svg>
+        <TouchableOpacity style={endOverlayStyles.btn} onPress={onGo} activeOpacity={0.82}>
+          <Text style={endOverlayStyles.btnText}>بریم بازی دیگه! 🎮</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const endOverlayStyles = StyleSheet.create({
+  root: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(20,10,40,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 50,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    paddingVertical: 28,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+  },
+  btn: {
+    backgroundColor: '#6C4EFF',
+    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+  },
+  btnText: {
+    color: '#FFFFFF',
+    fontFamily: ff('fa', 'black'),
+    fontSize: 18,
+  },
+});
 
 const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },

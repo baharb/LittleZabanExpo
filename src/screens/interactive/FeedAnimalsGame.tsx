@@ -19,7 +19,7 @@ import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
 import TopBar from '../../components/TopBar';
 import { dir, ff } from '../../theme/fonts';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
-import { FA_AUDIO_KEYS, getIngredientAudioKey, playFaAudio, speakWithGeneratedVoice } from '../../utils/faAudio';
+import { FA_AUDIO_KEYS, playFaAudio } from '../../utils/faAudio';
 import PopperCelebration from '../../components/PopperCelebration';
 import GameEndOverlay from '../../components/GameEndOverlay';
 
@@ -344,12 +344,14 @@ function FoodTile({
   resetToken: number;
 }) {
   const drag = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const pressScale = useRef(new Animated.Value(1)).current;
   const [pressed, setPressed] = useState(false);
 
   useEffect(() => {
     drag.setValue({ x: 0, y: 0 });
+    pressScale.setValue(1);
     setPressed(false);
-  }, [resetToken, drag]);
+  }, [resetToken, drag, pressScale]);
 
   const pan = useMemo(
     () =>
@@ -359,12 +361,14 @@ function FoodTile({
         onPanResponderGrant: () => {
           setPressed(true);
           onSpeak(food);
+          Animated.spring(pressScale, { toValue: 1.2, useNativeDriver: true, speed: 40, bounciness: 4 }).start();
         },
         onPanResponderMove: (_evt: any, gestureState: PanResponderGestureState) => {
           drag.setValue({ x: gestureState.dx, y: gestureState.dy });
         },
         onPanResponderRelease: (_evt: any, gestureState: PanResponderGestureState) => {
           setPressed(false);
+          Animated.spring(pressScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 2 }).start();
           onAttempt(
             food,
             { x: gestureState.moveX, y: gestureState.moveY },
@@ -377,6 +381,7 @@ function FoodTile({
         },
         onPanResponderTerminate: () => {
           setPressed(false);
+          Animated.spring(pressScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 2 }).start();
           Animated.spring(drag, { toValue: { x: 0, y: 0 }, useNativeDriver: true }).start();
         },
       }),
@@ -398,6 +403,7 @@ function FoodTile({
           transform: [
             { translateX: drag.x },
             { translateY: drag.y },
+            { scale: pressScale },
           ],
         },
       ]}
@@ -539,12 +545,7 @@ export default function FeedAnimalsGame() {
   };
 
   const speakFood = (food: Food) => {
-    const audioKey = getIngredientAudioKey(food.id);
-    if (audioKey) {
-      void playFaAudio(audioKey);
-    } else {
-      void speakWithGeneratedVoice(food.fa, 'fa-IR', { interrupt: true, rate: 0.84, pitch: 1.12 });
-    }
+    void playFaAudio(`feed-animals/food/${food.id}` as Parameters<typeof playFaAudio>[0]);
   };
 
   useEffect(() => {
@@ -649,7 +650,7 @@ export default function FeedAnimalsGame() {
     }, 1200);
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    say(food.fa, food.en);
+    void playFaAudio(`feed-animals/food/${food.id}` as Parameters<typeof playFaAudio>[0]);
   };
 
   const resetGame = () => {
@@ -673,12 +674,12 @@ export default function FeedAnimalsGame() {
     <View style={styles.root}>
       <ImageBackground source={sceneSource} style={styles.scene} resizeMode="cover">
         <View style={styles.sceneWash} />
-        <TopBar title="Feed Animals" titleFa="غذا دادن به حیوان‌ها" showClose dark topInset={10} />
-
-        <View style={styles.header}>
-          <Text style={[styles.kicker, { fontFamily: ff(isFa ? 'fa' : lang, 'bold') }, dir(lang)]}>
-            {isFa ? 'غذای درست را روی حیوان بکش' : 'Drag the correct food over the animal'}
-          </Text>
+        <TopBar title="Feed Animals" titleFa="غذا دادن به حیوانات" showClose dark topInset={10} />
+        {/* Invisible header spacer — preserves stage origin so animal/food positions stay correct */}
+        <View pointerEvents="none" style={{ opacity: 0 }}>
+          <View style={styles.header}>
+            <Text style={styles.kicker}>{' '}</Text>
+          </View>
         </View>
 
         <View ref={stageRef} style={styles.stage} onLayout={refreshStageOrigin}>
@@ -773,11 +774,6 @@ export default function FeedAnimalsGame() {
             />
           ) : null}
 
-          <View style={[styles.progressPill, wrong && styles.progressPillWrong]}>
-            <Text style={[styles.progressText, { fontFamily: ff(isFa ? 'fa' : lang, 'bold') }, dir(lang)]}>
-              {fedIds.length}/{FOODS.length}
-            </Text>
-          </View>
         </View>
 
       </ImageBackground>

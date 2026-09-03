@@ -1,5 +1,6 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState, AppStateStatus } from 'react-native';
 import { createPasswordSalt, derivePasswordVerifier } from '../utils/passwordHash';
 
 export type Lang = 'en' | 'fa' | 'fr' | 'es' | 'zh' | 'ko' | 'ar';
@@ -20,6 +21,13 @@ export const LANGUAGES: {
 export function isRTL(lang: Lang) { return lang === 'fa' || lang === 'ar'; }
 export function getLang(lang: Lang) { return LANGUAGES.find(l => l.code === lang)!; }
 
+// Local device-clock date key (YYYY-MM-DD), used so the daily screen-time
+// allowance resets based on the phone/tablet's own calendar day.
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 interface AppContextType {
   lang: Lang; setLang: (l: Lang) => void; rtl: boolean;
   settingsLang: Lang; setSettingsLang: (l: Lang) => void;
@@ -30,12 +38,20 @@ interface AppContextType {
   stickers: string[]; addSticker: (s: string) => void;
   completedSections: string[]; completeSection: (id: string) => void;
   pathProgress: number; setPathProgress: (n: number) => void;
-  parentPin: string; setParentPin: (p: string) => void;
   selectedCharacterId: string; setSelectedCharacter: (id: string) => void;
   authReady: boolean; hasAccount: boolean; accountContact: string | null;
   activateAccount: (contact: string, password: string) => Promise<void>;
   verifySettingsPassword: (password: string) => boolean;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
+  // Premium/subscription status. Not wired to a real payment provider yet —
+  // see PremiumScreen.tsx for where the purchase call will set this.
+  isPremium: boolean; setIsPremium: (v: boolean) => void;
+  // Daily screen-time limit — gated by the same account password as the rest of Settings.
+  dailyLimitEnabled: boolean; setDailyLimitEnabled: (on: boolean) => void;
+  dailyLimitMinutes: number; setDailyLimitMinutes: (mins: number) => void;
+  usedTodayMs: number;
+  bonusMinutesToday: number; addBonusMinutes: (mins: number) => void;
+  dailyLimitMs: number; remainingMs: number; timeExpired: boolean;
 }
 
 export const AppContext = createContext<AppContextType>({} as AppContextType);
@@ -50,12 +66,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [stickers, setStickers] = useState<string[]>([]);
   const [completedSections, setCompletedSections] = useState<string[]>([]);
   const [pathProgress, setPathProgressState] = useState(0);
-  const [parentPin, setParentPinState] = useState('1234');
   const [selectedCharacterId, setSelectedCharacterState] = useState('neli');
   const [authReady, setAuthReady] = useState(false);
   const [accountContact, setAccountContact] = useState<string | null>(null);
   const [passwordSalt, setPasswordSalt] = useState('');
   const [passwordVerifier, setPasswordVerifier] = useState('');
+  const [isPremium, setIsPremiumState] = useState(false);
+
+  // Daily screen-time limit
+  const [dailyLimitEnabled, setDailyLimitEnabledState] = useState(false);
+  const [dailyLimitMinutes, setDailyLimitMinutesState] = useState(60);
+  const [usedTodayMs, setUsedTodayMs] = useState(0);
+  const [bonusMinutesToday, setBonusMinutesTodayState] = useState(0);
+  const [usageDate, setUsageDateState] = useState('');
+
+  const save = async (patch: object) => {
+    try {
+      const cur = await AsyncStorage.getItem('lz_state_v2');
+      const state = cur ? JSON.parse(cur) : {};
+      await AsyncStorage.setItem('lz_state_v2', JSON.stringify({ ...state, ...patch }));
+    } catch {}
+  };
 
   useEffect(() => {
     (async () => {
@@ -70,11 +101,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (s.stickers) setStickers(s.stickers);
           if (s.completedSections) setCompletedSections(s.completedSections);
           if (s.pathProgress) setPathProgressState(s.pathProgress);
-          if (s.parentPin) setParentPinState(s.parentPin);
           if (s.selectedCharacterId) setSelectedCharacterState(s.selectedCharacterId);
           if (s.accountContact) setAccountContact(s.accountContact);
           if (s.passwordSalt) setPasswordSalt(s.passwordSalt);
           if (s.passwordVerifier) setPasswordVerifier(s.passwordVerifier);
+          if (s.isPremium) setIsPremiumState(true);
+
+          // One-time recovery: the parent settings password was forgotten,
+          // so force it to "1985" the first time the app loads after this
+          // change. The password is stored as a salted hash (not plaintext),
+          // so this is the only way to reset it without knowing the old one.
+          // Safe to delete this block (and the pwResetTo1985 flag) once the
+          // new password has been confirmed to work.
+          if (s.passwordVerifier && !s.pwResetTo1985) {
+            const recoverySalt = createPasswordSalt();
+            const recoveryVerifier = derivePasswordVerifier('1985', recoverySalt);
+            setPasswordSalt(recoverySalt);
+            setPasswordVerifier(recoveryVerifier);
+            save({ passwordSalt: recoverySalt, passwordVerifier: recoveryVerifier, pwResetTo1985: true });
+          }
+
+          if (s.dailyLimitEnabled) setDailyLimitEnabledState(true);
+          if (s.dailyLimitMinutes) setDailyLimitMinutesState(s.dailyLimitMinutes);
+
+          const key = todayKey();
+          const savedDate: string = s.usageDate || '';
+          if (savedDate === key) {
+            setUsedTodayMs(s.usedTodayMs || 0);
+            setBonusMinutesTodayState(s.bonusMinutesToday || 0);
+            setUsageDateState(key);
+          } else {
+            // New device day: the previous day's usage/bonus don't carry over.
+            setUsedTodayMs(0);
+            setBonusMinutesTodayState(0);
+            setUsageDateState(key);
+            save({ usageDate: key, usedTodayMs: 0, bonusMinutesToday: 0 });
+          }
+        } else {
+          setUsageDateState(todayKey());
         }
       } catch {
         // Keep first-run setup available when persisted state cannot be read.
@@ -84,13 +148,69 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  const save = async (patch: object) => {
-    try {
-      const cur = await AsyncStorage.getItem('lz_state_v2');
-      const state = cur ? JSON.parse(cur) : {};
-      await AsyncStorage.setItem('lz_state_v2', JSON.stringify({ ...state, ...patch }));
-    } catch {}
-  };
+  // Refs so the interval below always sees fresh values without resubscribing.
+  const usageDateRef = useRef(usageDate);
+  useEffect(() => { usageDateRef.current = usageDate; }, [usageDate]);
+  const usedTodayMsRef = useRef(usedTodayMs);
+  useEffect(() => { usedTodayMsRef.current = usedTodayMs; }, [usedTodayMs]);
+  const bonusMinutesRef = useRef(bonusMinutesToday);
+  useEffect(() => { bonusMinutesRef.current = bonusMinutesToday; }, [bonusMinutesToday]);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+
+  // Track how long the app has been open today, driven by the device clock.
+  // Ticks once per second while the app is in the foreground; persists
+  // periodically and immediately when the app leaves the foreground.
+  useEffect(() => {
+    if (!authReady) return;
+
+    const persistNow = () => {
+      save({ usedTodayMs: usedTodayMsRef.current, usageDate: usageDateRef.current, bonusMinutesToday: bonusMinutesRef.current });
+    };
+
+    const rollDayIfNeeded = () => {
+      const key = todayKey();
+      if (usageDateRef.current !== key) {
+        usageDateRef.current = key;
+        setUsageDateState(key);
+        setBonusMinutesTodayState(0);
+        setUsedTodayMs(0);
+        usedTodayMsRef.current = 0;
+        save({ usageDate: key, usedTodayMs: 0, bonusMinutesToday: 0 });
+        return true;
+      }
+      return false;
+    };
+
+    rollDayIfNeeded();
+
+    let ticks = 0;
+    const interval = setInterval(() => {
+      if (appStateRef.current !== 'active') return;
+      if (rollDayIfNeeded()) return;
+      const next = usedTodayMsRef.current + 1000;
+      usedTodayMsRef.current = next;
+      setUsedTodayMs(next);
+      ticks += 1;
+      if (ticks % 5 === 0) save({ usedTodayMs: next, usageDate: usageDateRef.current });
+    }, 1000);
+
+    const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
+      const goingBackground = appStateRef.current === 'active' && next !== 'active';
+      appStateRef.current = next;
+      if (next === 'active') {
+        rollDayIfNeeded();
+      } else if (goingBackground) {
+        persistNow();
+      }
+    });
+
+    return () => {
+      clearInterval(interval);
+      sub.remove();
+      persistNow();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authReady]);
 
   const setLang = (_l: Lang) => { save({ lang: 'fa' }); };
   const setSettingsLang = (l: Lang) => { setSettingsLangState(l); save({ settingsLang: l }); };
@@ -100,7 +220,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addSticker = (s: string) => setStickers(p => { const v = [...p, s]; save({ stickers: v }); return v; });
   const completeSection = (id: string) => setCompletedSections(p => { if (p.includes(id)) return p; const v = [...p, id]; save({ completedSections: v }); return v; });
   const setPathProgress = (n: number) => { setPathProgressState(n); save({ pathProgress: n }); };
-  const setParentPin = (p: string) => { setParentPinState(p); save({ parentPin: p }); };
   const setSelectedCharacter = (id: string) => { setSelectedCharacterState(id); save({ selectedCharacterId: id }); };
   const activateAccount = async (contact: string, password: string) => {
     const salt = createPasswordSalt();
@@ -120,6 +239,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await save({ passwordSalt: salt, passwordVerifier: verifier });
     return true;
   };
+  const setIsPremium = (v: boolean) => { setIsPremiumState(v); save({ isPremium: v }); };
+
+  // Daily screen-time limit — no separate PIN; gated by the account password.
+  const setDailyLimitEnabled = (on: boolean) => { setDailyLimitEnabledState(on); save({ dailyLimitEnabled: on }); };
+  const setDailyLimitMinutes = (mins: number) => { const v = Math.max(0, Math.round(mins)); setDailyLimitMinutesState(v); save({ dailyLimitMinutes: v }); };
+  const addBonusMinutes = (mins: number) => setBonusMinutesTodayState(p => { const v = Math.max(0, p + mins); save({ bonusMinutesToday: v, usageDate: usageDateRef.current }); return v; });
+
+  const dailyLimitMs = (dailyLimitMinutes + bonusMinutesToday) * 60000;
+  const remainingMs = Math.max(0, dailyLimitMs - usedTodayMs);
+  const timeExpired = dailyLimitEnabled && dailyLimitMs > 0 && usedTodayMs >= dailyLimitMs;
 
   return (
     <AppContext.Provider value={{
@@ -129,10 +258,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       badges, addBadge, stickers, addSticker,
       completedSections, completeSection,
       pathProgress, setPathProgress,
-      parentPin, setParentPin,
       selectedCharacterId, setSelectedCharacter,
       authReady, hasAccount: Boolean(accountContact && passwordVerifier), accountContact,
       activateAccount, verifySettingsPassword, changePassword,
+      isPremium, setIsPremium,
+      dailyLimitEnabled, setDailyLimitEnabled,
+      dailyLimitMinutes, setDailyLimitMinutes,
+      usedTodayMs, bonusMinutesToday, addBonusMinutes,
+      dailyLimitMs, remainingMs, timeExpired,
     }}>
       {children}
     </AppContext.Provider>

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Little Zaban",
-    "slug": "little-zaban",
+    "name": "ZAAL",
+    "slug": "zaal",
     "version": "1.0.0",
     "orientation": "landscape",
     "icon": "./assets/icon.png",
@@ -14,14 +14,14 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.littlezaban.app"
+      "bundleIdentifier": "com.zaal.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#6B21A8"
       },
-      "package": "com.littlezaban.app"
+      "package": "com.zaal.app"
     }
   }
 }

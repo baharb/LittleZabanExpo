@@ -36,7 +36,7 @@ const GAMES: Tile[] = [
   { id: 'coloring', route: { name: 'Coloring' }, en: 'Painting', fa: 'نقاشی', descEn: 'Paint picture pages', descFa: 'صفحه‌ها را رنگ کن', kind: 'paint', color: '#A855F7', accent: '#FF80C0', group: 'play' },
   { id: 'solarPuzzle', route: { name: 'SolarPuzzle' }, en: 'Solar System', fa: 'منظومه خورشیدی', descEn: 'Place each planet', descFa: 'هر سیاره را بگذار', kind: 'solarPuzzle', color: '#38BDF8', accent: '#EAF7FF', group: 'learn' },
   // individual letter tracing tiles are rendered dynamically from FARSI_LETTERS below
-  { id: 'alphabet', route: { name: 'AlphabetShow' }, en: 'Alphabet Show', fa: 'نمایش الفبا', descEn: 'Letters, words, and motion', descFa: 'حرف، واژه و حرکت', kind: 'alphabet', color: '#8B5CF6', accent: '#38BDF8', group: 'alphabet' },
+  { id: 'alphabet', route: { name: 'AlphabetShow' }, en: 'Alphabet Show', fa: 'نمایش الفبا', descEn: 'Letters, words, and motion', descFa: 'حرف، واژه و حرکت', kind: 'alphabet', color: '#8B5CF6', accent: '#38BDF8', group: 'alphabet', hidden: true },
   { id: 'alphabetTrain', route: { name: 'AlphabetTrain' }, en: 'Alphabet Train', fa: 'قطار الفبا', descEn: 'Ride the letters and words', descFa: 'سوار قطار حرف‌ها شو', kind: 'alphabetTrain', color: '#06B6D4', accent: '#FACC15', group: 'alphabet' },
   { id: 'memory', route: { name: 'Game', gameId: 'memory' }, en: 'Memory Match', fa: 'بازی حافظه', descEn: 'Find pairs', descFa: 'جفت‌ها را پیدا کن', kind: 'memory', color: '#6C4EFF', accent: '#FACC15', group: 'learn' },
   { id: 'quiz', route: { name: 'Game', gameId: 'quiz' }, en: 'Word Quiz', fa: 'مسابقه کلمه', descEn: 'See and choose', descFa: 'ببین و انتخاب کن', kind: 'quiz', color: '#38BDF8', accent: '#A855F7', group: 'learn', hidden: true },

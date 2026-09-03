@@ -11,7 +11,7 @@ import {
 import Svg, { Circle, G, Line, Path } from 'react-native-svg';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
 import { FarsiLetter } from '../../data/farsiLetters';
-import { FA_AUDIO_KEYS, makeAlphabetAudioKey, playFaAudio } from '../../utils/faAudio';
+import { FA_AUDIO_KEYS, FALLBACK_LETTER_NAME_FA, makeAlphabetAudioKey, playFaAudio, playFaAudioOrSpeak } from '../../utils/faAudio';
 import { VAZIR_TRACE_LETTERS } from '../../screens/interactive/vazirmatnTraceData';
 import {
   Point,
@@ -61,7 +61,7 @@ const DASH        = 11;
 const GAP         = 13;
 const GUIDE_W     = 10;
 const POINT_MARKER_SIZE = 46;
-const POINT_MARKER_TIP_ANCHOR_Y = 0.82;
+const POINT_MARKER_TIP_ANCHOR_Y = 0.5;
 const COMPLETE_PROGRESS = 0.95;
 const AnimPath    = Animated.createAnimatedComponent(Path);
 const TRACE_IMAGE_ID: Record<string, string> = {
@@ -227,7 +227,6 @@ export default function FarsiLetterTracer({
   const [activeStroke,  setActiveStroke]  = useState(0);
   const [strokeProg,    setStrokeProg]    = useState<number[]>(() => strokes.map(() => 0));
   const [completedDots, setCompletedDots] = useState<number[]>([]);
-  const [hint,          setHint]          = useState('مسیر را دنبال کن');
   const [success,       setSuccess]       = useState(false);
   const [guideTick,     setGuideTick]     = useState({ si: 0, progress: 0 });
   const [showCeleb,     setShowCeleb]     = useState(false);
@@ -262,10 +261,9 @@ export default function FarsiLetterTracer({
     },
     [letter.dots, traceMeta, vb.height, vb.width],
   );
-  const isSegmentedSin = letter.id === 'sin';
-  const traceTolerance = isSegmentedSin ? Math.max(tolerance * 1.2, 40) : Math.max(tolerance, 34);
-  const traceStartGate = isSegmentedSin ? Math.max(24, traceTolerance * 0.86) : Math.max(18, Math.max(tolerance, 34) * 0.78);
-  const maxProgressJump = isSegmentedSin ? 0.3 : 0.22;
+  const traceTolerance = Math.max(tolerance, 34);
+  const traceStartGate = Math.max(18, traceTolerance * 0.78);
+  const maxProgressJump = 0.22;
   // Dot tolerance: generous enough for kids but small enough that adjacent dots
   // (≥24 viewBox units apart for te/se) cannot be hit at the same time.
   const dotTolerance = Math.max(tolerance * 0.65, Math.min(boardSize * 0.09, 26));
@@ -323,11 +321,12 @@ export default function FarsiLetterTracer({
 
     const run = async () => {
       const nameKey = makeAlphabetAudioKey('name', letter.id);
+      const nameFallback = FALLBACK_LETTER_NAME_FA[letter.id] ?? letter.letter;
       // Say the letter name twice
-      await playFaAudio(nameKey, { awaitFinish: true });
-      await new Promise<void>(r => setTimeout(r, 380));
-      await playFaAudio(nameKey, { awaitFinish: true });
-      await new Promise<void>(r => setTimeout(r, 320));
+      await playFaAudioOrSpeak(nameKey, nameFallback, { awaitFinish: true });
+      await new Promise<void>(r => setTimeout(r, 250));
+      await playFaAudioOrSpeak(nameKey, nameFallback, { awaitFinish: true });
+      await new Promise<void>(r => setTimeout(r, 200));
       // Launch particle celebration
       setCelebParticles(buildCelebParticles(boardSize, boardSize));
       celebAnim.setValue(0);
@@ -355,7 +354,6 @@ export default function FarsiLetterTracer({
     setActiveStroke(0);
     setStrokeProg(strokes.map(() => 0));
     setCompletedDots([]);
-    setHint('مسیر را دنبال کن');
     setSuccess(false);
     setShowCeleb(false);
     setGuideTick({ si: 0, progress: 0 });
@@ -365,8 +363,11 @@ export default function FarsiLetterTracer({
     guideCancel.current = false;
     startGuideAnim();
 
-    // Animate the pencil dot across the path
-    const durations = strokes.map(st => clamp(polylineLength(st.points) * 4.2, 520, 1100));
+    // Animate the pencil dot across the path. Cap raised from 1100 so longer
+    // merged strokes (e.g. sin/shin's single continuous path) keep the same
+    // per-unit pace as everything else instead of the guide dot suddenly
+    // zipping through in ~1s and being hard to track.
+    const durations = strokes.map(st => clamp(polylineLength(st.points) * 4.2, 520, 1700));
     let si = 0;
     let tStart = Date.now();
 
@@ -379,7 +380,6 @@ export default function FarsiLetterTracer({
         setGuideTick({ si: 0, progress: 0 });
         setStrokeProg(strokes.map(() => 0));
         setActiveStroke(0);
-        setHint('از نقطه سبز شروع کن');
         strokeArmed.current = false;
         return;
       }
@@ -419,10 +419,7 @@ export default function FarsiLetterTracer({
         dotTouchConsumed.current = true;
         const next = [...completedDots, nextDotIndex];
         setCompletedDots(next);
-        setHint(next.length >= dotTargets.length ? 'آفرین!' : 'نقطه بعدی');
         if (next.length >= dotTargets.length) finishLetter();
-      } else {
-        setHint('همین نقطه را بزن');
       }
       return;
     }
@@ -440,7 +437,6 @@ export default function FarsiLetterTracer({
       if (distance(point, requiredPt) <= gate) {
         strokeArmed.current = true;
       } else {
-        setHint('از نقطه سبز شروع کن');
         return;
       }
     }
@@ -459,24 +455,19 @@ export default function FarsiLetterTracer({
       const next = strokeProg.slice();
       next[activeStroke] = progress;
       setStrokeProg(next);
-      setHint('');
 
       if (progress >= COMPLETE_PROGRESS) {
         strokeArmed.current    = false;
         const nextStroke = activeStroke + 1;
         if (nextStroke < strokes.length) {
           setActiveStroke(nextStroke);
-          setHint('مسیر بعدی');
           setPhase('trace');
         } else if (dotTargets.length > 0) {
           setPhase('dots');
-          setHint('نقطه‌ها را بزن');
         } else {
           finishLetter();
         }
       }
-    } else {
-      setHint(validation.reason === 'wrong_start' ? 'از نقطه سبز شروع کن' : 'مسیر را دنبال کن');
     }
   }
 
@@ -493,7 +484,6 @@ export default function FarsiLetterTracer({
       if (!requiredPt || distance(pt, requiredPt) > traceStartGate) {
         pointerActive.current = false;
         strokeArmed.current = false;
-        setHint('از نقطه سبز شروع کن');
         return;
       }
       strokeArmed.current = true;
@@ -557,7 +547,7 @@ export default function FarsiLetterTracer({
 
   return (
     <View
-      style={[styles.board, { width: boardSize, height: boardSize, borderColor: success ? '#24C878' : `${col}55` }]}
+      style={[styles.board, { width: boardSize, height: boardSize }]}
       accessibilityLabel={`Trace the Farsi letter ${letter.letter}`}
       accessibilityRole="image"
       onPointerDown={handleDown}
@@ -572,13 +562,11 @@ export default function FarsiLetterTracer({
       onMoveShouldSetResponder={() => true}
       onResponderTerminationRequest={() => false}
     >
-      {/* Subtle radial background glow */}
-      <View style={[styles.boardGlow, { backgroundColor: `${col}0C` }]} />
       {traceImage ? (
         <View pointerEvents="none" style={styles.traceGhostImageWrap}>
           <Image
             source={traceImage}
-            style={[styles.traceGhostImage, { tintColor: `${col}42` }]}
+            style={[styles.traceGhostImage, { tintColor: '#FFFFFF' }]}
             resizeMode="contain"
           />
         </View>
@@ -675,12 +663,13 @@ export default function FarsiLetterTracer({
             })
           : null}
 
-        {/* Static dots shown in guide/trace phase (preview of where to tap) */}
+        {/* Static dots shown in guide/trace phase (preview of where to tap) —
+            solid white to match the (also white) ghost/trace-path styling, since
+            a col-tinted dot disappears against the now col-colored page bg */}
         {phase !== 'dots' && dotTargets.length > 0
           ? dotTargets.map((dot, di) => (
               <G key={`sdot-${di}`}>
-                <Circle cx={dot.x} cy={dot.y} r={8} fill={col} opacity={0.65} />
-                <Circle cx={dot.x} cy={dot.y} r={3} fill="white" opacity={0.85} />
+                <Circle cx={dot.x} cy={dot.y} r={8} fill="white" opacity={0.88} />
               </G>
             ))
           : null}
@@ -734,35 +723,13 @@ export default function FarsiLetterTracer({
           </Animated.View>
         ) : null}
 
-        {/* Hint text */}
-        {hint && !success ? (
-          <View style={styles.hintBubble}>
-            <Text style={styles.hintText}>{hint}</Text>
-          </View>
-        ) : null}
-
         {/* Phase label top-right */}
         {phase === 'guide' && (
           <View style={styles.phasePill}>
             <Text style={styles.phasePillText}>👀 تماشا کن</Text>
           </View>
         )}
-        {phase === 'trace' && (
-          <View style={[styles.phasePill, { backgroundColor: `${col}22`, borderColor: `${col}55` }]}>
-            <Text style={[styles.phasePillText, { color: col }]}>✏️ تو بکش</Text>
-          </View>
-        )}
       </View>
-
-      {/* Progress bar */}
-      {phase === 'trace' && (
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, {
-            width: `${Math.round((strokeProg[activeStroke] ?? 0) * 100)}%`,
-            backgroundColor: col,
-          }]} />
-        </View>
-      )}
 
       {/* Celebration overlay */}
       {showCeleb ? (
@@ -817,20 +784,8 @@ function getExtraSegmentPoints(
 
 const styles = StyleSheet.create({
   board: {
-    borderRadius: 32,
-    backgroundColor: '#FFFDF8',
     overflow: 'hidden',
     position: 'relative',
-    borderWidth: 4,
-    shadowColor: '#7B68EE',
-    shadowOpacity: 0.14,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 6,
-  },
-  boardGlow: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 32,
   },
   traceGhostImageWrap: {
     ...StyleSheet.absoluteFillObject,
@@ -838,7 +793,7 @@ const styles = StyleSheet.create({
   traceGhostImage: {
     width: '100%',
     height: '100%',
-    opacity: 0.42,
+    opacity: 0.88,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -863,23 +818,6 @@ const styles = StyleSheet.create({
     width: POINT_MARKER_SIZE,
     height: POINT_MARKER_SIZE,
   },
-  hintBubble: {
-    position: 'absolute',
-    bottom: 16,
-    left: 14,
-    right: 14,
-    alignItems: 'center',
-  },
-  hintText: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    color: '#5D3E8A',
-    fontSize: 14,
-    fontWeight: '800',
-    overflow: 'hidden',
-  },
   phasePill: {
     position: 'absolute',
     top: 14,
@@ -895,19 +833,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     color: '#6C4EFF',
-  },
-  progressTrack: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 6,
-    backgroundColor: 'rgba(200,188,240,0.35)',
-  },
-  progressFill: {
-    height: 6,
-    borderRadius: 3,
-    minWidth: 0,
   },
   successReveal: {
     ...StyleSheet.absoluteFillObject,

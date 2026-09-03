@@ -20,7 +20,7 @@ import { characterAssets } from '../../assets/characterAssets';
 import { dir, ff } from '../../theme/fonts';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
 import BlinkingNeliImage from '../../components/BlinkingNeliImage';
-import { getIngredientAudioKey, playFaAudio, speakWithGeneratedVoice } from '../../utils/faAudio';
+import { FA_AUDIO_KEYS, getIngredientAudioKey, playFaAudio } from '../../utils/faAudio';
 import PopperCelebration from '../../components/PopperCelebration';
 
 type IngredientKind = 'rice' | 'herb' | 'egg' | 'tomato' | 'pasta' | 'cheese' | 'water' | 'salt' | 'cucumber' | 'yogurt' | 'driedMint' | 'lemon' | 'lentils' | 'beans' | 'fish' | 'oil' | 'onion' | 'filletChickenRaw' | 'groundBeefRaw' | 'cutRawBeefForStew' | 'grapeLeaves' | 'reshtehAshRaw' | 'zereshk' | 'pizzaBread' | 'pizzaCheese' | 'lappeh' | 'mushroom' | 'bellPepper' | 'olive' | 'kalam' | 'saffron' | 'chickpea';
@@ -500,14 +500,30 @@ export default function CookingGame() {
   }, [recipeIdx]);
 
   useEffect(() => {
-    const key = getIngredientAudioKey(current.id);
-    if (key) {
+    let cancelled = false;
+    const run = async () => {
       stop();
-      void playFaAudio(key);
-    } else {
-      say(`بعدی: ${current.fa}`, `Next: ${current.en}`);
-    }
-  }, [current.id]); // eslint-disable-line react-hooks/exhaustive-deps
+      if (step === 0) {
+        const nameKey = `cooking/name/${recipe.id}` as Parameters<typeof playFaAudio>[0];
+        const played = await playFaAudio(nameKey, { awaitFinish: true });
+        if (cancelled) return;
+        if (!played) {
+          await new Promise<void>(resolve => speakFarsiOnly(recipe.fa, resolve));
+          if (cancelled) return;
+        }
+      }
+      const key = getIngredientAudioKey(current.id);
+      if (key) {
+        void playFaAudio(key);
+      } else {
+        say(`بعدی: ${current.fa}`, `Next: ${current.en}`);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [resetToken, step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refreshStageOrigin = () => {
     stageRef.current?.measureInWindow((x, y) => {
@@ -546,14 +562,12 @@ export default function CookingGame() {
 
     if (step >= recipe.steps.length - 1) {
       setDone(true);
-      setShowCelebration(true);
       setTimeout(async () => {
-        const readyText = `${recipe.fa} آماده شد`;
-        const played = await speakWithGeneratedVoice(readyText, 'fa-IR', { awaitFinish: true, rate: 0.80, pitch: 1.1 });
-        if (!played) {
-          say(`${recipe.fa} آماده شد`, `${recipe.en} is ready!`);
-        }
-      }, 650);
+        const readyKey = `cooking/ready/${recipe.id}` as Parameters<typeof playFaAudio>[0];
+        await playFaAudio(readyKey, { awaitFinish: true });
+        setShowCelebration(true);
+        void playFaAudio(FA_AUDIO_KEYS.feedback.afarin);
+      }, 500);
     } else {
       setStep(prev => prev + 1);
     }
@@ -596,7 +610,9 @@ export default function CookingGame() {
             <TouchableOpacity
               key={item.id}
               style={[styles.recipeTab, index === recipeIdx && { backgroundColor: item.color }]}
-              onPress={() => resetRecipe(index)}
+              onPress={() => {
+                resetRecipe(index);
+              }}
             >
               {showRecipeThumb ? (
                 <View style={styles.recipeTabImageWrap}>
@@ -769,7 +785,10 @@ export default function CookingGame() {
         ) : null}
 
       </ImageBackground>
-      <PopperCelebration visible={showCelebration} onComplete={() => setShowCelebration(false)} />
+      <PopperCelebration
+        visible={showCelebration}
+        onComplete={() => setShowCelebration(false)}
+      />
     </View>
   );
 }

@@ -47,7 +47,7 @@ export default function AgeScreen() {
     <View style={styles.root}>
       <View style={[styles.header, { paddingHorizontal: horizontalPadding, paddingTop: STATUS_H + Math.max(12, Math.round(18 * ui)), paddingBottom: Math.max(12, Math.round(18 * ui)), gap: Math.max(10, Math.round(12 * ui)) }, isLandscape && styles.headerLandscape]}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.brand, { fontFamily: ff(lang, 'bold'), fontSize: Math.max(12, Math.round(14 * ui)), marginBottom: Math.max(6, Math.round(8 * ui)) }]}>Little Zaban</Text>
+          <Text style={[styles.brand, { fontFamily: ff(lang, 'bold'), fontSize: Math.max(12, Math.round(14 * ui)), marginBottom: Math.max(6, Math.round(8 * ui)) }]}>ZAAL</Text>
           <Text style={[styles.question, { fontFamily: ff(lang, 'black'), fontSize: Math.max(25, Math.round(31 * ui)), lineHeight: Math.max(30, Math.round(38 * ui)) }, dir(lang)]}>
             {isFa ? 'سن کودک را انتخاب کن' : "Choose your child's age"}
           </Text>

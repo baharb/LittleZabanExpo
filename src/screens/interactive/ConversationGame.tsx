@@ -11,7 +11,9 @@ import TopBar from '../../components/TopBar';
 import { C } from '../../theme/colors';
 import { dir, ff } from '../../theme/fonts';
 import { FA_TEST_AUDIO } from '../../assets/faTestAudio.generated';
-import { playFaAudio } from '../../utils/faAudio';
+import { FA_AUDIO_KEYS, playFaAudio, stopFaAudio } from '../../utils/faAudio';
+import PopperCelebration from '../../components/PopperCelebration';
+import GameEndOverlay from '../../components/GameEndOverlay';
 
 function conversationAudioKey(kind: string, type: 'prompt' | 'choice' | 'helper') {
   const key = `conversation/${type}/${kind}` as keyof typeof FA_TEST_AUDIO;
@@ -171,7 +173,7 @@ const CHOICE_IMAGES: Partial<Record<Choice['kind'], any>> = {
   bread: neliWorldAssets.foods.bread,
   book: neliWorldAssets.ingredients.book,
   fish: neliWorldAssets.foods.fish,
-  hat: neliWorldAssets.clothes.sunhat,
+  hat: neliWorldAssets.clothes.hat,
   backpack: neliWorldAssets.clothes.backpack,
   shoe: neliWorldAssets.clothes.boots,
   cucumber: neliWorldAssets.foods.cucumber,
@@ -190,6 +192,7 @@ function NeliTalkCharacter({ size }: { size: number }) {
 function ChoiceArt({ choice, size = 92 }: { choice: Choice; size?: number }) {
   const innerSize = size * 0.82;
   const asset = CHOICE_IMAGES[choice.kind];
+  if (asset && choice.kind === 'hat') return <View style={{ width: innerSize, height: innerSize, alignItems: 'center', justifyContent: 'center', overflow: 'visible' }}><Image source={asset} style={{ width: innerSize * 1.5, height: innerSize * 1.5, transform: [{ translateY: innerSize * 0.25 }] }} resizeMode="contain" /></View>;
   if (asset) return <Image source={asset} style={[styles.choiceImage, { width: innerSize, height: innerSize }]} resizeMode="contain" />;
   const color = choice.color;
   const scaled = { transform: [{ scale: innerSize / 70 }] };
@@ -210,13 +213,15 @@ function ChoiceArt({ choice, size = 92 }: { choice: Choice; size?: number }) {
 
 export default function ConversationGame() {
   const { lang, addStars } = useContext(AppContext);
-  const { navigate } = useNav();
+  const { reset } = useNav();
   const { speakFarsiOnly, speakInLang, stop } = useSpeech();
   const { width, height } = useLandscapeDimensions();
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [done, setDone] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [showEndOverlay, setShowEndOverlay] = useState(false);
   const slide = useRef(new Animated.Value(18)).current;
 
   const scene = SCENES[idx];
@@ -234,9 +239,10 @@ export default function ConversationGame() {
 
   const speakScene = () => {
     stop();
+    void stopFaAudio();
     const promptKey = conversationAudioKey(scene.id, 'prompt');
     if (promptKey) {
-      void playFaAudio(promptKey as any).then(() => {
+      void playFaAudio(promptKey as any, { awaitFinish: true }).then(() => {
         if (!isFa) setTimeout(() => speakInLang(promptFor(scene, lang), lang), 260);
       });
     } else {
@@ -254,6 +260,7 @@ export default function ConversationGame() {
     return () => {
       clearTimeout(t);
       stop();
+      void stopFaAudio();
     };
   }, [idx, lang]);
 
@@ -269,7 +276,13 @@ export default function ConversationGame() {
       const advance = () => {
         setTimeout(() => {
           if (idx < SCENES.length - 1) setIdx(prev => prev + 1);
-          else setDone(true);
+          else {
+            setDone(true);
+            setShowCelebration(true);
+            setTimeout(async () => {
+              await playFaAudio(FA_AUDIO_KEYS.feedback.afarin, { awaitFinish: true });
+            }, 400);
+          }
         }, 220);
       };
       if (choiceKey) {
@@ -284,43 +297,6 @@ export default function ConversationGame() {
       });
     }
   };
-
-  if (done) {
-    return (
-      <View style={styles.root}>
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#35217E' }]} />
-        <TopBar title="Talk & Play" titleFa="گفت‌وگو و بازی" showClose dark topInset={10} />
-        <View style={styles.finishWrap}>
-          <View style={styles.finishBadge}>
-            <Image source={neliWorldAssets.ui.ok} style={styles.finishIcon} resizeMode="contain" />
-          </View>
-          <Text style={[styles.finishTitle, { fontFamily: ff(lang, 'black') }, dir(lang)]}>
-            {isFa ? 'گفت‌وگو کامل شد!' : 'Great talking!'}
-          </Text>
-          <Text style={[styles.finishSub, { fontFamily: ff(lang, 'regular') }, dir(lang)]}>
-            {isFa ? `${correctCount} پاسخ درست` : `${correctCount} correct answers`}
-          </Text>
-          <TouchableOpacity
-            style={styles.primaryBtn}
-            onPress={() => {
-              setIdx(0);
-              setCorrectCount(0);
-              setDone(false);
-            }}
-          >
-            <Text style={[styles.primaryBtnTxt, { fontFamily: ff(lang, 'black') }]}>
-              {isFa ? 'دوباره بازی کن' : 'Play again'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryBtn} onPress={() => navigate({ name: 'InteractiveGames' })}>
-            <Text style={[styles.secondaryBtnTxt, { fontFamily: ff(lang, 'bold') }]}>
-              {isFa ? 'بازی‌های دیگر' : 'More games'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.root}>
@@ -343,12 +319,14 @@ export default function ConversationGame() {
                     const isPicked = selected === choice.id;
                     const showCorrect = !!selected && choice.id === scene.answer;
                     const showWrong = isPicked && choice.id !== scene.answer;
+                    const isDimmed = !!selected && !showCorrect && !showWrong;
                       return (
                         <TouchableOpacity
                           key={choice.id}
                           style={[
                             styles.choiceCard,
                             { width: choiceCardWidth },
+                            isDimmed && styles.choiceCardDimmed,
                             showCorrect && styles.choiceCardCorrect,
                             showWrong && styles.choiceCardWrong,
                           ]}
@@ -383,6 +361,13 @@ export default function ConversationGame() {
           </ScrollView>
         </ImageBackground>
       </View>
+      <PopperCelebration
+        visible={showCelebration}
+        onComplete={() => { setShowCelebration(false); setShowEndOverlay(true); }}
+      />
+      {showEndOverlay && (
+        <GameEndOverlay onGo={() => { setShowEndOverlay(false); reset({ name: 'Main', tab: 'Games' }); }} />
+      )}
     </View>
   );
 }
@@ -453,8 +438,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 16,
   },
-  choiceCardCorrect: { backgroundColor: 'rgba(240, 255, 244, 0.98)' },
-  choiceCardWrong: { backgroundColor: 'rgba(255, 241, 242, 0.98)' },
+  choiceCardCorrect: {
+    backgroundColor: '#E4FBEA',
+    borderWidth: 3,
+    borderColor: '#22C55E',
+  },
+  choiceCardWrong: {
+    backgroundColor: '#FFE0E0',
+    borderWidth: 3,
+    borderColor: '#EF4444',
+  },
+  choiceCardDimmed: { opacity: 0.5 },
   choiceArtWrap: { width: 102, padding: 10, alignItems: 'center', justifyContent: 'center' },
   choiceTextWrap: { flex: 1, alignItems: 'flex-end', justifyContent: 'center' },
   choiceLabel: { color: C.textDark, fontSize: 18, lineHeight: 24, textAlign: 'right', flexShrink: 1, paddingHorizontal: 10 },
@@ -487,13 +481,5 @@ const styles = StyleSheet.create({
   sabzehCup: { position: 'absolute', bottom: 4, width: 52, height: 34, borderRadius: 12 },
   sabzehLeafA: { position: 'absolute', top: 10, width: 12, height: 42, borderRadius: 8, backgroundColor: '#16A34A', transform: [{ rotate: '-18deg' }] },
   sabzehLeafB: { position: 'absolute', top: 6, width: 12, height: 46, borderRadius: 8, backgroundColor: '#15803D', transform: [{ rotate: '20deg' }] },
-  finishWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  finishBadge: { width: 155, height: 155, borderRadius: 78, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center' },
-  finishIcon: { width: 140, height: 140 },
-  finishTitle: { color: '#FFFFFF', fontSize: 29, lineHeight: 38, marginTop: 24, textAlign: 'center' },
-  finishSub: { color: 'rgba(255,255,255,0.86)', fontSize: 16, marginTop: 8, textAlign: 'center' },
-  primaryBtn: { width: '100%', height: 58, borderRadius: 29, backgroundColor: C.yellow, alignItems: 'center', justifyContent: 'center', marginTop: 28 },
-  primaryBtnTxt: { color: C.textDark, fontSize: 17 },
-  secondaryBtn: { width: '100%', height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginTop: 12 },
-  secondaryBtnTxt: { color: '#FFFFFF', fontSize: 15 },
 });
+

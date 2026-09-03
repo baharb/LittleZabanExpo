@@ -7,7 +7,7 @@ import { AppContext } from '../store/AppContext';
 import { useNav } from '../store/NavContext';
 import { FARSI_LETTERS } from '../data/farsiLetters';
 import * as Speech from 'expo-speech';
-import { FA_AUDIO_KEYS, makeAlphabetAudioKey, playFaAudio, playFaAudioSequence, speakWithGeneratedVoice, stopFaAudio } from '../utils/faAudio';
+import { FA_AUDIO_KEYS, FALLBACK_LETTER_NAME_FA, makeAlphabetAudioKey, playFaAudio, playFaAudioOrSpeak, playFaAudioSequence, stopFaAudio } from '../utils/faAudio';
 import FarsiLetterTracer from '../components/farsi/FarsiLetterTracer';
 import LetterSelectorModal from '../components/farsi/LetterSelectorModal';
 import PopperCelebration from '../components/PopperCelebration';
@@ -73,13 +73,13 @@ export default function FarsiTracingPage() {
   const playLetterSound = async (letterId: string) => {
     if (!soundOn) return;
     try {
-      const played = await playFaAudioSequence([
-        FA_AUDIO_KEYS.guidance.startHere,
+      await playFaAudio(FA_AUDIO_KEYS.guidance.startHere, { awaitFinish: true });
+      await new Promise<void>(r => setTimeout(r, 180));
+      const nameLetter = FARSI_LETTERS.find(l => l.id === letterId);
+      await playFaAudioOrSpeak(
         makeAlphabetAudioKey('name', letterId),
-      ], 180);
-      if (!played) {
-        void playFaAudio(makeAlphabetAudioKey('name', letterId));
-      }
+        FALLBACK_LETTER_NAME_FA[letterId] ?? nameLetter?.letter ?? '',
+      );
     } catch {}
   };
 
@@ -136,12 +136,13 @@ export default function FarsiTracingPage() {
       await pause(200);
       if (!isMounted.current) return;
       if (soundOn) {
-        await playFaAudio(nameKey, { awaitFinish: true });
+        const nameFallback = FALLBACK_LETTER_NAME_FA[letter.id] ?? letter.letter;
+        await playFaAudioOrSpeak(nameKey, nameFallback, { awaitFinish: true });
         if (!isMounted.current) return;
-        await pause(300);
-        await playFaAudio(nameKey, { awaitFinish: true });
+        await pause(200);
+        await playFaAudioOrSpeak(nameKey, nameFallback, { awaitFinish: true });
         if (!isMounted.current) return;
-        await pause(350);
+        await pause(150);
       } else {
         await pause(1200);
       }
@@ -150,29 +151,20 @@ export default function FarsiTracingPage() {
       // Phase 2 — swap to example image, say example name twice
       setShowLetterReveal(false);
       setLetterComplete(true);
-      await pause(200);
+      await pause(150);
       if (!isMounted.current) return;
       if (soundOn) {
-        const played = await playFaAudio(exampleKey, { awaitFinish: true });
+        await playFaAudioOrSpeak(exampleKey, letter.exampleFa ?? '', { awaitFinish: true, rate: 0.72, pitch: 1.14 });
         if (!isMounted.current) return;
-        if (!played && letter.exampleFa) {
-          await speakWithGeneratedVoice(letter.exampleFa, 'fa-IR', { rate: 0.72, pitch: 1.14, awaitFinish: true });
-        }
+        await pause(200);
+        await playFaAudioOrSpeak(exampleKey, letter.exampleFa ?? '', { awaitFinish: true, rate: 0.72, pitch: 1.14 });
         if (!isMounted.current) return;
-        await pause(300);
-        const played2 = await playFaAudio(exampleKey, { awaitFinish: true });
-        if (!isMounted.current) return;
-        if (!played2 && letter.exampleFa) {
-          await speakWithGeneratedVoice(letter.exampleFa, 'fa-IR', { rate: 0.72, pitch: 1.14, awaitFinish: true });
-        }
-        if (!isMounted.current) return;
-        await pause(300);
       } else {
         await pause(1000);
       }
 
       if (!isMounted.current) return;
-      // Phase 3 — celebration + آفرین
+      // Phase 3 — celebration + آفرین (starts immediately, no extra pause)
       setShowCelebration(true);
       if (soundOn) void playFaAudio(FA_AUDIO_KEYS.feedback.afarin);
     };
@@ -182,7 +174,7 @@ export default function FarsiTracingPage() {
   // ─── Single-letter mode layout ─────────────────────────────────────────────
   if (isSingleMode) {
     return (
-      <View style={styles.root}>
+      <View style={[styles.root, { backgroundColor: letter.color ?? '#6C4EFF' }]}>
         <TopBar
           title={letter.nameEn}
           titleFa={letter.nameFa}
@@ -245,7 +237,7 @@ export default function FarsiTracingPage() {
 
   // ─── Multi-letter mode (original layout) ───────────────────────────────────
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: letter.color ?? '#6C4EFF' }]}>
       <TopBar
         title="Farsi Tracing"
         titleFa="تمرین نوشتن"
@@ -430,15 +422,17 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   exampleImage: {
-    width: '60%',
-    height: '50%',
+    width: '85%',
+    height: '58%',
   },
   letterRevealChar: {
     fontFamily: ff('fa', 'black'),
     color: '#FFFFFF',
-    fontSize: 96,
-    lineHeight: 120,
+    fontSize: 176,
+    lineHeight: 300,
+    paddingTop: 14,
     textAlign: 'center',
+    includeFontPadding: true,
   },
   letterRevealName: {
     fontFamily: ff('fa', 'black'),
@@ -450,8 +444,8 @@ const styles = StyleSheet.create({
   exampleWord: {
     fontFamily: ff('fa', 'black'),
     color: '#FFFFFF',
-    fontSize: 36,
-    lineHeight: 48,
+    fontSize: 64,
+    lineHeight: 84,
     textAlign: 'center',
   },
   clearBtnSingle: {
