@@ -472,7 +472,8 @@ export default function SolarSystemPuzzleGame() {
   const startCelebration = () => {
     if (celebPlayedRef.current || !stageSize.width || !stageSize.height) return;
     celebPlayedRef.current = true;
-    void playFaAudio(FA_AUDIO_KEYS.feedback.afarin);
+    // Delay afarin so the last planet's name audio (played on touch-down) finishes first
+    setTimeout(() => { void playFaAudio(FA_AUDIO_KEYS.feedback.afarin); }, 1600);
     // Defer one frame so the drop gesture commit renders first, then mount particles
     requestAnimationFrame(() => {
       setCelebParticles(prebuiltParticlesRef.current);

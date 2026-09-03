@@ -1,12 +1,13 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Platform, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
-import * as Speech from 'expo-speech';
-import { resolveFaVoiceKey, speakWithGeneratedVoice } from '../../utils/faAudio';
+import { FA_AUDIO_KEYS, FALLBACK_LETTER_NAME_FA, makeAlphabetAudioKey, playFaAudio, playFaAudioOrSpeak } from '../../utils/faAudio';
 import * as Haptics from 'expo-haptics';
 import { AppContext } from '../../store/AppContext';
 import { FA, ff } from '../../theme/fonts';
 import { C } from '../../theme/colors';
 import TopBar from '../../components/TopBar';
+import PopperCelebration from '../../components/PopperCelebration';
+import GameEndOverlay from '../../components/GameEndOverlay';
 import { characterAssets } from '../../assets/characterAssets';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
 import { useNav } from '../../store/NavContext';
@@ -37,6 +38,7 @@ const ALPHABET_POOL: LetterItem[] = [
   { id: 'zal', char: 'ذ', name: 'ذال', color: '#EAB308' },
   { id: 're', char: 'ر', name: 'ر', color: '#22C55E' },
   { id: 'ze', char: 'ز', name: 'ز', color: '#FACC15' },
+  { id: 'zhe', char: 'ژ', name: 'ژه', color: '#F97316' },
   { id: 'sin', char: 'س', name: 'سین', color: '#EF4444' },
   { id: 'shin', char: 'ش', name: 'شین', color: '#7C3AED' },
   { id: 'sad', char: 'ص', name: 'صاد', color: '#06B6D4' },
@@ -171,15 +173,19 @@ function makeFoundOrder(deck: Card[]): LetterItem[] {
   );
 }
 
+// Maps memory game IDs that differ from alphabet/name/ audio filenames
+const MEMORY_ID_TO_AUDIO_ID: Record<string, string> = {
+  he: 'haa',   // ح
+  ta: 'taa',   // ط
+  za: 'zaa',   // ظ
+  qaf: 'ghaf', // ق
+  he2: 'heh',  // ه
+};
+
 function speakLetter(item: LetterItem) {
-  if (resolveFaVoiceKey(item.name || item.char)) {
-    void speakWithGeneratedVoice(item.name || item.char, 'fa-IR', { rate: 0.68, pitch: 1.14, interrupt: true });
-    return;
-  }
-  Speech.stop();
-  setTimeout(() => {
-    Speech.speak(MEMORY_LETTER_ROMANIZED[item.id] ?? item.name ?? item.char, { language: 'en-US', rate: 0.72, pitch: 1.0 });
-  }, 120);
+  const audioId = MEMORY_ID_TO_AUDIO_ID[item.id] ?? item.id;
+  const key = makeAlphabetAudioKey('name', audioId);
+  void playFaAudioOrSpeak(key, FALLBACK_LETTER_NAME_FA[audioId] ?? item.name);
 }
 
 function CardBack() {
@@ -234,6 +240,8 @@ export default function MemoryGame() {
   const [allComplete, setAllComplete] = useState(false);
   const [levelComplete, setLevelComplete] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [showEndOverlay, setShowEndOverlay] = useState(false);
 
   const cardsRef = useRef(cards);
   const levelIndexRef = useRef(0);
@@ -277,6 +285,14 @@ export default function MemoryGame() {
     cardsRef.current = cards;
   }, [cards]);
 
+  useEffect(() => {
+    if (!allComplete) return;
+    setShowCelebration(true);
+    setTimeout(async () => {
+      await playFaAudio(FA_AUDIO_KEYS.feedback.afarin, { awaitFinish: true });
+    }, 400);
+  }, [allComplete]);
+
   const loadLevel = (index: number) => {
     const pairs = levelPlanRef.current[index] ?? 2;
     const deck = makeDeck(pairs, letterPoolRef.current);
@@ -290,6 +306,8 @@ export default function MemoryGame() {
     setFoundOrder(makeFoundOrder(deck));
     setLevelComplete(false);
     setAllComplete(false);
+    setShowCelebration(false);
+    setShowEndOverlay(false);
     setBusy(false);
   };
 
@@ -483,6 +501,14 @@ export default function MemoryGame() {
         </View>
         </View>
       </View>
+
+      <PopperCelebration
+        visible={showCelebration}
+        onComplete={() => { setShowCelebration(false); setShowEndOverlay(true); }}
+      />
+      {showEndOverlay && (
+        <GameEndOverlay onGo={() => { setShowEndOverlay(false); reset({ name: 'Main', tab: 'Games' }); }} />
+      )}
     </View>
   );
 }

@@ -20,7 +20,7 @@ import { ff } from '../theme/fonts';
 import { C } from '../theme/colors';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
 import { characterAssets } from '../assets/characterAssets';
-import { FA_AUDIO_KEYS, makeAlphabetAudioKey, playFaAudio } from '../utils/faAudio';
+import { ALPHABET_AUDIO_ID_OVERRIDE, FA_AUDIO_KEYS, FALLBACK_LETTER_NAME_FA, makeAlphabetAudioKey, playFaAudio, playFaAudioOrSpeak } from '../utils/faAudio';
 import PopperCelebration from '../components/PopperCelebration';
 
 type AlphabetItem = {
@@ -240,14 +240,14 @@ function AlphabetShowPlayer({
 
 export const EXAMPLE_IMAGE_BY_ID: Partial<Record<string, any>> = {
   alef: neliWorldAssets.foods.water,
-  be: require('../../assets/neli-world/ingredients/leaves.webp'),
+  be: require('../../assets/neli-world/alphabet-icons/kite.png'),
   pe: require('../../assets/neli-world/fruits/orange.png'),
   te: require('../../assets/neli-world/alphabet-icons/ball.png'),
   se: require('../../assets/neli-world/alphabet-icons/clock.png'),
   jim: require('../../assets/neli-world/alphabet-icons/chick.png'),
   che: require('../../assets/neli-world/alphabet-icons/umbrella.png'),
   'he-jimi': neliWorldAssets.bathroom.towel,
-  khe: require('../../assets/neli-world/animals/bear_kids_app_clean_transparent.webp'),
+  khe: require('../../assets/neli-world/alphabet-icons/house.png'),
   dal: require('../../assets/neli-world/alphabet-icons/tree.png'),
   zal: neliWorldAssets.foods.corn,
   re: require('../../assets/neli-world/alphabet-icons/river.png'),
@@ -501,8 +501,29 @@ function SequentialAlphabetShowPlayer({
   const characterSource = ALPHABET_PUSHERS[index % ALPHABET_PUSHERS.length];
   const isWide = width >= height;
   const motion = useRef(new Animated.Value(0)).current;
+  const bounce = useRef(new Animated.Value(0)).current;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+  const bounceLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+  const bounceStartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bounceStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Separate from `timerRef` (which holds the audio-sequence timeout) so
+  // both can be tracked/cleared independently — see `tryAdvance` below.
+  const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // speak/stop/onClose come from hooks that hand back a new function identity on
+  // every render (e.g. useSpeech is re-created whenever the app-wide usage-timer
+  // context ticks, once a second). Keeping them out of the sequencing effect's
+  // dependency array - via refs - stops that unrelated re-render from tearing
+  // down and restarting the entrance animation before it can ever finish, which
+  // is what was freezing the show on the first letter.
+  const speakRef = useRef(speak);
+  const stopRef = useRef(stop);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    speakRef.current = speak;
+    stopRef.current = stop;
+    onCloseRef.current = onClose;
+  }, [speak, stop, onClose]);
   const characterSize = Math.max(150, Math.min(isWide ? 250 : 210, width * (isWide ? 0.22 : 0.38)));
   const letterSize = Math.max(150, Math.min(isWide ? 230 : 200, width * (isWide ? 0.20 : 0.36)));
   const letterLift = item.id === 'gheyn' ? -8 : 0;
@@ -517,59 +538,139 @@ function SequentialAlphabetShowPlayer({
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    if (advanceTimerRef.current) {
+      clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
     animationRef.current?.stop();
     animationRef.current = null;
+    bounceLoopRef.current?.stop();
+    bounceLoopRef.current = null;
+    if (bounceStartTimerRef.current) clearTimeout(bounceStartTimerRef.current);
+    if (bounceStopTimerRef.current) clearTimeout(bounceStopTimerRef.current);
+    bounce.setValue(0);
 
     motion.setValue(0);
-    stop();
+    stopRef.current();
+
+    // The letter's audio (name, then example) doesn't always finish inside the
+    // same fixed window as the visual slide/bounce animation — the name falls
+    // back to on-device TTS for a few letters whose recorded clip is broken
+    // (e.g. "jim"/ج), and that can take longer to finish speaking than the
+    // animation takes to run. Advancing to the next letter — or closing out on
+    // the last one — as soon as the ANIMATION finished used to call
+    // stopRef.current() for the new letter while the previous letter's TTS was
+    // still talking, cutting it off mid-word. Now advancing waits for BOTH the
+    // animation and the full name+example audio sequence to finish.
+    let cancelled = false;
+    let animationDone = false;
+    let audioDone = false;
+
+    const tryAdvance = () => {
+      if (cancelled || !animationDone || !audioDone) return;
+      if (index >= ALPHABETS.length - 1) {
+        setFinished(true);
+        setShowCelebration(true);
+        void playFaAudio(FA_AUDIO_KEYS.feedback.afarin).then(() => {
+          if (!cancelled) setTimeout(() => onCloseRef.current(), 3500);
+        });
+        return;
+      }
+      advanceTimerRef.current = setTimeout(() => {
+        if (!cancelled) setIndex(current => current + 1);
+      }, 90);
+    };
+
+    // Only hop gently while the character is settled on stage (not while sliding
+    // in/out), so the bounce doesn't fight with the slide-in motion and read as messy.
+    bounceStartTimerRef.current = setTimeout(() => {
+      bounceLoopRef.current = Animated.loop(
+        Animated.sequence([
+          Animated.timing(bounce, { toValue: 1, duration: 340, easing: Easing.out(Easing.sin), useNativeDriver: true }),
+          Animated.timing(bounce, { toValue: 0, duration: 340, easing: Easing.in(Easing.sin), useNativeDriver: true }),
+          Animated.delay(320),
+        ]),
+      );
+      bounceLoopRef.current.start();
+    }, 700);
+    bounceStopTimerRef.current = setTimeout(() => {
+      bounceLoopRef.current?.stop();
+      bounceLoopRef.current = null;
+      Animated.timing(bounce, { toValue: 0, duration: 160, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
+    }, 1480);
 
     animationRef.current = Animated.sequence([
-      Animated.timing(motion, { toValue: 1, duration: 1100, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.delay(240),
-      Animated.timing(motion, { toValue: 1.65, duration: 360, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-      Animated.delay(1180),
-      Animated.timing(motion, { toValue: 2, duration: 430, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(motion, { toValue: 1, duration: 650, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.delay(150),
+      Animated.timing(motion, { toValue: 1.65, duration: 220, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.delay(500),
+      Animated.timing(motion, { toValue: 2, duration: 280, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
     ]);
 
     animationRef.current.start(({ finished: animationFinished }) => {
       animationRef.current = null;
       if (!animationFinished) return;
-      if (index >= ALPHABETS.length - 1) {
-        setFinished(true);
-        setShowCelebration(true);
-        void playFaAudio(FA_AUDIO_KEYS.feedback.afarin).then(() => {
-          setTimeout(onClose, 3500);
-        });
-        return;
-      }
-      timerRef.current = setTimeout(() => setIndex(current => current + 1), 120);
+      animationDone = true;
+      tryAdvance();
     });
 
     timerRef.current = setTimeout(async () => {
-      const nameKey = makeAlphabetAudioKey('name', item.id);
-      const exampleKey = makeAlphabetAudioKey('example', item.id);
-      const nameExists = await playFaAudio(nameKey, { awaitFinish: true }).catch(() => false);
-      if (!nameExists) {
-        speak(`${item.letter}`);
-        await new Promise(r => setTimeout(r, 600));
-      }
-      await new Promise(r => setTimeout(r, 150));
-      const exampleExists = await playFaAudio(exampleKey, { awaitFinish: true }).catch(() => false);
-      if (!exampleExists) speak(item.wordFa);
-    }, 1080);
+      // A handful of ids used by ALPHABETS below (he-jimi/ta/za/noon/he)
+      // differ from the ids the recorded voice clips are keyed under
+      // (haa/taa/zaa/nun/heh) — translate first so those letters find their
+      // recorded clip too, instead of always falling back to TTS.
+      const audioId = ALPHABET_AUDIO_ID_OVERRIDE[item.id] ?? item.id;
+      const nameKey = makeAlphabetAudioKey('name', audioId);
+      const exampleKey = makeAlphabetAudioKey('example', audioId);
+      // playFaAudioOrSpeak already skips known-broken/garbled recorded clips
+      // (BROKEN_ALPHABET_AUDIO) and falls back to TTS — a raw playFaAudio()
+      // here would happily play a broken clip just because the file exists.
+      // `rate: 1.0` only speeds up that TTS fallback (recorded clips always
+      // play at their own fixed speed regardless of this option).
+      await playFaAudioOrSpeak(nameKey, FALLBACK_LETTER_NAME_FA[audioId] ?? item.letter, { awaitFinish: true, rate: 1.0 });
+      if (cancelled) return;
+      await new Promise(r => setTimeout(r, 90));
+      if (cancelled) return;
+      await playFaAudioOrSpeak(exampleKey, item.wordFa, { awaitFinish: true, rate: 1.0 });
+      if (cancelled) return;
+      audioDone = true;
+      tryAdvance();
+    }, 550);
 
     return () => {
+      cancelled = true;
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
+      if (advanceTimerRef.current) {
+        clearTimeout(advanceTimerRef.current);
+        advanceTimerRef.current = null;
+      }
       animationRef.current?.stop();
       animationRef.current = null;
+      bounceLoopRef.current?.stop();
+      bounceLoopRef.current = null;
+      if (bounceStartTimerRef.current) {
+        clearTimeout(bounceStartTimerRef.current);
+        bounceStartTimerRef.current = null;
+      }
+      if (bounceStopTimerRef.current) {
+        clearTimeout(bounceStopTimerRef.current);
+        bounceStopTimerRef.current = null;
+      }
     };
-  }, [index, item.letter, item.wordFa, motion, onClose, speak, stop]);
+    // Intentionally NOT depending on speak/stop/onClose: those are read via refs
+    // above so that their unstable identity (see comment near the ref
+    // declarations) doesn't restart this sequence on every unrelated re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bounce, index, item.letter, item.wordFa, motion]);
 
   const close = () => {
     stop();
+    bounceLoopRef.current?.stop();
+    if (bounceStartTimerRef.current) clearTimeout(bounceStartTimerRef.current);
+    if (bounceStopTimerRef.current) clearTimeout(bounceStopTimerRef.current);
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
@@ -624,9 +725,21 @@ function SequentialAlphabetShowPlayer({
                 transform: [
                   { translateY: characterLift },
                   {
-                    translateY: motion.interpolate({
-                      inputRange: [0, 1, 1.65, 2],
-                      outputRange: [0, 0, 0, 0],
+                    translateY: bounce.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, -characterSize * 0.08],
+                    }),
+                  },
+                  {
+                    scaleY: bounce.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 1.035],
+                    }),
+                  },
+                  {
+                    scaleX: bounce.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 0.975],
                     }),
                   },
                 ],
@@ -639,8 +752,6 @@ function SequentialAlphabetShowPlayer({
               {
                 width: letterSize,
                 height: letterSize,
-                borderRadius: letterSize * 0.28,
-                backgroundColor: 'rgba(255,255,255,0.18)',
                 transform: [
                   { translateY: letterLift },
                   {
@@ -653,7 +764,6 @@ function SequentialAlphabetShowPlayer({
               },
             ]}
           >
-            <View style={[styles.sequenceLetterShine, { backgroundColor: item.accent }]} />
             <Text style={[styles.sequenceLetter, { fontSize: letterSize * 0.54, lineHeight: letterSize * 0.7 }]}>{item.letter}</Text>
           </Animated.View>
         </Animated.View>
@@ -677,7 +787,7 @@ function SequentialAlphabetShowPlayer({
             },
           ]}
         >
-          <View style={[styles.sequenceExampleImageWrap, { backgroundColor: '#FFFFFF' }]}>
+          <View style={styles.sequenceExampleImageWrap}>
             {exampleSource ? (
               <Image source={exampleSource} style={styles.sequenceExampleImage} resizeMode="contain" />
             ) : null}
@@ -727,16 +837,8 @@ const styles = StyleSheet.create({
   sequenceLetterCard: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 7,
-    borderColor: '#FFFFFF',
-    shadowColor: '#170736',
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 12,
-    overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
-  sequenceLetterShine: { position: 'absolute', top: 20, right: 22, width: 58, height: 58, borderRadius: 29, opacity: 0.28 },
   sequenceLetter: {
     color: '#FFFFFF',
     fontFamily: ff('fa', 'black'),
@@ -752,7 +854,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingVertical: 13,
     borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.93)',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     zIndex: 7,
     borderWidth: 4,

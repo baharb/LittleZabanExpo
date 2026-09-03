@@ -147,7 +147,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.root}>
-      <TopBar title="Little Zaban" titleFa="لیتل زبان" dark showBack={false} />
+      <TopBar title="ZAAL" titleFa="زال" dark showBack={false} />
       <ScrollView contentContainerStyle={[styles.scroll, { paddingHorizontal: responsive.horizontalPadding }]} showsVerticalScrollIndicator={false}>
         <View style={[
           styles.hero,

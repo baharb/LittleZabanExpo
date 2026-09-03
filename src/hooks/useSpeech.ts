@@ -1,5 +1,5 @@
 /**
- * useSpeech - Robust bilingual TTS for LittleZaban
+ * useSpeech - Robust bilingual TTS for ZAAL
  * FIXED: fa-IR always used for Persian. Speech.stop() before every call.
  * Supports all 7 languages. Child-friendly pitch + slow rate for Persian.
  */
@@ -87,10 +87,12 @@ export function useSpeech() {
     }, false);
   };
 
-  /** Speak Farsi only */
-  const speakFarsiOnly = (text: string, onDone?: () => void) => {
+  /** Speak Farsi only. Optional `rate` overrides the default Farsi speaking rate
+   *  (e.g. a screen that wants to move a bit faster). The caller should still
+   *  wait for `onDone` before moving on so speech never gets cut off mid-word. */
+  const speakFarsiOnly = (text: string, onDone?: () => void, rate: number = LANG_RATE.fa) => {
     stop(); active.current = true;
-    speakSegment(text, 'fa-IR', LANG_RATE.fa, () => { active.current = false; onDone?.(); });
+    speakSegment(text, 'fa-IR', rate, () => { active.current = false; onDone?.(); });
   };
 
   /** Speak in current UI language */

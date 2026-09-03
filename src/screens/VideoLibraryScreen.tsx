@@ -390,6 +390,18 @@ export default function VideoLibraryScreen() {
                 javaScriptEnabled
                 domStorageEnabled
                 startInLoadingState
+                originWhitelist={['https://www.youtube.com', 'https://www.youtube-nocookie.com']}
+                setSupportMultipleWindows={false}
+                onShouldStartLoadWithRequest={request => {
+                  try {
+                    const host = new URL(request.url).hostname;
+                    // Keep playback confined to YouTube's own domains so a child
+                    // can't be navigated out to an arbitrary external site.
+                    return host === 'www.youtube.com' || host === 'youtube.com' || host.endsWith('.youtube.com') || host === 'youtube-nocookie.com' || host.endsWith('.youtube-nocookie.com') || host === 'www.google.com' || host.endsWith('.googlevideo.com');
+                  } catch {
+                    return false;
+                  }
+                }}
               />
             </View>
           </View>

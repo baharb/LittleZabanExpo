@@ -17,7 +17,7 @@ const RUNNING_FRAMES = [
 
 export default function SplashScreen() {
   const { reset } = useNav();
-  const { lang, authReady, hasAccount } = useContext(AppContext);
+  const { lang, authReady, hasAccount, timeExpired } = useContext(AppContext);
   const { width, height } = useWindowDimensions();
   const isFa = lang === 'fa' || lang === 'ar';
   const landscape = width > height;
@@ -59,13 +59,14 @@ export default function SplashScreen() {
 
     const timer = setTimeout(() => {
       if (!authReady) return;
+      if (timeExpired) { reset({ name: 'TimeUp' }); return; }
       reset(hasAccount ? { name: 'Main', tab: 'Games' } : { name: 'AccountSetup' });
     }, 3100);
     return () => {
       clearTimeout(timer);
       waveLoop.stop();
     };
-  }, [authReady, hasAccount, neliFloat, neliRunX, neliSize, reset, titleOpacity, titleY, width]);
+  }, [authReady, hasAccount, timeExpired, neliFloat, neliRunX, neliSize, reset, titleOpacity, titleY, width]);
 
   return (
     <ImageBackground source={splashSource} style={styles.root} resizeMode="cover">
@@ -80,9 +81,9 @@ export default function SplashScreen() {
         </Animated.View>
 
         <Animated.View style={[styles.copy, { opacity: titleOpacity, transform: [{ translateY: titleY }] }]}>
-          <Text style={[styles.appName, { fontSize: clamp(Math.min(width, height) * (tablet ? 0.082 : 0.1), 38, tablet ? 76 : landscape ? 48 : 58) }]}>Little Zaban</Text>
+          <Text style={[styles.appName, { fontSize: clamp(Math.min(width, height) * (tablet ? 0.082 : 0.1), 38, tablet ? 76 : landscape ? 48 : 58) }]}>ZAAL</Text>
           <Text style={[styles.appNameFa, { fontFamily: ff(lang, 'black'), fontSize: tablet ? 27 : 21 }, dir(lang)]}>
-            {isFa ? 'لیتل زبان' : 'Persian for kids'}
+            {isFa ? 'زال' : 'Persian for kids'}
           </Text>
           <View style={styles.badge}>
             <Image source={neliWorldAssets.ui.play} style={styles.badgeIcon} resizeMode="contain" />

@@ -4,11 +4,12 @@ export type Screen =
   | { name: 'Splash' }
   | { name: 'AccountSetup' }
   | { name: 'SettingsUnlock' }
+  | { name: 'PremiumUnlock' }
+  | { name: 'Premium' }
   | { name: 'Age' }
   | { name: 'Main'; tab?: string }
   | { name: 'Section'; id: string }
   | { name: 'Game'; gameId: string }
-  | { name: 'Parent' }
   | { name: 'Characters' }
   | { name: 'StickerReward'; sticker: string; message: string }
   | { name: 'Coloring' }
@@ -31,7 +32,8 @@ export type Screen =
   | { name: 'ToothBrush' }
   | { name: 'ConversationGame' }
   | { name: 'IranPuzzle' }
-  | { name: 'SolarPuzzle' };
+  | { name: 'SolarPuzzle' }
+  | { name: 'TimeUp' };
 
 interface NavContextType {
   screen: Screen;

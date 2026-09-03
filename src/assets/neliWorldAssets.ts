@@ -192,15 +192,6 @@ export const neliWorldAssets = {
     neli: characterAssets.neli.base,
     roboBoombo: characterAssets.roboBoombo.base,
     neliBlinkOverlay: require('../../assets/neli-world/characters/Neli/01_nelly_blink_overlay.png'),
-    neliConfirmedTransparent: require('../../assets/neli-world/characters/neli_confirmed_transparent.png'),
-  },
-  neliPosesPremium: {
-    brushingTeeth: require('../../assets/neli-world/characters/neli-poses-premium/brushing_teeth.png'),
-    cooking: characterAssets.neli.poses.cooking,
-    happy: require('../../assets/neli-world/characters/neli-poses-premium/happy.png'),
-    sleeping: require('../../assets/neli-world/characters/neli-poses-premium/sleeping.png'),
-    talking: require('../../assets/neli-world/characters/neli-poses-premium/talking.png'),
-    waving: require('../../assets/neli-world/characters/neli-poses-premium/waving.png'),
   },
   animations: {
     neli: {
