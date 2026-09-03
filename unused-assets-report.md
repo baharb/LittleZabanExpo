@@ -1,0 +1,947 @@
+# Unused image assets report
+
+Scanned all 1,939 image files under `assets/` against every `.ts/.tsx/.js/.jsx/.json` source file in the repo (by filename reference). **866 files (~537 MB) have no reference anywhere in source.**
+
+This is a filename-substring scan — it can miss an image loaded through a fully dynamic path built at runtime. Everything below was spot-checked against `characterAssets.ts` / `neliWorldAssets.ts` and matched the expected pattern (only one resolution/scale of each pose or scene is actually wired up; the rest are leftover exports).
+
+## Summary
+
+| Category | Files | Size |
+|---|---|---|
+| Temp files from the image pipeline (*.tmp.png) | 276 | 54.0 MB |
+| QA/preview/debug/contact-sheet images | 79 | 38.4 MB |
+| "Neli - Copy" folder (full duplicate of characters/Neli, never referenced) | 54 | 0.0 MB |
+| Unused resolution/scale duplicates (e.g. @2x/@4x, _512/_1536, _base) where another size of the same image IS used | 285 | 271.8 MB |
+| **Standalone / legacy files with no reference found anywhere — please review before deleting** | 172 | 173.1 MB |
+
+**Safe-to-delete total: 694 files, 364.3 MB.** Needs-review total: 172 files, 173.1 MB.
+
+## Temp files from the image pipeline (*.tmp.png) (276)
+
+- assets/neli-world/animations/neli/walk_01.png.tmp.png
+- assets/neli-world/bathroom/soap_dish.png.hq.tmp.png
+- assets/neli-world/bathroom/toothbrush.png.hq.tmp.png
+- assets/neli-world/bathroom/toothpaste.png.hq.tmp.png
+- assets/neli-world/bathroom/towel.png.hq.tmp.png
+- assets/neli-world/bathroom/water_splash.png.hq.tmp.png
+- assets/neli-world/clothes/backpack_blue.png.hq.tmp.png
+- assets/neli-world/clothes/bag_pink.png.hq.tmp.png
+- assets/neli-world/clothes/beanie_blue.png.hq.tmp.png
+- assets/neli-world/clothes/boots_purple.png.hq.tmp.png
+- assets/neli-world/clothes/crown_yellow.png.hq.tmp.png
+- assets/neli-world/clothes/gloves_blue.png.hq.tmp.png
+- assets/neli-world/clothes/hat_orange.png.hq.tmp.png
+- assets/neli-world/clothes/scarf_blue.png.hq.tmp.png
+- assets/neli-world/clothes/shoes_blue.png.hq.tmp.png
+- assets/neli-world/clothes/socks_pink.png.hq.tmp.png
+- assets/neli-world/clothes/sunglasses.png.hq.tmp.png
+- assets/neli-world/clothes/sunhat_yellow.png.hq.tmp.png
+- assets/neli-world/giraffe-poses/happy.png.hq.tmp.png
+- assets/neli-world/giraffe-poses/waving.png.hq.tmp.png
+- assets/neli-world/kitchen/bowl.png.hq.tmp.png
+- assets/neli-world/kitchen/pan.png.hq.tmp.png
+- assets/neli-world/kitchen/plate.png.hq.tmp.png
+- assets/neli-world/kitchen/pot.png.hq.tmp.png
+- assets/neli-world/puzzle/Iran/generated/iran_kids_placeholder_3840x2160_labeled.png.34cd7499f40e4674a79a2215e8ce14b1.tmp.png
+- assets/neli-world/puzzle/Iran/generated/iran_kids_placeholder_3840x2160_labeled.png.4c041bc460df43beb8b11a05d275c92d.tmp.png
+- assets/neli-world/puzzle/Iran/generated/iran_kids_placeholder_3840x2160_labeled.png.86ba2ded79ba4553baf5bc7260554787.tmp.png
+- assets/neli-world/puzzle/Iran/generated/iran_kids_placeholder_3840x2160_labeled.png.99f865ad90f7436db20635f536693dd6.tmp.png
+- assets/neli-world/puzzle/Iran/generated/iran_kids_placeholder_3840x2160_labeled.png.d9045816062243aa81261db4d66a96e6.tmp.png
+- assets/neli-world/puzzle/Iran/generated/iran_kids_placeholder_cropped_labeled.png.24e8d3817e464043b607c464fb51179d.tmp.png
+- assets/neli-world/puzzle/Iran/generated/iran_kids_placeholder_cropped_labeled.png.469ec5df656949b08787afd06d476345.tmp.png
+- assets/neli-world/puzzle/Iran/generated/iran_kids_placeholder_cropped_labeled.png.7df2d149f14b4f92a1039363d8d1d4ad.tmp.png
+- assets/neli-world/puzzle/Iran/generated/iran_kids_placeholder_cropped_labeled.png.7e44afd1d1f14442bf0ae05b01c62020.tmp.png
+- assets/neli-world/puzzle/Iran/generated/iran_kids_placeholder_cropped_labeled.png.b6ce235a88074ec78bd816d08efa9bff.tmp.png
+- assets/neli-world/puzzle/Iran/generated/iran_names_placeholder_3840x2160.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_01.png.075ed2144cdc4bfea3952eafeee04e83.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_01.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_01.png.50a7315aa9ef4f3fb528e30ef574aa73.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_01.png.615e291aa0bf4d5281ae12abaf6ef02f.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_01.png.7c25766319d44b7da78dcd53525707f6.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_01.png.9fbd7ce4a84444b5871b5cdf808f4599.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_01.png.fd5da9b4335a400cb7424bf715539186.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_01.png.fd947347d7284d03aeaeb64d4b43d679.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_02.png.03be7078d0244e04b9f42f6d870e456b.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_02.png.15c5543e16c448baa5b6ec7111474f15.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_02.png.265f462dfa5b42dbacdca9f960b3e7bc.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_02.png.ba61ba74d78e4979ab053c2fa0ad34e8.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_02.png.cd19bb414e584a8cb38c80fe155a8d11.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_03.png.3c022950540c4d45a19d3369e5b7b6ee.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_03.png.4a40739dd12e4178b2fe35e88d9a5d0d.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_03.png.56a6f773453b4b6e9771103196db0ec9.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_03.png.58fc0c6f55e14da5b0200b731686f817.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_03.png.6abecae6c3764f9a909b2ec64a6e55a3.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_04.png.62ed3cfa0d874b29973985b9e80f0299.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_04.png.9155d208d75d4e3eae9edece0f4a0ee3.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_04.png.9aa10f95e0d54ecc97166e481c71fd25.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_04.png.ba887205a0094efaa17ef2157fed8e16.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_04.png.cd840879867a4f9fa916ce60c7569c31.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_05.png.1c34c11ecd9b4eae9ca6b0ad2dc0be84.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_05.png.213573f2e34447008f942e98b26f5ede.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_05.png.4a5b136e7e83471fab640957d9405688.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_05.png.55d3c052e72a4eafa357b1bab782c3c3.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_05.png.fcb6a6820b534a58b660687e4b7c091d.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_06.png.33db5bcff5bd46fab5ff55cda5feb045.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_06.png.9bc02e52575b44a8bb13f005fd6f53d8.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_06.png.cd34731181f64da593d1ddde8396483a.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_06.png.f7600a294e6943bf81bd35311641eb46.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_06.png.f7a63a5642404297af9c44374332c67f.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_07.png.3452fb2b7639448aaaef09bff667c5cf.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_07.png.3edfd800c31443599c5a347c818bcf88.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_07.png.73cb4f42d7c44680b31473b8a7355424.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_07.png.e685356eb1fd4ccc9898fce6e457f3fe.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_07.png.f0f61b5d7e024ee38ab68e498bd788da.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_08.png.17e6e62effb84a2089f298b45c8f0135.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_08.png.340c8807628a45ba9f7193b50e7b2dd8.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_08.png.ee019a0c7e2448288af7e8f6bae9e742.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_08.png.f459a67bb17b4505b440d4d554b308d9.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_08.png.fae4a31c39f5492a93bcf638beb67941.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_09.png.4788ef008f1049589dce968fafa4972a.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_09.png.7a6004300f534758ae13630a12af76ad.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_09.png.a871848d7e594f0aabedffb04a4ae474.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_09.png.aa01a1d9e18a4387a8f7a6af44478557.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_09.png.d01ffcc7240b4d01afdc2f2c49fbf4b5.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_10.png.26ce2b25d5b2447ab9e28b58bb58b56d.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_10.png.39ac404eab1f4fc8b66bc176956055bb.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_10.png.50991e384bb44f6fab4c3c1a59729bc3.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_10.png.7affad3a5aeb449abe6e800725f031ff.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_10.png.b719ef52cf9b41599075894bcc551eec.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_11.png.380586d9fb4e4edd8a4eeedcaa1b790c.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_11.png.519da45313d64d47abc69dfbebbc31f0.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_11.png.58e136dce2544ec497a0588c71764fef.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_11.png.847cc6b5c6a447c8ba23fc26f9ca86cf.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_11.png.ca7c2f070ae94f82aee69db190d6e376.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_12.png.07073f7e360d440fb9feaa85dd805a36.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_12.png.08c69d046b3e4a7e8a37227072eb2009.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_12.png.eac93bae8c084effb90c32bf8a312493.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_12.png.eb1dbdb6d9194be09a9b1fec7a9d57d9.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_12.png.f461171b74814a628eeffc12793dab21.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_13.png.5bb75b580b814512820ad1fa68f93f6c.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_13.png.5ed45c263d8446acb45e0e1a38266ca2.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_13.png.6cdc5b8fbd3c41aa8c51d54c3d582ead.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_13.png.8255aefa786e4d9fb4921ded6c6c3008.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_13.png.fd6109c469954f4fa57b056697ab0462.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_14.png.07393d362f804a5b87b5686b9b7f294f.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_14.png.20bbe8a015a8481189c7934f23bcb09b.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_14.png.5eb47d6dd7db48cb900244cf47a84bec.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_14.png.6a0e64df323349f9ab47fe99f6a2a24a.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_14.png.d3b518489d1b423d8f46849913e40ef7.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_15.png.2558ce76f7a545dcaebbcd750431fe79.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_15.png.31e411f03673455aa705e3492cdae87a.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_15.png.c8482e3d2a15434da9b8ab07f6adada1.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_15.png.d0188ecd97434497a48bcd222739d8de.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_15.png.d6f8259703324affa17f888ed69ff89f.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_16.png.2e62eedd23424b89acd9972c475cb895.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_16.png.331a6c49993f478891303b241651440b.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_16.png.75a750c16eca472695fde8c34e1dd6e2.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_16.png.8edd919172ea4bb38fa859fada49c626.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_16.png.af9104257a7f48989a5ac5da852b25f0.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_17.png.384427bee27448b8a88d2d89dbb37e29.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_17.png.3cccfbf257b04f7bb2eaa2cd500d10a9.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_17.png.560306409cae4e9f8a01db634c906867.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_17.png.6449b23a70344d5c9422419ed0343b02.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_17.png.98d996e86b224b0b894a19e8da6247a4.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_18.png.08f94c2b3a7149529cd2ee69f46517f9.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_18.png.75d3d3599be84ae191c748bdeced86b8.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_18.png.d0fa344b5e1c46f4b1430a73695c13e5.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_18.png.dd20a52a94ff4f5ebcd7bc56ca90417b.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_18.png.f9ca490eb5954e77b022a8f133547c68.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_19.png.4a6d4e73f68b45bd8d44bbbfe5e25543.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_19.png.5ff34d7336404214a34ad17c714ef6f5.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_19.png.8954201584b44478b9280076336e181d.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_19.png.c65839c6e1b94e7d98be7884bcdff40a.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_19.png.e2cf6872449d43d7b93997727dc29e66.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_20.png.608adaf8a53c44f5946f08b68c7b56f1.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_20.png.8bbfd0ddb48841fd8d12633f7eb9c4a6.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_20.png.a6f7d70d55a64f68bf7edf7f566c7977.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_20.png.f5a915ee86c04d9d8abaedba075eee38.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_20.png.f5e98340114d4853b7fdd0fc509e020b.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_21.png.85e6e124e7fb4b3ba547f30b1b29f33a.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_21.png.93724211c31c40e2a7f6678999215f97.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_21.png.a2bc44bbdc604b95ad6c603d7390f482.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_21.png.cebfce21e9174180ac4e346f15314123.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_21.png.df086e709bd247d3963580a929eb4b9c.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_22.png.0a24ccb21d364c20a04e21a44c4e7974.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_22.png.594360978c4142ceb1f3c8777ac0a415.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_22.png.72f9635212464e229c037e5aef39b004.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_22.png.b81b7f96a93747bd87575637839d52a4.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_22.png.caaf56ddc9d044dba671bd6a9e846179.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_23.png.1d6ce4fc018f43dab19b667dd49f3408.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_23.png.414a4cc31c9e4183907e26391d6380b4.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_23.png.52caf8bdf929469eb5c781e1b0a85398.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_23.png.72102744e86f4cfb900773b75a4caebd.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_23.png.8706a440fe0044b7adc465b46fcca49a.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_24.png.09c0292b4e744408b237f0b914440c35.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_24.png.3a209714ad244629bb73126b27e73003.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_24.png.5ff603fb6c144aa1adfcc36588c5f33e.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_24.png.62c718efd0cf461aa152264b1b4be0d8.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_24.png.b868985ebd344b23b6d3f1a3ab860011.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_25.png.173fdc60009f43329cd6c51ec374aaa3.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_25.png.399e96c3f11d447aa11d4b97121c3904.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_25.png.5408e6897938457da32b7739b14f1a2d.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_25.png.884b22d554144df38dc536064d8a7c80.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_25.png.e6342f6e7c614eab9ebeec3a5a7e145f.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_26.png.2922990559f8488183225850b7011788.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_26.png.4610c4d46c984570b073552e640619ac.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_26.png.5d6a0d03d8dd407ebce0314720c79f37.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_26.png.c3589e19c2d543d9bd4dc60161dad1c8.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_26.png.ed5c89b87de54d57a27aa81134c2d940.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_27.png.1b8cce3c95034e01af90b8b383be23cb.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_27.png.8c091499e9294957ae2b2f6ec12f4f0a.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_27.png.aa8b3735e96949308b99017ea842bdba.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_27.png.aad1776b4c71435fae6e2c65fec2bcde.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_27.png.d2aa6139276f434080e11ec5d0f0b4fb.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_28.png.3f32018c9bab405abbb6d3db5771e777.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_28.png.9eae74e54a7d41729e779113eb8b85d4.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_28.png.bd3ea9ca15984b0eaa06d33327596221.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_28.png.cdd06e3a0eea45dd961444f29738c5c9.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_28.png.e7bd205d6167420d9610cb1d378e24f5.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_29.png.240c87b9038e4445977ecfe41d72aa9a.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_29.png.576538a51fb2483c9c5674666938cd5f.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_29.png.b84e53ea007a4e5db7b1466a88327e02.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_29.png.c07a67441c974a6ebd3ff3729971299b.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_29.png.f211d1be933b45829297fe340d2a182f.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_30.png.4410e561009648da9ff905f4c0b01a28.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_30.png.86b08f612f6a49d1a955b54306bc0d09.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_30.png.a0eeb4363ba14439bddb5549b8e85672.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_30.png.f3d81052c1454330b89f7d15fd332335.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_30.png.fd524aaa766a4410a403413ba6b1e2ae.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_31.png.01a080e08e734681b69020759758aad9.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_31.png.1d65d725691842b1b116b0ea6961852f.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_31.png.22489b37093e48c48f16b7e3b9cf4da6.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_31.png.8daefb77ab294f55813ea460184b7571.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_kids_labeled_31.png.d9d67c1a309b4bc7b2a5a3a43ae222a5.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_01.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_02.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_03.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_04.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_05.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_06.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_07.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_08.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_09.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_10.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_11.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_12.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_13.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_14.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_15.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_16.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_17.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_18.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_19.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_20.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_21.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_22.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_23.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_24.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_25.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_26.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_27.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_28.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_29.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_30.png.tmp.png
+- assets/neli-world/puzzle/Iran/generated/province-shapes/province_vazir_31.png.tmp.png
+- assets/neli-world/rooms/bathroom.png.bolder.tmp.png
+- assets/neli-world/rooms/bathroom.png.normal.tmp.png
+- assets/neli-world/rooms/bathroom.png.soft-premium.tmp.png
+- assets/neli-world/rooms/bathroom.png.tmp.png
+- assets/neli-world/rooms/bedroom.png.bolder.tmp.png
+- assets/neli-world/rooms/bedroom.png.normal.tmp.png
+- assets/neli-world/rooms/bedroom.png.soft-premium.tmp.png
+- assets/neli-world/rooms/bedroom.png.tmp.png
+- assets/neli-world/rooms/brush_teeth_bathroom.png.bolder.tmp.png
+- assets/neli-world/rooms/brush_teeth_bathroom.png.normal.tmp.png
+- assets/neli-world/rooms/brush_teeth_bathroom.png.soft-premium.tmp.png
+- assets/neli-world/rooms/brush_teeth_bathroom.png.tmp.png
+- assets/neli-world/rooms/cooking_table_scene.png.bolder.tmp.png
+- assets/neli-world/rooms/cooking_table_scene.png.normal.tmp.png
+- assets/neli-world/rooms/cooking_table_scene.png.soft-premium.tmp.png
+- assets/neli-world/rooms/cooking_table_scene.png.tmp.png
+- assets/neli-world/rooms/feed_animals_jungle.png.bolder.tmp.png
+- assets/neli-world/rooms/feed_animals_jungle.png.normal.tmp.png
+- assets/neli-world/rooms/feed_animals_jungle.png.soft-premium.tmp.png
+- assets/neli-world/rooms/feed_animals_jungle.png.tmp.png
+- assets/neli-world/rooms/garden.png.bolder.tmp.png
+- assets/neli-world/rooms/garden.png.normal.tmp.png
+- assets/neli-world/rooms/garden.png.soft-premium.tmp.png
+- assets/neli-world/rooms/garden.png.tmp.png
+- assets/neli-world/rooms/kitchen.png.bolder.tmp.png
+- assets/neli-world/rooms/kitchen.png.normal.tmp.png
+- assets/neli-world/rooms/kitchen.png.soft-premium.tmp.png
+- assets/neli-world/rooms/kitchen.png.tmp.png
+- assets/neli-world/rooms/living_room.png.bolder.tmp.png
+- assets/neli-world/rooms/living_room.png.normal.tmp.png
+- assets/neli-world/rooms/living_room.png.soft-premium.tmp.png
+- assets/neli-world/rooms/living_room.png.tmp.png
+- assets/neli-world/rooms/play_room.png.bolder.tmp.png
+- assets/neli-world/rooms/play_room.png.normal.tmp.png
+- assets/neli-world/rooms/play_room.png.soft-premium.tmp.png
+- assets/neli-world/rooms/play_room.png.tmp.png
+- assets/neli-world/rooms/splash_premium_landscape.png.bolder.tmp.png
+- assets/neli-world/rooms/splash_premium_landscape.png.normal.tmp.png
+- assets/neli-world/rooms/splash_premium_landscape.png.soft-premium.tmp.png
+- assets/neli-world/rooms/splash_premium_landscape.png.tmp.png
+- assets/neli-world/rooms/splash_premium_portrait.png.bolder.tmp.png
+- assets/neli-world/rooms/splash_premium_portrait.png.normal.tmp.png
+- assets/neli-world/rooms/splash_premium_portrait.png.soft-premium.tmp.png
+- assets/neli-world/rooms/splash_premium_portrait.png.tmp.png
+- assets/neli-world/rooms/study_room.png.bolder.tmp.png
+- assets/neli-world/rooms/study_room.png.normal.tmp.png
+- assets/neli-world/rooms/study_room.png.soft-premium.tmp.png
+- assets/neli-world/rooms/study_room.png.tmp.png
+- assets/neli-world/rooms/talk_play_room.png.bolder.tmp.png
+- assets/neli-world/rooms/talk_play_room.png.normal.tmp.png
+- assets/neli-world/rooms/talk_play_room.png.soft-premium.tmp.png
+- assets/neli-world/rooms/talk_play_room.png.tmp.png
+
+## QA/preview/debug/contact-sheet images (79)
+
+- assets/neli-world/_before_clean_cutouts/animals/bear.png
+- assets/neli-world/_before_clean_cutouts/animals/cat.png
+- assets/neli-world/_before_clean_cutouts/animals/panda.png
+- assets/neli-world/_before_clean_cutouts/animals/rabbit.png
+- assets/neli-world/_before_full_alpha_pack_repair/ingredients/almond.png
+- assets/neli-world/_before_hq_upscale/animals/bear.png
+- assets/neli-world/_before_hq_upscale/animals/cat.png
+- assets/neli-world/_before_hq_upscale/animals/panda.png
+- assets/neli-world/_before_hq_upscale/animals/rabbit.png
+- assets/neli-world/_preview_used_assets_qa.png
+- assets/neli-world/_preview_used_assets_qa_after_clean.png
+- assets/neli-world/_preview_used_assets_qa_final.png
+- assets/neli-world/_qa_alpha/qa_animals.png
+- assets/neli-world/_qa_alpha/qa_animations.png
+- assets/neli-world/_qa_alpha/qa_bathroom.png
+- assets/neli-world/_qa_alpha/qa_characters.png
+- assets/neli-world/_qa_alpha/qa_clean_animals.png
+- assets/neli-world/_qa_alpha/qa_clean_animations.png
+- assets/neli-world/_qa_alpha/qa_clean_bathroom.png
+- assets/neli-world/_qa_alpha/qa_clean_characters.png
+- assets/neli-world/_qa_alpha/qa_clean_clothes.png
+- assets/neli-world/_qa_alpha/qa_clean_food-flat.png
+- assets/neli-world/_qa_alpha/qa_clean_fruits.png
+- assets/neli-world/_qa_alpha/qa_clean_giraffe-poses-premium.png
+- assets/neli-world/_qa_alpha/qa_clean_giraffe-poses.png
+- assets/neli-world/_qa_alpha/qa_clean_ingredients.png
+- assets/neli-world/_qa_alpha/qa_clean_kitchen.png
+- assets/neli-world/_qa_alpha/qa_clean_persian-foods.png
+- assets/neli-world/_qa_alpha/qa_clean_ui-icons.png
+- assets/neli-world/_qa_alpha/qa_clean_vegetables.png
+- assets/neli-world/_qa_alpha/qa_clothes.png
+- assets/neli-world/_qa_alpha/qa_final_bathroom.png
+- assets/neli-world/_qa_alpha/qa_final_clothes.png
+- assets/neli-world/_qa_alpha/qa_final_ingredients.png
+- assets/neli-world/_qa_alpha/qa_final_kitchen.png
+- assets/neli-world/_qa_alpha/qa_final_ui-icons.png
+- assets/neli-world/_qa_alpha/qa_food-flat.png
+- assets/neli-world/_qa_alpha/qa_fruits.png
+- assets/neli-world/_qa_alpha/qa_giraffe-poses-premium.png
+- assets/neli-world/_qa_alpha/qa_giraffe-poses.png
+- assets/neli-world/_qa_alpha/qa_ingredients.png
+- assets/neli-world/_qa_alpha/qa_kitchen.png
+- assets/neli-world/_qa_alpha/qa_persian-foods.png
+- assets/neli-world/_qa_alpha/qa_referenced_assets.png
+- assets/neli-world/_qa_alpha/qa_referenced_assets_after_repair.png
+- assets/neli-world/_qa_alpha/qa_referenced_assets_full_repair.png
+- assets/neli-world/_qa_alpha/qa_ui-icons.png
+- assets/neli-world/_qa_alpha/qa_ui-icons_after_repair.png
+- assets/neli-world/_qa_alpha/qa_vegetables.png
+- assets/neli-world/alphabet-icons/_contact_sheet.png
+- assets/neli-world/characters/Neli - Copy/01_base_standing_alpha_bbox_debug.png
+- assets/neli-world/characters/Neli - Copy/01_nelly_blink_overlay_alpha_bbox_debug.png
+- assets/neli-world/characters/Neli/01_base_standing_alpha_bbox_debug.png
+- assets/neli-world/characters/Neli/01_nelly_blink_overlay_alpha_bbox_debug.png
+- assets/neli-world/debug-fruit-boxes.jpg
+- assets/neli-world/generated-contact-sheet.jpg
+- assets/neli-world/rooms/_preview_8000px_rooms.png
+- assets/neli-world/rooms/_preview_big_tablet_landscape_quality.png
+- assets/neli-world/rooms/_preview_bold_rooms.png
+- assets/neli-world/rooms/_preview_bolder_rooms.png
+- assets/neli-world/rooms/_preview_fruit_color_tablet_rooms_grid.png
+- assets/neli-world/rooms/_preview_fruit_color_tablet_rooms_orientation.png
+- assets/neli-world/rooms/_preview_full_frame_tablet_variants.png
+- assets/neli-world/rooms/_preview_lingokids_balanced_rooms_grid.png
+- assets/neli-world/rooms/_preview_lingokids_balanced_rooms_orientation.png
+- assets/neli-world/rooms/_preview_lingokids_soft_rooms_grid.png
+- assets/neli-world/rooms/_preview_lingokids_soft_rooms_orientation.png
+- assets/neli-world/rooms/_preview_normal_rooms_grid.png
+- assets/neli-world/rooms/_preview_normal_rooms_orientation.png
+- assets/neli-world/rooms/_preview_orientation_qa.png
+- assets/neli-world/rooms/_preview_scene_room_rebuild.png
+- assets/neli-world/rooms/_preview_simple_talk_room_fix.png
+- assets/neli-world/rooms/_preview_soft_premium_rooms_grid.png
+- assets/neli-world/rooms/_preview_soft_premium_rooms_orientation.png
+- assets/neli-world/rooms/_preview_splash_tablet_layout.png
+- assets/neli-world/rooms/_preview_talk_game_clean_layout.png
+- assets/neli-world/rooms/_preview_talk_game_fix.png
+- assets/neli-world/rooms/_preview_talk_room_fit_fix.png
+- assets/neli-world/split-assets-contact-sheet.jpg
+
+## "Neli - Copy" folder (full duplicate of characters/Neli, never referenced) (54)
+
+- assets/neli-world/characters/Neli - Copy/01_base_standing@2x.png
+- assets/neli-world/characters/Neli - Copy/01_base_standing@4x.png
+- assets/neli-world/characters/Neli - Copy/01_nelly_base.png
+- assets/neli-world/characters/Neli - Copy/01_nelly_base1.png
+- assets/neli-world/characters/Neli - Copy/01_nelly_blink_overlay1.png
+- assets/neli-world/characters/Neli - Copy/02_nelly_big_teeth_brushing.png
+- assets/neli-world/characters/Neli - Copy/02_nelly_wave.png
+- assets/neli-world/characters/Neli - Copy/02_wave_cat_paw@2x.png
+- assets/neli-world/characters/Neli - Copy/02_wave_cat_paw@4x.png
+- assets/neli-world/characters/Neli - Copy/03_nelly_walk.png
+- assets/neli-world/characters/Neli - Copy/03_smile_big_teeth@2x.png
+- assets/neli-world/characters/Neli - Copy/03_smile_big_teeth@4x.png
+- assets/neli-world/characters/Neli - Copy/04_nelly_run_front.png
+- assets/neli-world/characters/Neli - Copy/04_smile_big_teeth_toothbrush@2x.png
+- assets/neli-world/characters/Neli - Copy/04_smile_big_teeth_toothbrush@4x.png
+- assets/neli-world/characters/Neli - Copy/05_nelly_run_side.png
+- assets/neli-world/characters/Neli - Copy/05_walk@2x.png
+- assets/neli-world/characters/Neli - Copy/05_walk@4x.png
+- assets/neli-world/characters/Neli - Copy/06_nelly_jump.png
+- assets/neli-world/characters/Neli - Copy/06_run_front@2x.png
+- assets/neli-world/characters/Neli - Copy/06_run_front@4x.png
+- assets/neli-world/characters/Neli - Copy/07_nelly_dance.png
+- assets/neli-world/characters/Neli - Copy/07_run_side@2x.png
+- assets/neli-world/characters/Neli - Copy/07_run_side@4x.png
+- assets/neli-world/characters/Neli - Copy/08_jump@2x.png
+- assets/neli-world/characters/Neli - Copy/08_jump@4x.png
+- assets/neli-world/characters/Neli - Copy/08_nelly_excited.png
+- assets/neli-world/characters/Neli - Copy/09_dance@2x.png
+- assets/neli-world/characters/Neli - Copy/09_dance@4x.png
+- assets/neli-world/characters/Neli - Copy/09_nelly_sitting_floor.png
+- assets/neli-world/characters/Neli - Copy/10_excited@2x.png
+- assets/neli-world/characters/Neli - Copy/10_excited@4x.png
+- assets/neli-world/characters/Neli - Copy/11_sitting_floor@2x.png
+- assets/neli-world/characters/Neli - Copy/11_sitting_floor@4x.png
+- assets/neli-world/characters/Neli - Copy/12_sleep_left_no_bed@2x.png
+- assets/neli-world/characters/Neli - Copy/12_sleep_left_no_bed@4x.png
+- assets/neli-world/characters/Neli - Copy/13_sleep_right_no_bed@2x.png
+- assets/neli-world/characters/Neli - Copy/13_sleep_right_no_bed@4x.png
+- assets/neli-world/characters/Neli - Copy/14_sleep_blanket_pillow_left@2x.png
+- assets/neli-world/characters/Neli - Copy/14_sleep_blanket_pillow_left@4x.png
+- assets/neli-world/characters/Neli - Copy/15_sleep_blanket_pillow_right@2x.png
+- assets/neli-world/characters/Neli - Copy/15_sleep_blanket_pillow_right@4x.png
+- assets/neli-world/characters/Neli - Copy/17_cooking - Copy.png
+- assets/neli-world/characters/Neli - Copy/17_cooking1.png
+- assets/neli-world/characters/Neli - Copy/17_cooking@2x - Copy.png
+- assets/neli-world/characters/Neli - Copy/17_cooking@2x.png
+- assets/neli-world/characters/Neli - Copy/17_cooking@4x - Copy.png
+- assets/neli-world/characters/Neli - Copy/17_cooking@4x.png
+- assets/neli-world/characters/Neli - Copy/17_cooking_clean - Copy.png
+- assets/neli-world/characters/Neli - Copy/17_cooking_clean1.png
+- assets/neli-world/characters/Neli - Copy/18_reading_book@2x.png
+- assets/neli-world/characters/Neli - Copy/18_reading_book@4x.png
+- assets/neli-world/characters/Neli - Copy/nelly_resting.png
+- assets/neli-world/characters/Neli - Copy/sleepy_purple_cat_with_rainbow_curls.png
+
+## Unused resolution/scale duplicates (e.g. @2x/@4x, _512/_1536, _base) where another size of the same image IS used (285)
+
+- assets/neli-world/backgrounds/Bedroom-dressup/landscape_16x10_2560x1600.webp
+- assets/neli-world/backgrounds/Bedroom-dressup/landscape_4x3_2732x2048.webp
+- assets/neli-world/backgrounds/Jungle/jungle_landscape_1280x720.webp
+- assets/neli-world/backgrounds/Jungle/jungle_landscape_1920x1080.webp
+- assets/neli-world/backgrounds/Jungle/jungle_landscape_1920x1200.webp
+- assets/neli-world/backgrounds/Jungle/jungle_landscape_2560x1440.webp
+- assets/neli-world/backgrounds/Jungle/jungle_landscape_2560x1600.webp
+- assets/neli-world/backgrounds/Jungle/jungle_phone_portrait_1440x2560.webp
+- assets/neli-world/backgrounds/Jungle/jungle_tablet_landscape_2048x1536.webp
+- assets/neli-world/backgrounds/Jungle/jungle_tablet_portrait_1536x2048.webp
+- assets/neli-world/backgrounds/Kitchen/kitchen_landscape_1920x1200.webp
+- assets/neli-world/backgrounds/Kitchen/kitchen_landscape_2560x1600.webp
+- assets/neli-world/backgrounds/Kitchen/kitchen_landscape_2732x2048.webp
+- assets/neli-world/characters/Lila/lila_big_smile@4x.png
+- assets/neli-world/characters/Lila/lila_cooking@4x.png
+- assets/neli-world/characters/Lila/lila_jumping@4x.png
+- assets/neli-world/characters/Lila/lila_reading@4x.png
+- assets/neli-world/characters/Lila/lila_running@4x.png
+- assets/neli-world/characters/Lila/lila_sitting@4x.png
+- assets/neli-world/characters/Lila/lila_sleeping@4x.png
+- assets/neli-world/characters/Lila/lila_standing@4x.png
+- assets/neli-world/characters/Lila/lila_thinking@4x.png
+- assets/neli-world/characters/Lila/lila_waving@4x.png
+- assets/neli-world/characters/Neli/01_base_standing@2x.png
+- assets/neli-world/characters/Neli/01_base_standing@4x.png
+- assets/neli-world/characters/Neli/01_base_standing_2x.png
+- assets/neli-world/characters/Neli/01_base_standing_4x.png
+- assets/neli-world/characters/Neli/01_base_standing_base.png
+- assets/neli-world/characters/Neli/02_wave_cat_paw@2x.png
+- assets/neli-world/characters/Neli/02_wave_cat_paw@4x.png
+- assets/neli-world/characters/Neli/03_smile_big_teeth@2x.png
+- assets/neli-world/characters/Neli/03_smile_big_teeth@4x.png
+- assets/neli-world/characters/Neli/04_smile_big_teeth_toothbrush@2x.png
+- assets/neli-world/characters/Neli/04_smile_big_teeth_toothbrush@4x.png
+- assets/neli-world/characters/Neli/05_walk@2x.png
+- assets/neli-world/characters/Neli/05_walk@4x.png
+- assets/neli-world/characters/Neli/06_run_front@2x.png
+- assets/neli-world/characters/Neli/06_run_front@4x.png
+- assets/neli-world/characters/Neli/07_run_side@2x.png
+- assets/neli-world/characters/Neli/07_run_side@4x.png
+- assets/neli-world/characters/Neli/08_jump@2x.png
+- assets/neli-world/characters/Neli/08_jump@4x.png
+- assets/neli-world/characters/Neli/09_dance@2x.png
+- assets/neli-world/characters/Neli/09_dance@4x.png
+- assets/neli-world/characters/Neli/10_excited@2x.png
+- assets/neli-world/characters/Neli/10_excited@4x.png
+- assets/neli-world/characters/Neli/11_sitting_floor@2x.png
+- assets/neli-world/characters/Neli/11_sitting_floor@4x.png
+- assets/neli-world/characters/Neli/12_sleep_left_no_bed@2x.png
+- assets/neli-world/characters/Neli/12_sleep_left_no_bed@4x.png
+- assets/neli-world/characters/Neli/13_sleep_right_no_bed@2x.png
+- assets/neli-world/characters/Neli/13_sleep_right_no_bed@4x.png
+- assets/neli-world/characters/Neli/14_sleep_blanket_pillow_left@2x.png
+- assets/neli-world/characters/Neli/14_sleep_blanket_pillow_left@4x.png
+- assets/neli-world/characters/Neli/15_sleep_blanket_pillow_right@2x.png
+- assets/neli-world/characters/Neli/15_sleep_blanket_pillow_right@4x.png
+- assets/neli-world/characters/Neli/17_cooking_clean - Copy.png
+- assets/neli-world/characters/Neli/18_reading_book@2x.png
+- assets/neli-world/characters/Neli/18_reading_book@4x.png
+- assets/neli-world/characters/Robo Boombo/base_happy_2x_1024x1024.png
+- assets/neli-world/characters/Robo Boombo/base_happy_4x_2048x2048.png
+- assets/neli-world/characters/Robo Boombo/big_teeth_smile_2x_1024x1024.png
+- assets/neli-world/characters/Robo Boombo/big_teeth_smile_4x_2048x2048.png
+- assets/neli-world/characters/Robo Boombo/brushing_teeth_2x_1024x1024.png
+- assets/neli-world/characters/Robo Boombo/brushing_teeth_4x_2048x2048.png
+- assets/neli-world/characters/Robo Boombo/happy_waving_2x_1024x1024.png
+- assets/neli-world/characters/Robo Boombo/happy_waving_4x_2048x2048.png
+- assets/neli-world/characters/Robo Boombo/jumping_2x_1024x1024.png
+- assets/neli-world/characters/Robo Boombo/jumping_4x_2048x2048.png
+- assets/neli-world/characters/Robo Boombo/reading_book_2x_1024x1024.png
+- assets/neli-world/characters/Robo Boombo/reading_book_4x_2048x2048.png
+- assets/neli-world/characters/Robo Boombo/running_2x_1024x1024.png
+- assets/neli-world/characters/Robo Boombo/running_4x_2048x2048.png
+- assets/neli-world/characters/Robo Boombo/sad_2x_1024x1024.png
+- assets/neli-world/characters/Robo Boombo/sad_4x_2048x2048.png
+- assets/neli-world/characters/Robo Boombo/sitting_2x_1024x1024.png
+- assets/neli-world/characters/Robo Boombo/sitting_4x_2048x2048.png
+- assets/neli-world/characters/Robo Boombo/sleeping_2x_1024x1024.png
+- assets/neli-world/characters/Robo Boombo/sleeping_4x_2048x2048.png
+- assets/neli-world/characters/Robo Boombo/thinking_2x_1024x1024.png
+- assets/neli-world/characters/Robo Boombo/thinking_4x_2048x2048.png
+- assets/neli-world/characters/Robo Boombo/walking_2x_1024x1024.png
+- assets/neli-world/characters/Robo Boombo/walking_4x_2048x2048.png
+- assets/neli-world/fruits/apple_1536.webp
+- assets/neli-world/fruits/apple_512.webp
+- assets/neli-world/fruits/apricot_1536.webp
+- assets/neli-world/fruits/apricot_512.webp
+- assets/neli-world/fruits/banana_1536.webp
+- assets/neli-world/fruits/banana_512.webp
+- assets/neli-world/fruits/blueberries_1536.webp
+- assets/neli-world/fruits/blueberries_512.webp
+- assets/neli-world/fruits/cherries_1536.webp
+- assets/neli-world/fruits/cherries_512.webp
+- assets/neli-world/fruits/coconut_half_1536.webp
+- assets/neli-world/fruits/coconut_half_512.webp
+- assets/neli-world/fruits/fig_1536.webp
+- assets/neli-world/fruits/fig_512.webp
+- assets/neli-world/fruits/grapes_1536.webp
+- assets/neli-world/fruits/grapes_512.webp
+- assets/neli-world/fruits/kiwi_1536.webp
+- assets/neli-world/fruits/kiwi_512.webp
+- assets/neli-world/fruits/lime_1536.webp
+- assets/neli-world/fruits/lime_512.webp
+- assets/neli-world/fruits/mango_1536.webp
+- assets/neli-world/fruits/mango_512.webp
+- assets/neli-world/fruits/orange_1536.webp
+- assets/neli-world/fruits/orange_512.webp
+- assets/neli-world/fruits/peach_1536.webp
+- assets/neli-world/fruits/peach_512.webp
+- assets/neli-world/fruits/pear_1536.webp
+- assets/neli-world/fruits/pear_512.webp
+- assets/neli-world/fruits/pineapple_1536.webp
+- assets/neli-world/fruits/pineapple_512.webp
+- assets/neli-world/fruits/plum_1536.webp
+- assets/neli-world/fruits/plum_512.webp
+- assets/neli-world/fruits/pomegranate_1536.webp
+- assets/neli-world/fruits/pomegranate_512.webp
+- assets/neli-world/fruits/raspberry_1536.webp
+- assets/neli-world/fruits/raspberry_512.webp
+- assets/neli-world/fruits/strawberry_1536.webp
+- assets/neli-world/fruits/strawberry_512.webp
+- assets/neli-world/fruits/watermelon_slice_1536.webp
+- assets/neli-world/fruits/watermelon_slice_512.webp
+- assets/neli-world/ingredients/beans@2x.webp
+- assets/neli-world/ingredients/beans@4x.webp
+- assets/neli-world/ingredients/cheese@2x.webp
+- assets/neli-world/ingredients/cheese@4x.webp
+- assets/neli-world/ingredients/chickpea@2x.webp
+- assets/neli-world/ingredients/chickpea@4x.webp
+- assets/neli-world/ingredients/cooking_oil@2x.webp
+- assets/neli-world/ingredients/cooking_oil@4x.webp
+- assets/neli-world/ingredients/cut_raw_beef_for_stew@2x.webp
+- assets/neli-world/ingredients/cut_raw_beef_for_stew@4x.webp
+- assets/neli-world/ingredients/egg_fried@2x.webp
+- assets/neli-world/ingredients/egg_fried@4x.webp
+- assets/neli-world/ingredients/egg_whole@2x.webp
+- assets/neli-world/ingredients/egg_whole@4x.webp
+- assets/neli-world/ingredients/fillet_chicken_raw@2x.webp
+- assets/neli-world/ingredients/fillet_chicken_raw@4x.webp
+- assets/neli-world/ingredients/grape_leaves@2x.webp
+- assets/neli-world/ingredients/grape_leaves@4x.webp
+- assets/neli-world/ingredients/ground_beef_raw@2x.webp
+- assets/neli-world/ingredients/ground_beef_raw@4x.webp
+- assets/neli-world/ingredients/herbs@2x.webp
+- assets/neli-world/ingredients/herbs@4x.webp
+- assets/neli-world/ingredients/jambon@2x.webp
+- assets/neli-world/ingredients/jambon@4x.webp
+- assets/neli-world/ingredients/kalam@2x.webp
+- assets/neli-world/ingredients/kalam@4x.webp
+- assets/neli-world/ingredients/lappeh@2x.webp
+- assets/neli-world/ingredients/lappeh@4x.webp
+- assets/neli-world/ingredients/lemon_slice@2x.webp
+- assets/neli-world/ingredients/lemon_slice@4x.webp
+- assets/neli-world/ingredients/lentils@2x.webp
+- assets/neli-world/ingredients/lentils@4x.webp
+- assets/neli-world/ingredients/olive@2x.webp
+- assets/neli-world/ingredients/olive@4x.webp
+- assets/neli-world/ingredients/pizza_bread@2x.webp
+- assets/neli-world/ingredients/pizza_bread@4x.webp
+- assets/neli-world/ingredients/pizza_cheese@2x.webp
+- assets/neli-world/ingredients/pizza_cheese@4x.webp
+- assets/neli-world/ingredients/raw_pasta@2x.webp
+- assets/neli-world/ingredients/raw_pasta@4x.webp
+- assets/neli-world/ingredients/reshteh_ash_raw@2x.webp
+- assets/neli-world/ingredients/reshteh_ash_raw@4x.webp
+- assets/neli-world/ingredients/rice@2x.webp
+- assets/neli-world/ingredients/rice@4x.webp
+- assets/neli-world/ingredients/saffron@2x.webp
+- assets/neli-world/ingredients/saffron@4x.webp
+- assets/neli-world/ingredients/salad_shirazi@2x.webp
+- assets/neli-world/ingredients/salad_shirazi@4x.webp
+- assets/neli-world/ingredients/salt.png
+- assets/neli-world/ingredients/salt@2x.webp
+- assets/neli-world/ingredients/salt@4x.webp
+- assets/neli-world/ingredients/somagh@2x.webp
+- assets/neli-world/ingredients/somagh@4x.webp
+- assets/neli-world/ingredients/walnuts@2x.webp
+- assets/neli-world/ingredients/walnuts@4x.webp
+- assets/neli-world/ingredients/water@2x.webp
+- assets/neli-world/ingredients/water@4x.webp
+- assets/neli-world/ingredients/yogurt@2x.webp
+- assets/neli-world/ingredients/yogurt@4x.webp
+- assets/neli-world/ingredients/zereshk@2x.webp
+- assets/neli-world/ingredients/zereshk@4x.webp
+- assets/neli-world/persian-foods/ash_reshteh@2x.png
+- assets/neli-world/persian-foods/ash_reshteh@2x.webp
+- assets/neli-world/persian-foods/ash_reshteh@4x.png
+- assets/neli-world/persian-foods/ash_reshteh@4x.webp
+- assets/neli-world/persian-foods/dolmeh@2x.png
+- assets/neli-world/persian-foods/dolmeh@2x.webp
+- assets/neli-world/persian-foods/dolmeh@4x.png
+- assets/neli-world/persian-foods/dolmeh@4x.webp
+- assets/neli-world/persian-foods/gheimeh@2x.png
+- assets/neli-world/persian-foods/gheimeh@2x.webp
+- assets/neli-world/persian-foods/gheimeh@4x.png
+- assets/neli-world/persian-foods/gheimeh@4x.webp
+- assets/neli-world/persian-foods/ghormeh_sabzi_bowl@2x.webp
+- assets/neli-world/persian-foods/ghormeh_sabzi_bowl@4x.webp
+- assets/neli-world/persian-foods/jooje_kebab.png
+- assets/neli-world/persian-foods/jooje_kebab@2x.png
+- assets/neli-world/persian-foods/jooje_kebab@2x.webp
+- assets/neli-world/persian-foods/jooje_kebab@4x.png
+- assets/neli-world/persian-foods/jooje_kebab@4x.webp
+- assets/neli-world/persian-foods/kalam_polo.png
+- assets/neli-world/persian-foods/kalam_polo@2x.png
+- assets/neli-world/persian-foods/kalam_polo@2x.webp
+- assets/neli-world/persian-foods/kalam_polo@4x.png
+- assets/neli-world/persian-foods/kalam_polo@4x.webp
+- assets/neli-world/persian-foods/kebab@2x.png
+- assets/neli-world/persian-foods/kebab@2x.webp
+- assets/neli-world/persian-foods/kebab@4x.png
+- assets/neli-world/persian-foods/kebab@4x.webp
+- assets/neli-world/persian-foods/kuku_sabzi@2x.webp
+- assets/neli-world/persian-foods/kuku_sabzi@4x.webp
+- assets/neli-world/persian-foods/mast_o_khiar_bowl@2x.webp
+- assets/neli-world/persian-foods/mast_o_khiar_bowl@4x.webp
+- assets/neli-world/persian-foods/omelette.png
+- assets/neli-world/persian-foods/omelette@2x.png
+- assets/neli-world/persian-foods/omelette@2x.webp
+- assets/neli-world/persian-foods/omelette@4x.png
+- assets/neli-world/persian-foods/omelette@4x.webp
+- assets/neli-world/persian-foods/pizza@2x.png
+- assets/neli-world/persian-foods/pizza@2x.webp
+- assets/neli-world/persian-foods/pizza@4x.png
+- assets/neli-world/persian-foods/pizza@4x.webp
+- assets/neli-world/persian-foods/ready_pasta_dish@2x.webp
+- assets/neli-world/persian-foods/ready_pasta_dish@4x.webp
+- assets/neli-world/persian-foods/sabzi_polo_ba_mahi.png
+- assets/neli-world/persian-foods/sabzi_polo_ba_mahi@2x.png
+- assets/neli-world/persian-foods/sabzi_polo_ba_mahi@2x.webp
+- assets/neli-world/persian-foods/sabzi_polo_ba_mahi@4x.png
+- assets/neli-world/persian-foods/sabzi_polo_ba_mahi@4x.webp
+- assets/neli-world/persian-foods/tahchin@2x.png
+- assets/neli-world/persian-foods/tahchin@2x.webp
+- assets/neli-world/persian-foods/tahchin@4x.png
+- assets/neli-world/persian-foods/tahchin@4x.webp
+- assets/neli-world/persian-foods/zereshk_polo@2x.png
+- assets/neli-world/persian-foods/zereshk_polo@2x.webp
+- assets/neli-world/persian-foods/zereshk_polo@4x.png
+- assets/neli-world/persian-foods/zereshk_polo@4x.webp
+- assets/neli-world/persian-foods/zereshk_polo_ba_morgh@2x.webp
+- assets/neli-world/persian-foods/zereshk_polo_ba_morgh@4x.webp
+- assets/neli-world/puzzle/Iran/generated/iran_kids_placeholder_cropped_base.png
+- assets/neli-world/ui-icons/toy_wagon_transparent_2048.webp
+- assets/neli-world/ui-icons/toy_wagon_transparent_4096.webp
+- assets/neli-world/vegetables/bell_pepper@2x.webp
+- assets/neli-world/vegetables/bell_pepper@4x.webp
+- assets/neli-world/vegetables/broccoli@2x.webp
+- assets/neli-world/vegetables/broccoli@4x.webp
+- assets/neli-world/vegetables/cabbage@2x.webp
+- assets/neli-world/vegetables/cabbage@4x.webp
+- assets/neli-world/vegetables/carrot@2x.webp
+- assets/neli-world/vegetables/carrot@4x.webp
+- assets/neli-world/vegetables/cauliflower@2x.webp
+- assets/neli-world/vegetables/cauliflower@4x.webp
+- assets/neli-world/vegetables/corn@2x.webp
+- assets/neli-world/vegetables/corn@4x.webp
+- assets/neli-world/vegetables/cucumber@2x.webp
+- assets/neli-world/vegetables/cucumber@4x.webp
+- assets/neli-world/vegetables/eggplant@2x.webp
+- assets/neli-world/vegetables/eggplant@4x.webp
+- assets/neli-world/vegetables/garlic@2x.webp
+- assets/neli-world/vegetables/garlic@4x.webp
+- assets/neli-world/vegetables/lettuce@2x.webp
+- assets/neli-world/vegetables/lettuce@4x.webp
+- assets/neli-world/vegetables/mushroom@2x.webp
+- assets/neli-world/vegetables/mushroom@4x.webp
+- assets/neli-world/vegetables/onion@2x.webp
+- assets/neli-world/vegetables/onion@4x.webp
+- assets/neli-world/vegetables/parsley@2x.webp
+- assets/neli-world/vegetables/parsley@4x.webp
+- assets/neli-world/vegetables/peas@2x.webp
+- assets/neli-world/vegetables/peas@4x.webp
+- assets/neli-world/vegetables/potato@2x.webp
+- assets/neli-world/vegetables/potato@4x.webp
+- assets/neli-world/vegetables/pumpkin@2x.webp
+- assets/neli-world/vegetables/pumpkin@4x.webp
+- assets/neli-world/vegetables/radish@2x.webp
+- assets/neli-world/vegetables/radish@4x.webp
+- assets/neli-world/vegetables/spinach@2x.webp
+- assets/neli-world/vegetables/spinach@4x.webp
+- assets/neli-world/vegetables/tomato@2x.webp
+- assets/neli-world/vegetables/tomato@4x.webp
+- assets/neli-world/vegetables/zucchini@2x.webp
+- assets/neli-world/vegetables/zucchini@4x.webp
+
+## Standalone / legacy files with no reference found anywhere — please review before deleting (172)
+
+**assets/** (1)
+- favicon.png
+
+**assets/characters/** (1)
+- giraffe.png
+
+**assets/neli-world/** (1)
+- key-assets-contact.jpg
+
+**assets/neli-world/alphabet-icons/** (2)
+- frog.png
+- jellyfish.png
+
+**assets/neli-world/animations/giraffe/** (1)
+- _source_animation_sheet.png
+
+**assets/neli-world/animations/neli/** (5)
+- _source_animation_sheet.png
+- talk_blink_cropped.png
+- talk_closed_cropped.png
+- talk_open_cropped.png
+- tmp_bitmap_test.png
+
+**assets/neli-world/backgrounds/Bathub/** (5)
+- bath_bathroom_scene_master_8000x4500_app_webp_q95.webp
+- bath_bathroom_scene_phone_2796x1290_app_webp_q95.webp
+- bath_bathroom_scene_premium_4096x2304_app_webp_q95.webp
+- bath_bathroom_scene_tablet_2732x2048_app_webp_q95.webp
+- bath_bathroom_scene_universal_3840x2160_app_webp_q95.webp
+
+**assets/neli-world/backgrounds/Bedroom1/** (10)
+- kids_bedroom_final_master_8000x4500_app_webp_q95.webp
+- kids_bedroom_final_phone_2796x1290_app_webp_q95.webp
+- kids_bedroom_final_premium_4096x2304_app_webp_q95.webp
+- kids_bedroom_final_tablet_2732x2048_app_webp_q95.webp
+- kids_bedroom_final_universal_3840x2160_app_webp_q95.webp
+- kids_bedroom_v2_master_8000x4500_app_webp_q95.webp
+- kids_bedroom_v2_phone_2796x1290_app_webp_q95.webp
+- kids_bedroom_v2_premium_4096x2304_app_webp_q95.webp
+- kids_bedroom_v2_tablet_2732x2048_app_webp_q95.webp
+- kids_bedroom_v2_universal_3840x2160_app_webp_q95.webp
+
+**assets/neli-world/backgrounds/Kitchen/** (10)
+- bright_and_cheerful_kitchen_interior_master_8000x4500_app_webp_q95.webp
+- bright_and_cheerful_kitchen_interior_phone_2796x1290_app_webp_q95.webp
+- bright_and_cheerful_kitchen_interior_premium_4096x2304_app_webp_q95.webp
+- bright_and_cheerful_kitchen_interior_tablet_2732x2048_app_webp_q95.webp
+- bright_and_cheerful_kitchen_interior_universal_3840x2160_app_webp_q95.webp
+- colorful_and_cozy_kitchen_interior_master_8000x4500_app_webp_q95.webp
+- colorful_and_cozy_kitchen_interior_phone_2796x1290_app_webp_q95.webp
+- colorful_and_cozy_kitchen_interior_premium_4096x2304_app_webp_q95.webp
+- colorful_and_cozy_kitchen_interior_tablet_2732x2048_app_webp_q95.webp
+- colorful_and_cozy_kitchen_interior_universal_3840x2160_app_webp_q95.webp
+
+**assets/neli-world/characters/** (3)
+- ChatGPT Image Jun 4, 2026, 08_37_01 AM.png
+- ChatGPT Image May 5, 2026, 11_44_13 AM.png
+- ChatGPT Image May 5, 2026, 12_23_13 PM.png
+
+**assets/neli-world/characters/Lila/** (1)
+- lila_close_eyelid.png
+
+**assets/neli-world/characters/Neli/** (45)
+- 01_nelly_base.png
+- 01_nelly_base1.png
+- 01_nelly_blink_overlay1.png
+- 02_nelli_big_teeth_smile_2x.png
+- 02_nelli_big_teeth_smile_4x.png
+- 02_nelli_big_teeth_smile_base.png
+- 02_nelly_big_teeth_brushing.png
+- 02_nelly_wave.png
+- 03_brushing_teeth_2x.png
+- 03_brushing_teeth_4x.png
+- 03_brushing_teeth_base.png
+- 03_nelly_walk.png
+- 04_dancing_2x.png
+- 04_dancing_4x.png
+- 04_dancing_base.png
+- 04_nelly_run_front.png
+- 05_cooking_chef_2x.png
+- 05_cooking_chef_4x.png
+- 05_cooking_chef_base.png
+- 05_nelly_run_side.png
+- 06_nelly_jump.png
+- 06_reading_book_2x.png
+- 06_reading_book_4x.png
+- 06_reading_book_base.png
+- 07_nelly_dance.png
+- 07_sitting_2x.png
+- 07_sitting_4x.png
+- 07_sitting_base.png
+- 08_nelly_excited.png
+- 08_sleeping_side_2x.png
+- 08_sleeping_side_4x.png
+- 08_sleeping_side_base.png
+- 09_nelly_sitting_floor.png
+- 09_sleeping_in_bed_2x.png
+- 09_sleeping_in_bed_4x.png
+- 09_sleeping_in_bed_base.png
+- 17_cooking - Copy.png
+- 17_cooking1.png
+- 17_cooking@2x - Copy.png
+- 17_cooking@2x.png
+- 17_cooking@4x - Copy.png
+- 17_cooking@4x.png
+- 17_cooking_clean1.png
+- nelly_resting.png
+- sleepy_purple_cat_with_rainbow_curls.png
+
+**assets/neli-world/characters/neli-poses-premium/** (1)
+- _source_neli_pose_sheet.png
+
+**assets/neli-world/food-flat/** (4)
+- egg.png
+- mast.png
+- olive.png
+- salt.png
+
+**assets/neli-world/giraffe-poses/** (1)
+- brushing_premium.png
+
+**assets/neli-world/giraffe-poses-premium/** (2)
+- _source_giraffe_pose_sheet.png
+- running_laughing.png
+
+**assets/neli-world/painting/** (1)
+- painting_card_bunny_transparent.png
+
+**assets/neli-world/painting/line-overlays/** (2)
+- painting_card_bunny_outline.png
+- painting_card_bunny_transparent_outline.png
+
+**assets/neli-world/persian-foods/** (3)
+- dolme.png
+- ghorme_sabzi.png
+- jooje.png
+
+**assets/neli-world/puzzle/Iran/generated/** (11)
+- iran_kids_placeholder_3840x2160_base.png
+- iran_kids_placeholder_3840x2160_labeled.png
+- iran_names_placeholder_3840x2160.png
+- iran_names_placeholder_cropped.png
+- iran_outline_landscape_3840x2160.png
+- iran_pieces_contact.jpg
+- large_color_components.jpg
+- province_shapes_contact.jpg
+- province_shapes_contact_v2.jpg
+- province_shapes_contact_v3.jpg
+- province_vazir_contact.jpg
+
+**assets/neli-world/puzzle/Iran/generated/province-shapes/** (32)
+- province_full_01.png
+- province_full_02.png
+- province_full_03.png
+- province_full_04.png
+- province_full_05.png
+- province_full_06.png
+- province_full_07.png
+- province_full_08.png
+- province_full_09.png
+- province_full_10.png
+- province_full_11.png
+- province_full_12.png
+- province_full_13.png
+- province_full_14.png
+- province_full_15.png
+- province_full_16.png
+- province_full_17.png
+- province_full_18.png
+- province_full_19.png
+- province_full_20.png
+- province_full_21.png
+- province_full_22.png
+- province_full_23.png
+- province_full_24.png
+- province_full_25.png
+- province_full_26.png
+- province_full_27.png
+- province_full_28.png
+- province_full_29.png
+- province_full_30.png
+- province_full_31.png
+- province_kids_labeled_01.test.png
+
+**assets/neli-world/puzzle/Solarsystem/** (4)
+- solar_system_original_1535x1024.webp
+- solarsystem-.png
+- solarsystem1.png
+- solarsystem1@2x.png
+
+**assets/neli-world/puzzle/Solarsystem/planets/** (3)
+- plotu.png
+- pluto_clean.png
+- sun.png
+
+**assets/neli-world/rooms/** (16)
+- bathroom.png.png
+- bedroom.png.png
+- bedroom.webp
+- bedroom1.png
+- bedroom_candidate_01.png
+- brush_teeth_bathroom.png.png
+- cooking_table_scene.png.png
+- feed_animals_jungle.png.png
+- garden.png.png
+- kitchen.png.png
+- living_room.png.png
+- play_room.png.png
+- splash_premium_landscape.png.png
+- splash_premium_portrait.png.png
+- study_room.png.png
+- talk_play_room.png.png
+
+**assets/neli-world/ui-icons/** (7)
+- brush_large.png
+- brush_medium.png
+- brush_small.png
+- toy_wagon_transparent_original.webp
+- trainhead_no_hooks.png
+- ui-corrected-contact.jpg
+- ui-current-contact.jpg

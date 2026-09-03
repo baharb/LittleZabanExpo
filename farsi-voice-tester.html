@@ -1,0 +1,280 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Farsi Voice Tester</title>
+  <style>
+    :root {
+      --bg: #f6f8fc;
+      --panel: #ffffff;
+      --text: #162033;
+      --muted: #667085;
+      --primary: #5b5bd6;
+      --primary-2: #2f80ed;
+      --border: #d9e0ea;
+      --ok: #1aa36f;
+      --danger: #d92d20;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Vazirmatn, Tahoma, Arial, sans-serif;
+      background: linear-gradient(180deg, #eef3ff 0%, #f7f9fc 100%);
+      color: var(--text);
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    .hero { display: grid; gap: 10px; margin-bottom: 16px; }
+    h1 { margin: 0; font-size: 28px; line-height: 1.2; }
+    .sub { margin: 0; color: var(--muted); line-height: 1.65; }
+    .note {
+      background: #fff7d6; border: 1px solid #f0d77d; color: #735b00;
+      padding: 12px 14px; border-radius: 14px; line-height: 1.7;
+    }
+    .grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px; }
+    .card {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(17, 24, 39, 0.06); padding: 16px;
+    }
+    .card h2 { margin: 0 0 12px; font-size: 18px; }
+    label { display: block; margin: 12px 0 6px; font-weight: 600; font-size: 14px; }
+    input, select, textarea, button { font: inherit; }
+    select, textarea {
+      width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
+      background: #fff; color: var(--text); outline: none;
+    }
+    textarea {
+      min-height: 220px; resize: vertical; line-height: 1.8; direction: rtl;
+    }
+    select:focus, textarea:focus {
+      border-color: var(--primary-2); box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.12);
+    }
+    .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    button {
+      border: 0; border-radius: 12px; padding: 11px 15px; font-weight: 700; cursor: pointer;
+    }
+    .primary { background: linear-gradient(135deg, var(--primary), var(--primary-2)); color: white; }
+    .secondary { background: #eef2ff; color: #27344d; }
+    .ghost { background: #f3f4f6; color: #27344d; }
+    .danger { background: #ffe4e1; color: var(--danger); }
+    .status {
+      margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: #f8fafc;
+      border: 1px solid var(--border); color: var(--muted); line-height: 1.7; white-space: pre-wrap;
+    }
+    .samples { display: grid; gap: 10px; }
+    .sample {
+      border: 1px solid var(--border); border-radius: 14px; padding: 12px; display: grid; gap: 8px; background: #fff;
+    }
+    .sample-head { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .sample-name { font-weight: 700; }
+    .links { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .mini { color: var(--muted); font-size: 13px; }
+    .voice-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .voice-chip {
+      border: 1px solid var(--border); border-radius: 999px; padding: 8px 10px; background: #fff;
+      display: flex; justify-content: space-between; gap: 8px; align-items: center; cursor: pointer;
+    }
+    .voice-chip.active { border-color: var(--primary-2); box-shadow: 0 0 0 3px rgba(47,128,237,0.10); }
+    .voice-chip span { font-size: 13px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .voice-list { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>Farsi Voice Tester</h1>
+      <p class="sub">No API key needed. This version uses your browser or device speech engine so you can preview the Persian script right away.</p>
+      <div class="note">
+        If your browser has a Persian voice installed, choose it below. If not, you can still test with the available system voices. On some devices the Persian accent quality depends on the OS voices installed.
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Speak text</h2>
+
+        <label for="voice">Browser voice</label>
+        <select id="voice"></select>
+        <div class="mini" style="margin-top:8px;">Tip: look for voices that say Persian / Farsi / fa if your device has them.</div>
+
+        <div class="row">
+          <div>
+            <label for="rate">Rate</label>
+            <select id="rate">
+              <option value="0.8">0.8</option>
+              <option value="0.9">0.9</option>
+              <option value="1" selected>1.0</option>
+              <option value="1.05">1.05</option>
+              <option value="1.1">1.1</option>
+            </select>
+          </div>
+          <div>
+            <label for="pitch">Pitch</label>
+            <select id="pitch">
+              <option value="0.8">0.8</option>
+              <option value="0.9">0.9</option>
+              <option value="1" selected>1.0</option>
+              <option value="1.1">1.1</option>
+              <option value="1.2">1.2</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="script">Persian text</label>
+        <textarea id="script">سلام بچه‌ها. امروز می‌خواهیم حرف ب را یاد بگیریم. آفرین!\n\nالف\nب\nپ\nت\nث\nج\nچ\nح\nخ\nد\nر\nس\nش\nص\nض\nط\nظ\nع\nغ\nف\nق\nک\nگ\nل\nم\nن\nو\nه\nی</textarea>
+
+        <div class="btns">
+          <button class="primary" id="speak">Speak</button>
+          <button class="secondary" id="stop">Stop</button>
+          <button class="ghost" id="reloadVoices">Reload voices</button>
+          <button class="danger" id="clear">Clear text</button>
+        </div>
+
+        <div id="status" class="status">Ready.</div>
+      </div>
+
+      <div class="card">
+        <h2>Saved samples</h2>
+        <p class="mini">This browser-only version doesn't create downloadable files. It lets you preview voices quickly without an API key.</p>
+        <div class="samples" id="samples"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const voiceEl = document.getElementById('voice');
+    const rateEl = document.getElementById('rate');
+    const pitchEl = document.getElementById('pitch');
+    const scriptEl = document.getElementById('script');
+    const statusEl = document.getElementById('status');
+    const samplesEl = document.getElementById('samples');
+    const speakBtn = document.getElementById('speak');
+    const stopBtn = document.getElementById('stop');
+    const reloadBtn = document.getElementById('reloadVoices');
+    const clearBtn = document.getElementById('clear');
+
+    let currentUtterance = null;
+    let voiceCache = [];
+
+    function setStatus(msg) { statusEl.textContent = msg; }
+
+    function getVoices() {
+      return window.speechSynthesis?.getVoices?.() || [];
+    }
+
+    function normalizeVoiceName(v) {
+      return `${v.name || ''} ${v.lang || ''}`.toLowerCase();
+    }
+
+    function renderVoiceOptions() {
+      const voices = getVoices();
+      voiceCache = voices;
+      voiceEl.innerHTML = '';
+
+      const faVoices = voices.filter(v => /\bfa\b|farsi|persian|parsi|iran/i.test(normalizeVoiceName(v)));
+      const list = faVoices.length ? faVoices : voices;
+
+      if (!list.length) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'No voices found yet';
+        voiceEl.appendChild(opt);
+        setStatus('No browser voices are available yet. Try Reload voices, or wait a moment for the system voices to load.');
+        return;
+      }
+
+      list.forEach((v, idx) => {
+        const opt = document.createElement('option');
+        opt.value = String(idx);
+        opt.textContent = `${v.name} (${v.lang})`;
+        voiceEl.appendChild(opt);
+      });
+
+      const preferredIndex = list.findIndex(v => /\bfa\b|farsi|persian|parsi|iran/i.test(normalizeVoiceName(v)));
+      voiceEl.value = String(preferredIndex >= 0 ? preferredIndex : 0);
+      setStatus(`Loaded ${list.length} voice(s).`);
+    }
+
+    function getSelectedVoice() {
+      const idx = Number(voiceEl.value || 0);
+      const voices = getVoices().filter(v => /\bfa\b|farsi|persian|parsi|iran/i.test(normalizeVoiceName(v)));
+      const list = voices.length ? voices : getVoices();
+      return list[idx] || list[0] || null;
+    }
+
+    function addPreviewEntry(text, voiceName) {
+      const item = document.createElement('div');
+      item.className = 'sample';
+      item.innerHTML = `
+        <div class="sample-head">
+          <div class="sample-name">${voiceName}</div>
+          <div class="mini">Preview</div>
+        </div>
+        <div style="white-space:pre-wrap; line-height:1.7;">${text}</div>
+      `;
+      samplesEl.prepend(item);
+    }
+
+    function speak() {
+      const text = scriptEl.value.trim();
+      if (!text) {
+        setStatus('Add some Persian text first.');
+        return;
+      }
+      if (!window.speechSynthesis) {
+        setStatus('This browser does not support speech synthesis.');
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      currentUtterance = utterance;
+      utterance.lang = 'fa-IR';
+      utterance.rate = Number(rateEl.value);
+      utterance.pitch = Number(pitchEl.value);
+      utterance.volume = 1;
+
+      const voice = getSelectedVoice();
+      if (voice) utterance.voice = voice;
+
+      utterance.onstart = () => {
+        const name = voice ? `${voice.name} (${voice.lang})` : 'Default browser voice';
+        setStatus(`Speaking with: ${name}`);
+        addPreviewEntry(text.slice(0, 80) + (text.length > 80 ? '…' : ''), name);
+      };
+      utterance.onend = () => {
+        setStatus('Done.');
+      };
+      utterance.onerror = (e) => {
+        setStatus(`Speech error: ${e.error || 'unknown error'}`);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    speakBtn.addEventListener('click', speak);
+    stopBtn.addEventListener('click', () => {
+      window.speechSynthesis?.cancel?.();
+      setStatus('Stopped.');
+    });
+    reloadBtn.addEventListener('click', () => {
+      renderVoiceOptions();
+      setStatus('Reloaded voices.');
+    });
+    clearBtn.addEventListener('click', () => {
+      scriptEl.value = '';
+      setStatus('Text cleared.');
+    });
+
+    if (window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = renderVoiceOptions;
+      renderVoiceOptions();
+      setTimeout(renderVoiceOptions, 500);
+      setTimeout(renderVoiceOptions, 1500);
+    } else {
+      setStatus('Speech synthesis is not supported in this browser.');
+    }
+  </script>
+</body>
+</html>
