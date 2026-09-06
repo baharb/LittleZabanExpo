@@ -1,110 +1,174 @@
 import React, { useContext } from 'react';
 import { Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import TopBar from '../components/TopBar';
-import CharacterAvatar from '../components/CharacterAvatar';
 import { characterAssets } from '../assets/characterAssets';
-import { neliWorldAssets, roomBackgroundPickers } from '../assets/neliWorldAssets';
+import { neliWorldAssets } from '../assets/neliWorldAssets';
+import CharacterAvatar from '../components/CharacterAvatar';
 import { AppContext } from '../store/AppContext';
 import { useNav } from '../store/NavContext';
 import { dir, ff } from '../theme/fonts';
-import { clamp, useResponsive } from '../theme/responsive';
-import { BOX_CHARACTER_HEIGHT, BOX_CHARACTER_WIDTH } from '../theme/characterSizes';
+import { useResponsive } from '../theme/responsive';
+import { FARSI_LETTERS } from '../data/farsiLetters';
 
-type Action = {
+type BigCard = {
   en: string;
   fa: string;
-  descEn: string;
-  descFa: string;
   route: any;
-  colors: readonly [string, string];
-  art: string;
+  art: 'gamesHub' | 'alphabetHub' | 'paint' | 'cook';
 };
 
-const TODAY: Action[] = [
-  { en: 'Talk', fa: 'گفتگو', descEn: 'Listen and answer', descFa: 'گوش بده و جواب بده', route: { name: 'ConversationGame' }, colors: ['#24C878', '#119C65'], art: 'talk' },
-  { en: 'Dress', fa: 'لباس', descEn: 'Drag clothes', descFa: 'لباس را بکش', route: { name: 'DressUp' }, colors: ['#FF78A8', '#C84B7A'], art: 'dress' },
-  { en: 'Brush', fa: 'مسواک', descEn: 'Move the brush', descFa: 'مسواک را حرکت بده', route: { name: 'ToothBrush' }, colors: ['#53C8FF', '#2D8CFF'], art: 'teeth' },
-  { en: 'Painting', fa: 'نقاشی', descEn: 'Paint pictures', descFa: 'تصویرها را رنگ کن', route: { name: 'Coloring' }, colors: ['#B88CFF', '#7C3AED'], art: 'paint' },
-  { en: 'Story', fa: 'قصه', descEn: 'Listen to a book', descFa: 'داستان گوش بده', route: { name: 'Audiobooks' }, colors: ['#FFD166', '#F59E0B'], art: 'story' },
-  { en: 'Alphabet', fa: 'الفبا', descEn: 'Learn letters with motion', descFa: 'حروف را با حرکت یاد بگیر', route: { name: 'AlphabetShow' }, colors: ['#8E6BFF', '#16C2E8'], art: 'video' },
-  { en: 'Games', fa: 'بازی‌ها', descEn: 'Open game library', descFa: 'کتابخانه بازی‌ها', route: { name: 'Main', tab: 'Games' }, colors: ['#6D3DF4', '#20B8D7'], art: 'games' },
+const BIG_CARDS: BigCard[] = [
+  { en: 'Games', fa: 'بازی ها', route: { name: 'Main', tab: 'Games' }, art: 'gamesHub' },
+  { en: 'Cooking', fa: 'آشپزی', route: { name: 'Cooking' }, art: 'cook' },
+  { en: 'Painting', fa: 'نقاشی', route: { name: 'Coloring' }, art: 'paint' },
+  { en: 'Alphabet', fa: 'حروف الفبا', route: { name: 'AlphabetHub' }, art: 'alphabetHub' },
 ];
 
-function HomeCharacterArt({ characterId, style, size, talking = false }: { characterId: string; style?: any; size: number; talking?: boolean }) {
-  return <CharacterAvatar characterId={characterId} size={size} talking={talking} floating={false} style={style} />;
+type SmallTile = {
+  en: string;
+  fa: string;
+  route: any;
+  art: 'memory' | 'robo' | 'tooth' | 'talk' | 'animals' | 'count';
+  bg: string;
+};
+
+const SMALL_TILES: SmallTile[] = [
+  { en: 'Memory Match', fa: 'بازی حافظه', route: { name: 'Game', gameId: 'memory' }, art: 'memory', bg: '#5E46D4' },
+  { en: 'Alphabet Train', fa: 'قطار الفبا', route: { name: 'AlphabetTrain' }, art: 'robo', bg: '#FF00F5' },
+  { en: 'Brush Teeth', fa: 'مسواک زدن', route: { name: 'ToothBrush' }, art: 'tooth', bg: '#38BDF8' },
+  { en: 'Talk with Neli', fa: 'گفت‌وگو با نلی', route: { name: 'ConversationGame' }, art: 'talk', bg: '#6C4EFF' },
+  { en: 'Feed Animals', fa: 'غذا به حیوانات', route: { name: 'FeedAnimals' }, art: 'animals', bg: '#22C55E' },
+  { en: 'Counting', fa: 'شمارش', route: { name: 'Game', gameId: 'counting' }, art: 'count', bg: '#F72585' },
+];
+
+type SmallItem =
+  | (SmallTile & { kind: 'game' })
+  | { kind: 'letter'; id: string; letter: string; nameFa: string; nameEn: string; bg: string };
+
+// Vertical centering for a single Farsi glyph in a small box: Android adds
+// asymmetric ascent/descent padding around custom fonts, so plain flex-centering
+// alone renders it noticeably above center. `lineHeightFactor` sets the glyph's
+// line box (as a multiple of font size) and `nudge` fine-tunes its position within
+// that box (as a fraction of font size, positive = down). Letters whose dots hang
+// below the stroke (ب ج ی پ) already sit lower, and پ's three dots need a taller
+// box to avoid being clipped, so they each get their own tuned values.
+const LETTER_VERTICAL_CONFIG: Record<string, { lineHeightFactor: number; nudge: number; fontScale?: number }> = {
+  be: { lineHeightFactor: 1.45, nudge: -0.16, fontScale: 0.72 },
+  jim: { lineHeightFactor: 1.45, nudge: -0.16, fontScale: 0.72 },
+  ye: { lineHeightFactor: 1.45, nudge: -0.16, fontScale: 0.72 },
+  // pe's 3 dots need real headroom, but growing the line box past the tile's own
+  // size just gets clipped by the tile's overflow:hidden — so shrink the font
+  // instead, which keeps the whole glyph safely inside a modest box.
+  pe: { lineHeightFactor: 1.5, nudge: -0.05, fontScale: 0.72 },
+};
+const DEFAULT_LETTER_VERTICAL_CONFIG = { lineHeightFactor: 1.45, nudge: 0.06, fontScale: 0.72 };
+
+
+// Builds the quick-access row: game tiles plus letter tiles spread evenly into the
+// gaps between them, sized to exactly fill one row (leaving one slot for the
+// trailing "more" tile) so the row never wraps to a second line.
+function buildQuickAccessItems(rowSlots: number): SmallItem[] {
+  const games: SmallItem[] = SMALL_TILES.map(t => ({ ...t, kind: 'game' as const }));
+  const availableForContent = Math.max(1, rowSlots - 1); // reserve 1 slot for the trailing "more" tile
+  const lettersNeeded = Math.max(0, availableForContent - games.length);
+
+  let letterCursor = 0;
+  const nextLetter = (): SmallItem => {
+    const letter = FARSI_LETTERS[letterCursor % FARSI_LETTERS.length];
+    letterCursor += 1;
+    return { kind: 'letter', id: letter.id, letter: letter.letter, nameFa: letter.nameFa, nameEn: letter.nameEn, bg: letter.color ?? '#6C4EFF' };
+  };
+
+  // Spread the letters evenly across the gaps between games (including after the last one).
+  const gapCount = games.length + 1;
+  const items: SmallItem[] = [];
+  for (let gap = 0; gap < gapCount; gap += 1) {
+    const lettersUpToHere = Math.floor((lettersNeeded * (gap + 1)) / gapCount);
+    const lettersBeforeHere = Math.floor((lettersNeeded * gap) / gapCount);
+    for (let i = 0; i < lettersUpToHere - lettersBeforeHere; i += 1) items.push(nextLetter());
+    if (gap < games.length) items.push(games[gap]);
+  }
+
+  return items;
 }
 
-function ActionScene({
-  type,
-  characterId,
-  width,
-  height,
-  previewSize,
-}: {
-  type: string;
-  characterId: string;
-  width: number;
-  height: number;
-  previewSize: number;
-}) {
-  if (type === 'talk') {
+function BigCardArt({ art, size }: { art: BigCard['art']; size: number }) {
+  if (art === 'gamesHub') {
     return (
-      <ImageBackground source={roomBackgroundPickers.talkPlay(width, height)} style={styles.sceneFill} imageStyle={styles.sceneImageCover}>
-        <View style={styles.sceneWash} />
-        <CharacterAvatar
-          characterId="neli"
-          size={106}
-          talking
-          talkPattern="home"
-          talkMouthScale={0.86}
-          talkMouthOffsetXPercent={0.46}
-          talkMouthOffsetY={2}
-          floating={false}
-          style={styles.sceneNeliLarge}
-        />
-      </ImageBackground>
-    );
-  }
-  if (type === 'dress') {
-    return (
-      <ImageBackground source={roomBackgroundPickers.bedroom(width, height)} style={styles.sceneFill} imageStyle={styles.sceneImage}>
-        <CharacterAvatar characterId="neli" size={previewSize} floating={false} style={styles.sceneNeliSmall} />
-      </ImageBackground>
-    );
-  }
-    if (type === 'teeth') {
-      return (
-        <ImageBackground source={neliWorldAssets.rooms.brushTeethBathroom} style={styles.sceneFill} imageStyle={styles.sceneImage}>
-          <Image source={characterAssets.lila.poses.bigSmile} style={styles.sceneGiraffeCentered} resizeMode="contain" />
-        </ImageBackground>
-      );
-    }
-  if (type === 'paint') {
-    return (
-      <View style={[styles.sceneFill, styles.paintCardScene]}>
-        <Image source={neliWorldAssets.painting.cardBunny} style={styles.paintCardImage} resizeMode="contain" />
+      <View style={[styles.sceneFill, styles.gamesHubScene]}>
+        <View style={styles.gamesHubRow}>
+          {(() => {
+            const sources = [
+              characterAssets.aidin.poses.waving,
+              characterAssets.lila.poses.standing,
+              characterAssets.neli.poses.dancing,
+              characterAssets.roboBoombo.poses.brushing,
+            ];
+            // owl stays base size; lamb, neli and the robot are 20% bigger
+            const scales = [1, 1.2, 1.2, 1.2];
+            const overlapFactor = 0.32;
+            const sideMargin = 0.84; // leaves room on the left/right of the box
+            const scaleSum = scales.reduce((a, b) => a + b, 0);
+            const totalUnits = scaleSum - (sources.length - 1) * overlapFactor;
+            const charW = (size * sideMargin) / totalUnits;
+            const charH = Math.min(charW * 1.326, size * 0.9);
+            const overlap = -charW * overlapFactor;
+            // Explicit stacking order: owl renders above lila (everything else keeps
+            // its original front-to-back order).
+            const zIndices = [1.5, 1, 2, 3];
+            // Per-character render-only boosts: each reserves its ORIGINAL box (so the
+            // row's total width and every other character's position never move) and
+            // renders the image itself larger inside that box, anchored so the growth
+            // doesn't eat into shared space. robo (rightmost) anchors bottom-right so it
+            // only grows up/left, staying clear of the card's right margin; lila anchors
+            // bottom-center so it grows up/outward evenly without nudging its neighbors.
+            // Shared growth applied equally to all 4 characters (accumulated from
+            // successive "make them all bigger" requests: +4%, +5%, +5%, +10%), on top
+            // of each character's own individual boost.
+            const sharedGrowth = 1.04 * 1.05 * 1.05 * 1.1 * 1.05 * 1.05;
+            const boosts: Record<number, { boost: number; anchor: 'bottom-right' | 'bottom-left' | 'bottom-center'; translateY?: number; translateX?: number }> = {
+              0: { boost: 1 * sharedGrowth, anchor: 'bottom-left', translateX: -0.2 }, // aidin (owl)
+              1: { boost: 1.05 * sharedGrowth, anchor: 'bottom-center', translateY: 0.06, translateX: 0.1 }, // lila
+              2: { boost: 1 * sharedGrowth, anchor: 'bottom-center', translateY: -0.01, translateX: 0.12 }, // neli
+              3: { boost: 1.32 * sharedGrowth, anchor: 'bottom-right', translateY: 0.19, translateX: 0.51 }, // robo
+            };
+            return sources.map((source, i) => {
+              const scale = scales[i];
+              const boxW = charW * scale;
+              const boxH = charH * scale;
+              const boostConfig = boosts[i];
+              if (!boostConfig) {
+                return (
+                  <Image
+                    key={i}
+                    source={source}
+                    style={{ width: boxW, height: boxH, marginLeft: i === 0 ? 0 : overlap, zIndex: zIndices[i] }}
+                    resizeMode="contain"
+                  />
+                );
+              }
+              const { boost, anchor, translateY = 0, translateX = 0 } = boostConfig;
+              const boostedW = boxW * boost;
+              const boostedH = boxH * boost;
+              const shift = [{ translateY: boxH * translateY }, { translateX: boxW * translateX }];
+              const imageStyle =
+                anchor === 'bottom-right'
+                  ? { position: 'absolute' as const, right: 0, bottom: 0, width: boostedW, height: boostedH, transform: shift }
+                  : anchor === 'bottom-left'
+                  ? { position: 'absolute' as const, left: 0, bottom: 0, width: boostedW, height: boostedH, transform: shift }
+                  : { position: 'absolute' as const, left: -((boostedW - boxW) / 2), bottom: 0, width: boostedW, height: boostedH, transform: shift };
+              return (
+                <View key={i} style={{ width: boxW, height: boxH, marginLeft: i === 0 ? 0 : overlap, zIndex: zIndices[i], overflow: 'visible' }}>
+                  <Image source={source} style={imageStyle} resizeMode="contain" />
+                </View>
+              );
+            });
+          })()}
+        </View>
       </View>
     );
   }
-  if (type === 'story') {
-    return (
-      <ImageBackground source={neliWorldAssets.rooms.studyRoom ?? neliWorldAssets.rooms.livingRoom} style={styles.sceneFill} imageStyle={styles.sceneImage}>
-        <Image source={neliWorldAssets.ui.book} style={styles.storyBookBig} resizeMode="contain" />
-        <HomeCharacterArt characterId={characterId} style={[styles.storyNeli, { width: BOX_CHARACTER_WIDTH, height: BOX_CHARACTER_HEIGHT }]} size={BOX_CHARACTER_WIDTH} />
-      </ImageBackground>
-    );
-  }
-  if (type === 'games') {
-    return (
-      <View style={[styles.sceneFill, styles.gamesSceneMemory]}>
-        <View style={[styles.memoryCardBack, styles.memoryCardBackOne]} />
-        <View style={[styles.memoryCardBack, styles.memoryCardBackTwo]} />
-        <View style={[styles.memoryCardBack, styles.memoryCardBackThree]} />
-        <Image source={characterAssets.lila.poses.thinkingAlt} style={styles.memoryLila} resizeMode="contain" />
-      </View>
-    );
-  }
-  if (type === 'video') {
+  if (art === 'alphabetHub') {
     return (
       <View style={[styles.sceneFill, styles.videoAlphabetScene]}>
         <View style={[styles.alphaBubble, styles.alphaBubbleOne]}>
@@ -116,84 +180,162 @@ function ActionScene({
         <View style={[styles.alphaBubble, styles.alphaBubbleThree]}>
           <Text style={styles.alphaBubbleText}>پ</Text>
         </View>
-        <Image source={characterAssets.lila.poses.thinkingAlt} style={styles.memoryLila} resizeMode="contain" />
+        <View style={[styles.alphaBubble, styles.alphaBubbleFour]}>
+          <Text style={styles.alphaBubbleText}>ت</Text>
+        </View>
+        <View style={[styles.alphaBubble, styles.alphaBubbleFive]}>
+          <Text style={styles.alphaBubbleText}>ث</Text>
+        </View>
+        <Image source={characterAssets.lila.poses.thinkingAlt} style={styles.bigCardLila} resizeMode="contain" />
+      </View>
+    );
+  }
+  if (art === 'paint') {
+    return (
+      <View style={[styles.sceneFill, styles.paintCardScene]}>
+        <Image source={neliWorldAssets.painting.cardBunny} style={styles.paintCardImage} resizeMode="contain" />
       </View>
     );
   }
   return (
-    <View style={[styles.sceneFill, styles.gamesScene]}>
-      <Image source={neliWorldAssets.ui.gamepad} style={styles.gamepadBig} resizeMode="contain" />
-      <Image source={neliWorldAssets.ui.star} style={[styles.gameStar, { left: 22, top: 24 }]} resizeMode="contain" />
-      <Image source={neliWorldAssets.ui.trophy} style={styles.gameTrophy} resizeMode="contain" />
+    <View style={[styles.sceneFill, styles.cookScene]}>
+      <Image source={neliWorldAssets.foods.tomato} style={[styles.cookIngredient, styles.cookIngredientOne]} resizeMode="contain" />
+      <Image source={neliWorldAssets.foods.herbs} style={[styles.cookIngredient, styles.cookIngredientTwo]} resizeMode="contain" />
+      <Image source={neliWorldAssets.foods.eggplant} style={[styles.cookIngredient, styles.cookIngredientThree]} resizeMode="contain" />
+      <Image source={neliWorldAssets.foods.blueberries} style={[styles.cookIngredient, styles.cookIngredientFour]} resizeMode="contain" />
+      <Image source={neliWorldAssets.foods.carrot} style={[styles.cookIngredient, styles.cookIngredientFive]} resizeMode="contain" />
+      <Image source={neliWorldAssets.foods.bellPepper} style={[styles.cookIngredient, styles.cookIngredientSix]} resizeMode="contain" />
+      <Image source={characterAssets.neli.poses.cooking} style={styles.cookNeli} resizeMode="contain" />
+    </View>
+  );
+}
+
+function SmallTileArt({ art, size }: { art: SmallTile['art']; size: number }) {
+  if (art === 'memory') {
+    return (
+      <View style={styles.smallArtFill}>
+        <View style={[styles.memoryCardBack, styles.memoryCardBackOne]} />
+        <View style={[styles.memoryCardBack, styles.memoryCardBackTwo]} />
+        <Image source={characterAssets.lila.poses.thinkingAlt} style={styles.smallLila} resizeMode="contain" />
+      </View>
+    );
+  }
+  if (art === 'robo') {
+    return (
+      <View style={styles.smallArtFill}>
+        <Image source={characterAssets.roboBoombo.poses.waving} style={styles.smallCharRobo} resizeMode="contain" />
+      </View>
+    );
+  }
+  if (art === 'tooth') {
+    return (
+      <ImageBackground source={neliWorldAssets.rooms.brushTeethBathroom} style={styles.smallArtFill} imageStyle={styles.smallArtImage}>
+        <Image source={characterAssets.lila.poses.bigSmile} style={styles.smallTooth} resizeMode="contain" />
+      </ImageBackground>
+    );
+  }
+  if (art === 'talk') {
+    return (
+      <View style={styles.smallArtFill}>
+        <CharacterAvatar characterId="neli" size={size * 0.74} floating={false} />
+      </View>
+    );
+  }
+  if (art === 'animals') {
+    return (
+      <View style={styles.smallArtFill}>
+        <Image source={neliWorldAssets.animals.monkey} style={styles.smallChar} resizeMode="contain" />
+      </View>
+    );
+  }
+  return (
+    <View style={styles.smallArtFill}>
+      <Image source={characterAssets.aidin.poses.waving} style={styles.smallChar} resizeMode="contain" />
     </View>
   );
 }
 
 export default function HomeScreen() {
-  const { lang, stars, age, selectedCharacterId } = useContext(AppContext);
+  const { lang } = useContext(AppContext);
   const { navigate } = useNav();
-  const { width, height } = useWindowDimensions();
+  const { height } = useWindowDimensions();
   const responsive = useResponsive();
-  const ui = Math.min(width / 390, height / 844);
+  const ui = Math.min(responsive.contentWidth / 700, height / 400);
   const isFa = lang === 'fa' || lang === 'ar';
 
-  const contentWidth = responsive.sideRail ? width - 92 : width;
-  const columns = contentWidth >= 960 ? 4 : contentWidth >= 680 ? 3 : 2;
-  const gap = 12;
-  const cardW = (contentWidth - responsive.horizontalPadding * 2 - gap * (columns - 1)) / columns;
-  const cardRadius = Math.max(24, Math.round(26 * ui));
-  const compactHero = responsive.isLandscape && !responsive.isTablet;
-  const actions = TODAY;
+  const bigGap = Math.max(18, Math.round(22 * ui));
+  const cardGap = Math.round(bigGap * 0.8 * 0.6);
+  const bigCardRadius = Math.max(22, Math.round(26 * ui));
+  const bigCardWRaw = (responsive.contentWidth - bigGap * 2 - cardGap * 3) / 4;
+  const bigCardSize = Math.min(bigCardWRaw, Math.max(190, Math.round(230 * ui)));
+  const smallGap = Math.max(9, Math.round(11 * ui));
+  const smallTileW = bigCardSize * 0.3;
+  const smallRowWidth = responsive.contentWidth - bigGap * 2;
+  const smallColumns = Math.max(1, Math.floor((smallRowWidth + smallGap) / (smallTileW + smallGap)));
+  const quickAccessItems = buildQuickAccessItems(smallColumns);
 
   return (
     <View style={styles.root}>
-      <TopBar title="ZAAL" titleFa="زال" dark showBack={false} />
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingHorizontal: responsive.horizontalPadding }]} showsVerticalScrollIndicator={false}>
-        <View style={[
-          styles.hero,
-          compactHero && styles.heroCompact,
-          {
-            minHeight: Math.max(150, Math.round(202 * ui)),
-            padding: Math.max(12, Math.round(16 * ui)),
-            borderRadius: Math.max(28, Math.round(34 * ui)),
-          },
-        ]}>
-          <View style={styles.heroText}>
-            <Text style={[styles.kicker, { fontFamily: ff(lang, 'bold'), fontSize: Math.max(12, Math.round(13 * ui)), marginBottom: Math.max(4, Math.round(6 * ui)) }, dir(lang)]}>
-              {isFa ? `مسیر امروز، سن ${age || 4}` : `Today, age ${age || 4}`}
-            </Text>
-            <Text style={[styles.heroTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(23, Math.round(27 * ui)), lineHeight: Math.max(29, Math.round(34 * ui)) }, dir(lang)]}>
-              {isFa ? 'فارسی را با بازی یاد بگیر' : 'Learn Persian through play'}
-            </Text>
-            <Text style={[styles.heroSub, { fontFamily: ff(lang, 'regular'), fontSize: Math.max(12, Math.round(13 * ui)), lineHeight: Math.max(17, Math.round(19 * ui)), marginTop: Math.max(4, Math.round(6 * ui)) }, dir(lang)]}>
-              {isFa ? 'یک صفحه ساده برای شروع. همه بازی‌ها در تب بازی‌هاست.' : 'A simple starting page. All games are in the Games tab.'}
-            </Text>
-            <View style={[styles.starPill, { borderRadius: Math.max(16, Math.round(18 * ui)), marginTop: Math.max(10, Math.round(14 * ui)), paddingHorizontal: Math.max(10, Math.round(12 * ui)), paddingVertical: Math.max(5, Math.round(6 * ui)) }]}>
-              <Text style={[styles.starTxt, { fontFamily: ff(lang, 'bold'), fontSize: Math.max(12, Math.round(13 * ui)) }]}>★ {stars}</Text>
-            </View>
-          </View>
-          <View style={[styles.neliWrap, { width: BOX_CHARACTER_WIDTH * Math.max(0.92, ui), height: (BOX_CHARACTER_HEIGHT + 12) * Math.max(0.92, ui) }]}>
-            <HomeCharacterArt characterId={selectedCharacterId} size={BOX_CHARACTER_WIDTH} style={{ width: BOX_CHARACTER_WIDTH, height: BOX_CHARACTER_HEIGHT }} />
-          </View>
-        </View>
-
-        <Text style={[styles.sectionTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(18, Math.round(20 * ui)), marginBottom: Math.max(8, Math.round(11 * ui)) }, dir(lang)]}>
-          {isFa ? 'امروز چه کار کنیم؟' : 'What shall we do today?'}
-        </Text>
-        <View style={styles.grid}>
-          {actions.map(item => (
-            <TouchableOpacity key={item.en} style={[styles.card, { width: cardW, height: Math.max(204, Math.round(226 * ui)), borderRadius: cardRadius }]} onPress={() => navigate(item.route)} activeOpacity={0.86}>
-              <View style={[styles.cardArt, { borderRadius: cardRadius }]}>
-                <ActionScene type={item.art} characterId={selectedCharacterId} width={width} height={height} previewSize={Math.max(92, Math.round(BOX_CHARACTER_WIDTH * Math.max(0.92, ui)))} />
+      <TopBar title="ZAAL" titleFa="زال" dark showBack={false} large />
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingHorizontal: bigGap }]} showsVerticalScrollIndicator={false}>
+        <View style={[styles.bigCards, { gap: cardGap }]}>
+          {BIG_CARDS.map(item => (
+            <TouchableOpacity
+              key={item.en}
+              style={[styles.bigCard, { width: bigCardSize, height: bigCardSize, borderRadius: bigCardRadius }]}
+              onPress={() => navigate(item.route)}
+              activeOpacity={0.88}
+            >
+              <View style={[styles.bigCardArtWrap, { borderRadius: bigCardRadius }]}>
+                <BigCardArt art={item.art} size={bigCardSize} />
                 <View style={styles.cardShade} />
                 <View style={styles.cardTextBand}>
-                  <Text style={[styles.cardTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(12, Math.round(13 * ui)) }, dir(lang)]} numberOfLines={2}>
+                  <Text style={[styles.bigCardTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(11, Math.round(12 * ui)) }, dir(lang), { textAlign: 'center' }]}>
                     {isFa ? item.fa : item.en}
                   </Text>
                 </View>
               </View>
             </TouchableOpacity>
           ))}
+        </View>
+
+        <View style={[styles.smallHeaderRow, { justifyContent: 'flex-end', marginTop: Math.max(14, Math.round(20 * ui)) }]}>
+          <Text style={[styles.sectionTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(12, Math.round(13 * ui)) }, dir(lang)]}>
+            {isFa ? 'دسترسی سریع' : 'Quick access'}
+          </Text>
+        </View>
+
+        <View style={[styles.smallRow, { gap: smallGap, flexWrap: 'wrap', flexDirection: isFa ? 'row-reverse' : 'row' }]}>
+          {quickAccessItems.map((item, idx) =>
+            item.kind === 'letter' ? (
+              <TouchableOpacity
+                key={`letter-${item.id}-${idx}`}
+                style={[styles.smallCard, { width: smallTileW, height: smallTileW, backgroundColor: item.bg }]}
+                onPress={() => navigate({ name: 'InteractiveFarsiTrace', letterId: item.id })}
+                activeOpacity={0.88}
+              >
+                <View style={styles.smallArtFill}>
+                  <Text style={[styles.smallLetterGlyph, (() => { const baseGlyphSize = Math.max(26, Math.round(30 * ui)); const { lineHeightFactor, nudge, fontScale = 1 } = LETTER_VERTICAL_CONFIG[item.id] ?? DEFAULT_LETTER_VERTICAL_CONFIG; const glyphSize = Math.round(baseGlyphSize * fontScale); return { fontSize: glyphSize, lineHeight: Math.round(glyphSize * lineHeightFactor), transform: [{ translateY: Math.round(glyphSize * nudge) }] }; })()]}>{item.letter}</Text>
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                key={item.en}
+                style={[styles.smallCard, { width: smallTileW, height: smallTileW, backgroundColor: item.bg }]}
+                onPress={() => navigate(item.route)}
+                activeOpacity={0.88}
+              >
+                <SmallTileArt art={item.art} size={smallTileW} />
+              </TouchableOpacity>
+            )
+          )}
+          <TouchableOpacity
+            style={[styles.smallCard, styles.smallCardMore, { width: smallTileW, height: smallTileW }]}
+            onPress={() => navigate({ name: 'Main', tab: 'Games' })}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.smallCardMoreText}>...</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -203,101 +345,53 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#2B1268' },
   scroll: { paddingHorizontal: 14, paddingBottom: 34 },
-  hero: { flexDirection: 'row', alignItems: 'center', borderRadius: 34, padding: 16, marginBottom: 18, minHeight: 202, backgroundColor: '#FFFFFF', shadowColor: '#170736', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
-  heroCompact: { minHeight: 150, paddingVertical: 12 },
-  heroText: { flex: 1 },
-  kicker: { color: '#7C3AED', fontSize: 13, marginBottom: 6 },
-  heroTitle: { color: '#221044', fontSize: 27, lineHeight: 34 },
-  heroSub: { color: '#6B5A89', fontSize: 13, lineHeight: 19, marginTop: 6 },
-  neliWrap: { width: 134, height: 154, alignItems: 'center', justifyContent: 'center' },
-  starPill: { alignSelf: 'flex-start', backgroundColor: '#FFE57A', borderRadius: 18, paddingHorizontal: 12, paddingVertical: 6, marginTop: 14 },
-  starTxt: { color: '#7A4B00', fontSize: 13 },
-  sectionTitle: { color: '#fff', fontSize: 20, marginBottom: 11 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  card: { height: 226, borderRadius: 26, overflow: 'hidden', borderWidth: 6, borderColor: '#FFFFFF', backgroundColor: '#AEEBFF', shadowColor: '#170736', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 14, elevation: 8 },
-  cardArt: { flex: 1, overflow: 'hidden' },
-  cardShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 48, backgroundColor: 'rgba(37,16,92,0.62)' },
-  cardTextBand: { position: 'absolute', left: 10, right: 10, bottom: 9, minHeight: 28, justifyContent: 'center' },
-  cardTitle: { color: '#FFFFFF', fontSize: 16, textAlign: 'left' },
-  cardDesc: { color: 'rgba(255,255,255,0.9)', fontSize: 11, lineHeight: 15, textAlign: 'left' },
+  bigCards: { flexDirection: 'row', justifyContent: 'center', marginTop: 22, marginBottom: 34 },
+  bigCard: { borderRadius: 26, overflow: 'hidden', backgroundColor: '#AEEBFF', shadowColor: '#170736', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 16, elevation: 9 },
+  bigCardArtWrap: { flex: 1, overflow: 'hidden' },
+  cardShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 54, backgroundColor: 'rgba(37,16,92,0.62)' },
+  cardTextBand: { position: 'absolute', left: 14, right: 14, bottom: 0, height: 54, justifyContent: 'center' },
+  bigCardTitle: { color: '#FFFFFF', textAlign: 'center' },
   sceneFill: { flex: 1, width: '100%', height: '100%', overflow: 'hidden' },
-  sceneImage: { width: '100%', height: '100%' },
-  sceneImageCover: { width: '100%', height: '100%' },
-  sceneWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(44, 20, 74, 0.10)' },
-  sceneNeliLarge: { position: 'absolute', width: 159, height: 208, alignSelf: 'center', bottom: -42 },
-  sceneNeliSmall: { position: 'absolute', width: 104, height: 136, right: 8, bottom: 10 },
-  sceneGiraffe: { position: 'absolute', width: 116, height: 150, right: 8, bottom: 14 },
-  sceneGiraffeCentered: { position: 'absolute', width: 172.2, height: 218.4, alignSelf: 'center', bottom: -14 },
-  paintScene: { backgroundColor: '#B88CFF', alignItems: 'center', justifyContent: 'center' },
+  gamesHubScene: { backgroundColor: '#FF00F5', alignItems: 'center', justifyContent: 'center' },
+  gamesHubRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 },
+  gamesHubChar: { width: 92, height: 122 },
+  videoAlphabetScene: { backgroundColor: '#00D1FF', alignItems: 'center', justifyContent: 'center' },
+  alphaBubble: { position: 'absolute', width: 72, height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowColor: '#170736', shadowOpacity: 0.16, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+  alphaBubbleOne: { left: 12, top: 16, backgroundColor: '#8E6BFF', transform: [{ rotate: '-9deg' }] },
+  alphaBubbleTwo: { right: 30, top: 50, backgroundColor: '#16C2E8', transform: [{ rotate: '7deg' }] },
+  alphaBubbleThree: { left: 74, top: 6, backgroundColor: '#F97316', transform: [{ rotate: '9deg' }] },
+  alphaBubbleFour: { right: 10, bottom: 56, backgroundColor: '#FF2E93', transform: [{ rotate: '-12deg' }] },
+  alphaBubbleFive: { left: 28, bottom: 12, backgroundColor: '#FFD400', transform: [{ rotate: '10deg' }] },
+  alphaBubbleText: { fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: 30 },
+  bigCardLila: { width: 255, height: 333 },
   paintCardScene: { backgroundColor: '#18C977', alignItems: 'center', justifyContent: 'center' },
   paintCardImage: { width: '100%', height: '100%' },
-  paintBrushImage: { position: 'absolute', width: 94, height: 94, right: 14, top: 28, transform: [{ rotate: '-18deg' }] },
-  paintPaletteBig: { position: 'absolute', left: 18, bottom: 68, width: 112, height: 82, borderRadius: 42, backgroundColor: '#FFFFFF', flexDirection: 'row', flexWrap: 'wrap', padding: 13, gap: 7 },
-  paintBlob: { width: 24, height: 24, borderRadius: 12 },
-  storyBookBig: { position: 'absolute', width: 110, height: 110, left: 14, bottom: 58 },
-  storyNeli: { position: 'absolute', width: 98, height: 128, right: 10, bottom: 14 },
-  gamesScene: { backgroundColor: '#53D5FF', alignItems: 'center', justifyContent: 'center' },
-  gamesSceneMemory: { backgroundColor: '#5E46D4', alignItems: 'center', justifyContent: 'center' },
-  memoryCardBack: {
-    position: 'absolute',
-    width: 74,
-    height: 74,
-    borderRadius: 18,
-    backgroundColor: '#FFF6B8',
-    borderWidth: 5,
-    borderColor: '#FFFFFF',
-    shadowColor: '#140A36',
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
-  },
-  memoryCardBackOne: { left: 16, top: 24, transform: [{ rotate: '-10deg' }] },
-  memoryCardBackTwo: { right: 16, top: 34, transform: [{ rotate: '10deg' }] },
-  memoryCardBackThree: { left: '50%', marginLeft: -37, bottom: 24, transform: [{ rotate: '-2deg' }] },
-  memoryLila: { width: 152, height: 198, position: 'absolute', bottom: -8, alignSelf: 'center' },
-  videoPlayBadge: { position: 'absolute', top: 26, left: '50%', marginLeft: -24, width: 48, height: 48, borderRadius: 24, backgroundColor: '#FACC15', alignItems: 'center', justifyContent: 'center', shadowColor: '#140A36', shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
-  videoPlayText: { color: '#1A0050', fontSize: 18, marginLeft: 2 },
-  videoAlphabetScene: { backgroundColor: '#F5ECFF' },
-  alphaBubble: { position: 'absolute', width: 72, height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowColor: '#170736', shadowOpacity: 0.16, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
-  alphaBubbleOne: { left: 24, top: 24, backgroundColor: '#8E6BFF' },
-  alphaBubbleTwo: { left: 88, top: 74, backgroundColor: '#16C2E8' },
-  alphaBubbleThree: { right: 28, top: 32, backgroundColor: '#F97316' },
-  alphaBubbleText: { fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: 30 },
-  gamepadBig: { position: 'absolute', width: 118, height: 118, left: 20, bottom: 54 },
-  gameStar: { position: 'absolute', width: 48, height: 48 },
-  gameTrophy: { position: 'absolute', width: 80, height: 80, right: 18, top: 36 },
-  face: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#FFD1D9', alignItems: 'center', justifyContent: 'center' },
-  eyeRow: { flexDirection: 'row', gap: 12, marginBottom: 7 },
-  eye: { width: 7, height: 9, borderRadius: 5, backgroundColor: '#25105C' },
-  teeth: { flexDirection: 'row', gap: 2, backgroundColor: '#25105C', borderRadius: 10, padding: 5 },
-  tooth: { width: 8, height: 12, borderRadius: 3, backgroundColor: '#fff' },
-  palette: { width: 72, height: 54, borderRadius: 27, backgroundColor: '#fff', flexDirection: 'row', flexWrap: 'wrap', padding: 10, gap: 6 },
-  paintDot: { width: 17, height: 17, borderRadius: 9 },
-  talkNeliArt: { width: 104, height: 96, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  talkNeliImage: { width: 96, height: 116, marginTop: 18 },
-  talkWhiteIcon: { position: 'absolute', right: 3, top: 4, width: 34, height: 34, borderRadius: 17, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', gap: 2 },
-  talkWhiteDot: { position: 'absolute', left: 7, width: 7, height: 12, borderRadius: 5, backgroundColor: '#23C878' },
-  talkWhiteLine: { width: 14, height: 4, borderRadius: 4, backgroundColor: '#23C878', marginLeft: 8 },
-  talkFace: { width: 68, height: 64, borderRadius: 32, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-  talkEyeLeft: { position: 'absolute', left: 22, top: 24, width: 7, height: 7, borderRadius: 4, backgroundColor: '#25105C' },
-  talkEyeRight: { position: 'absolute', right: 22, top: 24, width: 7, height: 7, borderRadius: 4, backgroundColor: '#25105C' },
-  talkSmile: { position: 'absolute', bottom: 18, width: 24, height: 12, borderBottomWidth: 3, borderBottomColor: '#25105C', borderRadius: 12 },
-  chatBubble: { position: 'absolute', right: -10, top: 5, width: 26, height: 20, borderRadius: 10, backgroundColor: '#FFD60A' },
-  talkWaterBig: { position: 'absolute', left: 14, bottom: 18, width: 88, height: 88 },
-  talkVoiceBig: { position: 'absolute', left: 18, top: 16, width: 54, height: 54 },
-  flatDressArt: { width: 74, height: 72, alignItems: 'center', justifyContent: 'center' },
-  dressTop: { width: 32, height: 26, borderTopLeftRadius: 12, borderTopRightRadius: 12, backgroundColor: '#FFD60A', marginBottom: -1 },
-  dressSkirt: { width: 0, height: 0, borderLeftWidth: 34, borderRightWidth: 34, borderBottomWidth: 46, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: '#FF4FD8' },
-  bookArt: { width: 74, height: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  bookLeft: { width: 32, height: 48, borderTopLeftRadius: 12, borderBottomLeftRadius: 12, backgroundColor: '#FFFFFF' },
-  bookRight: { width: 32, height: 48, borderTopRightRadius: 12, borderBottomRightRadius: 12, backgroundColor: '#FFD60A' },
-  bookDot: { position: 'absolute', width: 12, height: 12, borderRadius: 6, backgroundColor: '#FF4FD8' },
-  gameArt: { width: 76, height: 64, alignItems: 'center', justifyContent: 'center' },
-  gameDot: { position: 'absolute', width: 36, height: 36, borderRadius: 18 },
+  cookScene: { backgroundColor: '#F7D046', alignItems: 'center', justifyContent: 'center' },
+  cookNeli: { width: 190, height: 248 },
+  cookIngredient: { position: 'absolute', width: 46, height: 46 },
+  cookIngredientOne: { left: 16, top: 8, transform: [{ rotate: '-16deg' }] },
+  cookIngredientTwo: { right: 40, top: 16, width: 58, height: 58, transform: [{ rotate: '13deg' }] },
+  cookIngredientThree: { left: 24, top: 94, width: 34, height: 34, transform: [{ rotate: '11deg' }] },
+  cookIngredientFour: { right: 10, top: 88, width: 34, height: 34, transform: [{ rotate: '-9deg' }] },
+  cookIngredientFive: { right: 26, top: 177, width: 42, height: 42, transform: [{ rotate: '15deg' }] },
+  cookIngredientSix: { left: 34, top: 161, width: 38, height: 38, transform: [{ rotate: '-12deg' }] },
+  smallHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  sectionTitle: { color: '#fff' },
+  moreLink: { color: '#BFA8FF' },
+  smallRow: { flexDirection: 'row' },
+  smallCard: { aspectRatio: 1, borderRadius: 20, overflow: 'hidden', shadowColor: '#170736', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 6 },
+  smallCardMore: { backgroundColor: '#3A2A80', alignItems: 'center', justifyContent: 'center' },
+  smallCardMoreText: { color: '#FFFFFF', fontSize: 26, fontWeight: '800' },
+  smallArtFill: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  smallArtImage: { width: '100%', height: '100%' },
+  smallCardShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 30, backgroundColor: 'rgba(20,10,40,0.55)' },
+  smallCardTitle: { position: 'absolute', left: 6, right: 6, bottom: 5, color: '#FFFFFF', fontSize: 10.5, textAlign: 'center' },
+  memoryCardBack: { position: 'absolute', width: 46, height: 46, borderRadius: 12, backgroundColor: '#FFF6B8', borderWidth: 3, borderColor: '#FFFFFF' },
+  memoryCardBackOne: { left: 8, top: 6, transform: [{ rotate: '-10deg' }] },
+  memoryCardBackTwo: { right: 8, top: 12, transform: [{ rotate: '10deg' }] },
+  smallLila: { width: 78, height: 100, position: 'absolute', bottom: -10 },
+  smallTooth: { width: '68%', height: '68%' },
+  smallChar: { width: '66%', height: '80%' },
+  smallCharRobo: { width: '86%', height: '100%' },
+  smallLetterGlyph: { fontFamily: ff('fa', 'black'), color: '#FFFFFF', textAlign: 'center', textAlignVertical: 'center', includeFontPadding: false },
 });
-
-
-
-
-

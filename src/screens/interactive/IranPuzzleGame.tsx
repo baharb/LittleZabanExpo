@@ -128,6 +128,13 @@ function ProvincePiece({
   const yAnim = useRef(new Animated.Value(piece.startTop)).current;
   const wAnim = useRef(new Animated.Value(piece.startWidth)).current;
   const hAnim = useRef(new Animated.Value(piece.startHeight)).current;
+  // Stable refs so the PanResponder below isn't rebuilt (and an in-progress
+  // drag lost) whenever the parent re-renders and hands down new callback
+  // function identities.
+  const onActivateRef = useRef(onActivate);
+  onActivateRef.current = onActivate;
+  const onPlacedRef = useRef(onPlaced);
+  onPlacedRef.current = onPlaced;
   const startRef = useRef({ x: piece.startLeft, y: piece.startTop });
   const [placed, setPlaced] = useState(false);
   const [pressed, setPressed] = useState(false);
@@ -154,7 +161,7 @@ function ProvincePiece({
           if (placed || settling) return;
           setPressed(true);
           draggedRef.current = false;
-          onActivate(piece.id);
+          onActivateRef.current(piece.id);
           xAnim.stopAnimation(value => {
             startRef.current.x = value;
           });
@@ -182,7 +189,7 @@ function ProvincePiece({
             ]).start(() => {
               startRef.current = { x: piece.startLeft, y: piece.startTop };
             });
-            onActivate(null);
+            onActivateRef.current(null);
             return;
           }
 
@@ -218,8 +225,8 @@ function ProvincePiece({
             setSettling(false);
             setPlaced(true);
           });
-          onActivate(null);
-          onPlaced(piece.id);
+          onActivateRef.current(null);
+          onPlacedRef.current(piece.id);
         },
         onPanResponderTerminate: () => {
           if (placed || settling) return;
@@ -228,10 +235,10 @@ function ProvincePiece({
             Animated.timing(xAnim, { toValue: startRef.current.x, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
             Animated.timing(yAnim, { toValue: startRef.current.y, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
           ]).start();
-          onActivate(null);
+          onActivateRef.current(null);
         },
       }),
-    [hAnim, onActivate, onPlaced, piece.id, piece.startLeft, piece.startTop, piece.target.h, piece.target.w, piece.target.x, piece.target.y, placed, settling, wAnim, xAnim, yAnim],
+    [hAnim, piece.id, piece.startLeft, piece.startTop, piece.target.h, piece.target.w, piece.target.x, piece.target.y, placed, settling, wAnim, xAnim, yAnim],
   );
 
   return (

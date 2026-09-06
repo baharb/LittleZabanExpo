@@ -12,7 +12,7 @@ interface Props {
 
 // Kept under the existing component name so every current TopBar call site
 // automatically receives the shared settings control.
-export default function LangBar({ buttonSize = 56, iconSize = 44 }: Props) {
+export default function LangBar({ dark = true, buttonSize = 56, iconSize = 44 }: Props) {
   const { navigate } = useNav();
 
   const openSettings = () => {
@@ -27,7 +27,11 @@ export default function LangBar({ buttonSize = 56, iconSize = 44 }: Props) {
       activeOpacity={0.78}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
-      <Image source={neliWorldAssets.ui.settings} style={[styles.icon, { width: iconSize, height: iconSize }]} resizeMode="contain" />
+      <Image
+        source={neliWorldAssets.ui.settingsIcon}
+        style={[styles.icon, { width: iconSize, height: iconSize, tintColor: dark ? '#FFFFFF' : '#2D1B69' }]}
+        resizeMode="contain"
+      />
     </TouchableOpacity>
   );
 }

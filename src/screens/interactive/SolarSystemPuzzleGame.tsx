@@ -246,6 +246,13 @@ function PlanetPiece({
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const xAnim = useRef(new Animated.Value(planet.start.x)).current;
   const yAnim = useRef(new Animated.Value(planet.start.y)).current;
+  // Stable refs so the PanResponder below isn't rebuilt (and an in-progress
+  // drag lost) whenever the parent re-renders and hands down new callback
+  // function identities.
+  const onActivateRef = useRef(onActivate);
+  onActivateRef.current = onActivate;
+  const onPlacedRef = useRef(onPlaced);
+  onPlacedRef.current = onPlaced;
 
   useEffect(() => {
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -266,7 +273,7 @@ function PlanetPiece({
           draggedRef.current = false;
           setPressed(true);
           setSettling(false);
-          onActivate(planet.id);
+          onActivateRef.current(planet.id);
           const isFa = lang === 'fa' || lang === 'ar';
           const spokenName = isFa ? planet.labelFa : (PLANET_NAME_EN[planet.id] ?? planet.labelFa);
           const audioKey = isFa ? getSolarSystemAudioKey(planet.id) : null;
@@ -304,7 +311,7 @@ function PlanetPiece({
           }).start();
           if (placed) {
             setPressed(false);
-            onActivate(null);
+            onActivateRef.current(null);
             return;
           }
           setPressed(false);
@@ -325,7 +332,7 @@ function PlanetPiece({
               }),
             ]).start(() => { setSettling(false); });
             // Fire immediately so celebration doesn't wait for settle animation
-            onPlaced(planet.id);
+            onPlacedRef.current(planet.id);
           };
           if (!moved) {
             animatePlanetSettle();
@@ -335,7 +342,7 @@ function PlanetPiece({
             setSize({ w: planet.target.w, h: planet.target.w });
             setImageH(planet.target.w);
             settleToTarget();
-            onActivate(null);
+            onActivateRef.current(null);
             return;
           }
 
@@ -347,7 +354,7 @@ function PlanetPiece({
           setSize({ w: planet.target.w, h: planet.target.w });
           setImageH(planet.target.w);
           settleToTarget();
-          onActivate(null);
+          onActivateRef.current(null);
         },
         onPanResponderTerminate: () => {
           setShowPressedLabel(false);
@@ -358,7 +365,7 @@ function PlanetPiece({
           }).start();
           if (placed) {
             setPressed(false);
-            onActivate(null);
+            onActivateRef.current(null);
             return;
           }
           setPressed(false);
@@ -382,11 +389,11 @@ function PlanetPiece({
           ]).start(() => {
             setSettling(false);
           });
-          onActivate(null);
+          onActivateRef.current(null);
         },
         onPanResponderTerminationRequest: () => false,
       }),
-    [lang, onActivate, onPlaced, planet.id, planet.labelFa, planet.start.x, planet.start.y, planet.target.h, planet.target.w, planet.target.x, planet.target.y, placed, size.h, size.w, xAnim, yAnim],
+    [lang, planet.id, planet.labelFa, planet.start.x, planet.start.y, planet.target.h, planet.target.w, planet.target.x, planet.target.y, placed, size.h, size.w, xAnim, yAnim],
   );
 
   useEffect(() => {
@@ -520,7 +527,7 @@ export default function SolarSystemPuzzleGame() {
         <View style={styles.bgWash} />
       </ImageBackground>
 
-      <TopBar title="Solar System" titleFa="منظومه خورشیدی" showClose dark />
+      <TopBar title="Solar System" titleFa="منظومه خورشیدی" showClose dark onBack={() => reset({ name: 'Main', tab: 'Games' })} />
 
       <View style={styles.stage} onLayout={event => setStageSize(event.nativeEvent.layout)}>
         {layout.length ? (

@@ -262,10 +262,10 @@ export default function MemoryGame() {
   const activePairGoal = Math.min(pairCount, Math.floor(cardCount / 2));
 
   const compactHeight = Math.max(0, height - 118);
-  const lilaWidth = Math.min(260, Math.max(180, Math.floor(width * 0.2)));
-  const lilaHeight = Math.min(340, Math.max(240, lilaWidth * 1.28));
+  const mascotWidth = Math.min(312, Math.max(216, Math.floor(width * 0.24)));
+  const mascotHeight = Math.min(408, Math.max(288, mascotWidth * 1.28));
   const stageWidth = Math.min(width - 48, 720);
-  const gridInnerWidth = stageWidth - lilaWidth - 16;
+  const gridInnerWidth = stageWidth - mascotWidth - 16;
   const cardGap = 10;
   const cardSize = Math.min(
     92,
@@ -407,7 +407,7 @@ export default function MemoryGame() {
     <View style={styles.root}>
       <TopBar
         title="Memory Match"
-        titleFa="بازی حافظه"
+        titleFa="بازی فکر"
         dark
         showClose
         onBack={closeGame}
@@ -433,7 +433,7 @@ export default function MemoryGame() {
         <View style={[styles.stage, { maxWidth: stageWidth }]}>
           <Image
             source={LILA_THINKING}
-            style={{ width: lilaWidth, height: lilaHeight }}
+            style={{ width: mascotWidth, height: mascotHeight, transform: [{ scale: 1.3 }] }}
             resizeMode="contain"
           />
 

@@ -8,6 +8,8 @@ export type Screen =
   | { name: 'Premium' }
   | { name: 'Age' }
   | { name: 'Main'; tab?: string }
+  | { name: 'Home' }
+  | { name: 'AlphabetHub' }
   | { name: 'Section'; id: string }
   | { name: 'Game'; gameId: string }
   | { name: 'Characters' }

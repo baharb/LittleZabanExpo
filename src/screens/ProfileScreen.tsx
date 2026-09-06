@@ -37,6 +37,13 @@ function t(lang: Lang, key: keyof typeof TX): string {
   return TX[key]?.[lang] ?? TX[key]?.en ?? '';
 }
 
+// Temporary visibility flags for sections hidden for now — flip back to
+// true to restore them once they're ready.
+const SHOW_CHILD_PROFILE_BOX = false;
+const SHOW_STATS_ROW = false;
+const SHOW_CHILD_AGE_BOX = false;
+const SHOW_REWARDS_BOX = false;
+
 export default function ProfileScreen() {
   const {
     settingsLang, setSettingsLang, stars, streak, badges, completedSections, age, setAge, selectedCharacterId, accountContact, changePassword,
@@ -93,7 +100,11 @@ export default function ProfileScreen() {
           <Text style={[styles.sectionTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(16, Math.round(18 * ui)) }, dir(lang)]}>
             {t(lang, 'settingsHelp')}
           </Text>
-          <View style={[styles.languageRow, isFa && styles.languageRowRtl]}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.languageRow}
+          >
             {LANGUAGES.map(language => (
               <TouchableOpacity
                 key={language.code}
@@ -101,7 +112,13 @@ export default function ProfileScreen() {
                 onPress={() => setSettingsLang(language.code)}
                 activeOpacity={0.82}
               >
-                <Text style={styles.languageFlag}>{language.flag}</Text>
+                <View style={styles.languageFlagBox}>
+                  {language.code === 'fa' ? (
+                    <Image source={neliWorldAssets.ui.flagIran} style={styles.languageFlagImg} resizeMode="cover" />
+                  ) : (
+                    <Text style={styles.languageFlag}>{language.flag}</Text>
+                  )}
+                </View>
                 <Text
                   numberOfLines={1}
                   style={[
@@ -110,11 +127,11 @@ export default function ProfileScreen() {
                     { fontFamily: ff(language.code, 'bold') },
                   ]}
                 >
-                  {language.nativeLabel}
+                  {language.shortLabel}
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
           <Text style={[styles.languageNote, { fontFamily: ff(lang, 'regular') }, dir(lang)]}>
             {t(lang, 'settingsNote')}
           </Text>
@@ -125,7 +142,7 @@ export default function ProfileScreen() {
           <Text style={[styles.sectionTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(16, Math.round(18 * ui)) }, dir(lang)]}>
             {t(lang, 'parentAccount')}
           </Text>
-          <Text style={styles.accountContact}>{accountContact}</Text>
+          <Text style={[styles.accountContact, { fontFamily: ff(lang, 'bold') }]}>{accountContact}</Text>
           <View style={styles.passwordForm}>
             <TextInput
               value={currentPassword}
@@ -174,7 +191,8 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Box 3 — Child profile (simple panel, static character) */}
+        {/* Box 3 — Child profile (simple panel, static character) — hidden for now */}
+        {SHOW_CHILD_PROFILE_BOX ? (
         <View style={[styles.panel, styles.hero, { borderRadius: Math.max(26, Math.round(30 * ui)), padding: Math.max(12, Math.round(16 * ui)) }]}>
           <CharacterAvatar characterId={selectedCharacterId} size={Math.max(138, Math.round(156 * ui))} floating={false} />
           <View style={styles.heroText}>
@@ -189,8 +207,10 @@ export default function ProfileScreen() {
             </Text>
           </View>
         </View>
+        ) : null}
 
-        {/* Stats row */}
+        {/* Stats row — hidden for now */}
+        {SHOW_STATS_ROW ? (
         <View style={[styles.statsRow, { gap: Math.max(8, Math.round(10 * ui)) }]}>
           <View style={[styles.statCard, { backgroundColor: '#FFE57A' }]}>
             <Image source={neliWorldAssets.ui.star} style={styles.statIcon} resizeMode="contain" />
@@ -208,8 +228,10 @@ export default function ProfileScreen() {
             <Text style={[styles.statLbl, { fontFamily: ff(lang, 'bold') }]}>{t(lang, 'done')}</Text>
           </View>
         </View>
+        ) : null}
 
-        {/* Box 4 — Child age */}
+        {/* Box 4 — Child age — hidden for now */}
+        {SHOW_CHILD_AGE_BOX ? (
         <View style={[styles.panel, styles.ageSettings, { borderRadius: Math.max(22, Math.round(26 * ui)), padding: Math.max(14, Math.round(16 * ui)) }]}>
           <View style={styles.settingsCopy}>
             <Text style={[styles.settingsTitle, { fontFamily: ff(lang, 'black') }, dir(lang)]}>{t(lang, 'childAge')}</Text>
@@ -230,6 +252,7 @@ export default function ProfileScreen() {
             ))}
           </View>
         </View>
+        ) : null}
 
         {/* Box 5 — Daily time limit */}
         <DailyLimitCard
@@ -244,7 +267,8 @@ export default function ProfileScreen() {
           onAddBonus={addBonusMinutes}
         />
 
-        {/* Box 6 — Rewards */}
+        {/* Box 6 — Rewards — hidden for now */}
+        {SHOW_REWARDS_BOX ? (
         <View style={[styles.panel, { borderRadius: Math.max(22, Math.round(26 * ui)), padding: Math.max(14, Math.round(16 * ui)) }]}>
           <Text style={[styles.sectionTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(16, Math.round(18 * ui)), marginBottom: Math.max(10, Math.round(12 * ui)) }, dir(lang)]}>
             {t(lang, 'rewards')}
@@ -260,6 +284,7 @@ export default function ProfileScreen() {
             })}
           </View>
         </View>
+        ) : null}
 
       </ScrollView>
     </View>
@@ -281,15 +306,16 @@ const styles = StyleSheet.create({
   statLbl: { color: '#493C63', fontSize: 11, fontWeight: '900' },
   panel: { backgroundColor: 'rgba(255,255,255,0.95)' },
   sectionTitle: { color: '#221044', fontWeight: '900', marginBottom: 12 },
-  languageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  languageRowRtl: { flexDirection: 'row-reverse' },
-  languageButton: { minWidth: 92, flexGrow: 1, flexBasis: '29%', minHeight: 58, borderRadius: 18, paddingHorizontal: 9, paddingVertical: 8, backgroundColor: '#F0EBFF', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: 'transparent' },
+  languageRow: { flexDirection: 'row', gap: 8, paddingVertical: 2, paddingHorizontal: 1 },
+  languageButton: { width: 66, minHeight: 62, borderRadius: 16, paddingHorizontal: 6, paddingVertical: 8, backgroundColor: '#F0EBFF', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: 'transparent' },
   languageButtonActive: { backgroundColor: '#FFF2C7', borderColor: '#F5B800' },
-  languageFlag: { fontSize: 21 },
-  languageText: { color: '#5C4B78', fontSize: 11, marginTop: 2, textAlign: 'center' },
+  languageFlagBox: { width: 30, height: 20, borderRadius: 5, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  languageFlagImg: { width: 30, height: 20 },
+  languageFlag: { fontSize: 18, lineHeight: 20, textAlign: 'center' },
+  languageText: { color: '#5C4B78', fontSize: 10.5, marginTop: 3, textAlign: 'center' },
   languageTextActive: { color: '#221044' },
   languageNote: { color: '#6B5A89', fontSize: 11.5, lineHeight: 18, marginTop: 10 },
-  accountContact: { color: '#7C3AED', fontFamily: 'Nunito_700Bold', fontSize: 13, textAlign: 'right', marginBottom: 11 },
+  accountContact: { color: '#7C3AED', fontSize: 13, textAlign: 'right', marginBottom: 11 },
   passwordForm: { gap: 9 },
   passwordRow: { flexDirection: 'row-reverse', gap: 9 },
   passwordInput: { height: 52, borderRadius: 16, backgroundColor: '#F3F0F8', borderWidth: 2, borderColor: '#DED7EA', paddingHorizontal: 14, color: '#2D1B69', textAlign: 'right', fontSize: 13 },

@@ -1,5 +1,5 @@
 /**
- * Shared dark-purple Lingokids style constants
+ * Shared dark-purple theme constants
  * BG = deep purple background
  * CARD = white rounded card
  */

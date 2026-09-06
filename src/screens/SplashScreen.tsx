@@ -60,7 +60,7 @@ export default function SplashScreen() {
     const timer = setTimeout(() => {
       if (!authReady) return;
       if (timeExpired) { reset({ name: 'TimeUp' }); return; }
-      reset(hasAccount ? { name: 'Main', tab: 'Games' } : { name: 'AccountSetup' });
+      reset(hasAccount ? { name: 'Home' } : { name: 'AccountSetup' });
     }, 3100);
     return () => {
       clearTimeout(timer);
@@ -103,7 +103,7 @@ export default function SplashScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#41D778' },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(37,16,92,0.14)' },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,0,245,0.14)' },
   content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 26, paddingBottom: 34 },
     contentLandscape: { flexDirection: 'row-reverse', gap: 34 },
     contentTablet: { paddingHorizontal: 54, paddingBottom: 54 },

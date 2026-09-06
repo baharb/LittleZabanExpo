@@ -393,7 +393,6 @@ export default function ToothBrushGame() {
       const currentCleanCount = cleanedRef.current.filter(Boolean).length;
       if (!doneRef.current && currentCleanCount < NUM && lastBubblePointRef.current.active) {
         brushIdleCuePlayedRef.current = true;
-        void playFaAudioSequence([FA_AUDIO_KEYS.toothbrush.cleanNow], 100);
       }
     }, 900);
   };
@@ -404,7 +403,6 @@ export default function ToothBrushGame() {
     lastBubblePointRef.current.active = false;
     const currentCleanCount = cleanedRef.current.filter(Boolean).length;
     if (!doneRef.current && currentCleanCount < NUM) {
-      void playFaAudioSequence([FA_AUDIO_KEYS.toothbrush.cleanNow], 100);
     }
   };
   const pan = useRef(PanResponder.create({
@@ -468,12 +466,12 @@ export default function ToothBrushGame() {
   return (
     <View style={styles.root}>
       <ImageBackground source={sceneSource} style={styles.scene} resizeMode="cover">
-        <TopBar title="Brush Teeth" titleFa="مسواک زدن" showClose dark topInset={10} />
+        <TopBar title="Brush Teeth" titleFa="مسواک بزن" showClose dark topInset={10} onBack={() => reset({ name: 'Main', tab: 'Games' })} />
 
         {!showSparkles && !done ? (
           <View style={styles.promptPill}>
             <Text style={[styles.progressTitle, dir(lang), { fontFamily: isFa ? ff('fa', 'black') : ff(lang, 'black') }]}>
-              {isFa ? 'دندان‌های لیلا را مسواک بزن' : "Brush Lila's teeth"}
+              {isFa ? 'دندان‌های لی لا را مسواک بزن' : "Brush Lila's teeth"}
             </Text>
           </View>
         ) : null}

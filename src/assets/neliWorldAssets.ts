@@ -496,6 +496,8 @@ export const neliWorldAssets = {
     restart: require('../../assets/neli-world/ui-icons/restart.png'),
     rainbow: require('../../assets/neli-world/ui-icons/rainbow.png'),
     settings: require('../../assets/neli-world/ui-icons/settings.png'),
+    settingsIcon: require('../../assets/neli-world/ui-icons/ui/setting.png'),
+    flagIran: require('../../assets/neli-world/ui-icons/flags/iran_sun_lion.png'),
     sparkle: require('../../assets/neli-world/ui-icons/sparkle.png'),
     spoon: require('../../assets/neli-world/ui-icons/spoon.png'),
     star: require('../../assets/neli-world/ui-icons/star.png'),
