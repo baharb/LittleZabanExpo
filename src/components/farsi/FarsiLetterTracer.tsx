@@ -72,7 +72,7 @@ const TRACE_IMAGE_ID: Record<string, string> = {
   zaa: 'za',
 };
 
-// ─── Celebration particles (3-fountain LingoKids style) ───────────────────────
+// ─── Celebration particles (3-fountain burst style) ───────────────────────
 
 function buildCelebParticles(W: number, H: number): CelebParticle[] {
   const cols = ['#FFE034','#FF6B9D','#4CC9F0','#80ED99','#FF9F1C','#C77DFF','#FF5757','#56CFE1'];
@@ -140,7 +140,7 @@ function CelebrationOverlay({
   );
 }
 
-// ─── Animated guide path (flowing dashes, LingoKids style) ────────────────────
+// ─── Animated guide path (flowing dashes) ────────────────────
 
 function AnimatedGuidePath({
   pathD, color, anim, opacity = 0.6,

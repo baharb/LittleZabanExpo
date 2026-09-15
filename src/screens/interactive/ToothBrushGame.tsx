@@ -35,8 +35,8 @@ const FOAM_POINTS = [
   { left: 0.74, top: 0.28, size: 8 },
 ] as const;
 
-const LILA_BRUSHING = require('../../../assets/neli-world/characters/Lila/lila_big_smile_640.png');
-const BUBBLE_IMAGE = require('../../../assets/neli-world/characters/bubbles_512.png');
+const LILA_BRUSHING = require('../../../assets/neli-world/characters/Lila/lila_big_smile_640.webp');
+const BUBBLE_IMAGE = require('../../../assets/neli-world/characters/bubbles_512.webp');
 const BRUSH_RENDER_WIDTH = 168;
 const BRUSH_RENDER_HEIGHT = Math.round(BRUSH_RENDER_WIDTH * (889 / 512));
 const BRUSH_START_RENDER_WIDTH = 112;

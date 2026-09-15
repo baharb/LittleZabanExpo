@@ -33,7 +33,6 @@ export type Screen =
   | { name: 'Cooking' }
   | { name: 'ToothBrush' }
   | { name: 'ConversationGame' }
-  | { name: 'IranPuzzle' }
   | { name: 'SolarPuzzle' }
   | { name: 'TimeUp' };
 

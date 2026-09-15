@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#6B21A8"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.zaal.app"
@@ -19,9 +21,14 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#6B21A8"
+        "backgroundColor": "#FFFFFF"
       },
       "package": "com.zaal.app"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d5d78fae-7a7e-46c9-8f76-31fc0c631c2b"
+      }
     }
   }
 }

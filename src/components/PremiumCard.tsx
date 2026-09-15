@@ -12,7 +12,7 @@ interface Props {
 
 const TX = {
   titleActive: { fa: 'عضو ویژه ✨', en: 'Premium ✨', fr: 'Premium ✨', es: 'Premium ✨', ar: 'عضو مميز ✨', zh: 'Premium ✨', ko: 'Premium ✨' },
-  title:       { fa: 'زبان کوچولو ویژه', en: 'Go Premium', fr: 'Passer à Premium', es: 'Hazte Premium', ar: 'الترقية إلى المميز', zh: 'Go Premium', ko: 'Go Premium' },
+  title:       { fa: 'فعال سازی نسخه ویژه زال', en: 'Go Premium', fr: 'Passer à Premium', es: 'Hazte Premium', ar: 'الترقية إلى المميز', zh: 'Go Premium', ko: 'Go Premium' },
 } as const;
 
 function t(lang: Lang, key: keyof typeof TX): string {
@@ -23,13 +23,14 @@ function t(lang: Lang, key: keyof typeof TX): string {
 // rather than a full-width row. Keeps the "go premium" nudge visible
 // without it competing with the rest of the page for attention.
 export default function PremiumCard({ lang, isPremium, onPress }: Props) {
+  const isFa = lang === 'fa';
   return (
     <TouchableOpacity style={styles.wrap} onPress={onPress} activeOpacity={0.86}>
       <LinearGradient
         colors={isPremium ? ['#34D399', '#0EA5E9'] : ['#FFE066', '#FF9D2E']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.pill}
+        style={[styles.pill, isFa && styles.pillRtl]}
       >
         <Text style={styles.crown}>👑</Text>
         <Text style={[styles.title, { fontFamily: ff(lang, 'black') }, dir(lang)]} numberOfLines={1}>
@@ -50,6 +51,7 @@ const styles = StyleSheet.create({
     shadowColor: '#B8860B', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 },
     elevation: 6,
   },
+  pillRtl: { flexDirection: 'row-reverse' },
   crown: { fontSize: 17 },
   title: { color: '#2D1B69', fontSize: 14 },
 });

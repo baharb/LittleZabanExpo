@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { Image, ImageSourcePropType, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
-import { ff } from '../theme/fonts';
+import { Lang } from '../store/AppContext';
+import { dir, ff } from '../theme/fonts';
 
 interface Props {
   iconSource?: ImageSourcePropType;
   iconEmoji?: string;
+  iconBg?: string;
+  iconTint?: string;
+  iconRound?: boolean;
+  lang: Lang;
   title: string;
   subtitle: string;
   buttonLabel: string;
@@ -15,15 +20,23 @@ interface Props {
   onClose: () => void;
 }
 
+const PLACEHOLDER: Partial<Record<Lang, string>> = {
+  fa: 'رمز عبور، ۴ رقم', en: '4-digit passcode',
+  fr: 'Code à 4 chiffres', es: 'Contraseña de 4 dígitos',
+};
+
 // Shared visual shell for any "confirm the parent password before X" flow —
 // currently used by Settings and by Premium. Keeping the card, blobs and PIN
 // input in one place means every password gate in the app looks and behaves
 // the same, and a future one is just a few lines of copy plugged in here.
+// `lang` follows the parent's chosen settings language so this always reads
+// in whatever language they last picked.
 export default function PasswordGate({
-  iconSource, iconEmoji, title, subtitle, buttonLabel, errorText, onVerify, onSuccess, onClose,
+  iconSource, iconEmoji, iconBg, iconTint, iconRound, lang, title, subtitle, buttonLabel, errorText, onVerify, onSuccess, onClose,
 }: Props) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const textDir = dir(lang);
 
   const submit = () => {
     if (!onVerify(password)) {
@@ -43,15 +56,15 @@ export default function PasswordGate({
         <Image source={neliWorldAssets.ui.close} style={styles.closeIcon} resizeMode="contain" />
       </TouchableOpacity>
       <View style={styles.card}>
-        <View style={styles.iconCircle}>
+        <View style={[styles.iconCircle, iconBg ? { backgroundColor: iconBg } : null, iconRound ? styles.iconCircleRound : null]}>
           {iconSource ? (
-            <Image source={iconSource} style={styles.settingsIcon} resizeMode="contain" />
+            <Image source={iconSource} style={[styles.settingsIcon, iconTint ? { tintColor: iconTint } : null]} resizeMode="contain" />
           ) : (
             <Text style={styles.emojiIcon}>{iconEmoji}</Text>
           )}
         </View>
-        <Text style={[styles.title, { fontFamily: ff('fa', 'black') }]}>{title}</Text>
-        <Text style={[styles.subtitle, { fontFamily: ff('fa', 'regular') }]}>{subtitle}</Text>
+        <Text style={[styles.title, { fontFamily: ff(lang, 'black') }, textDir, styles.centerText]}>{title}</Text>
+        <Text style={[styles.subtitle, { fontFamily: ff(lang, 'regular') }, textDir, styles.centerText]}>{subtitle}</Text>
         <TextInput
           value={password}
           onChangeText={value => { setPassword(value.replace(/\D/g, '').slice(0, 4)); setError(''); }}
@@ -60,14 +73,14 @@ export default function PasswordGate({
           keyboardType="numeric"
           maxLength={4}
           textContentType="password"
-          placeholder="رمز عبور، ۴ رقم"
+          placeholder={PLACEHOLDER[lang] ?? PLACEHOLDER.en}
           placeholderTextColor="#9488AD"
-          style={[styles.input, { fontFamily: ff('fa', 'regular') }]}
+          style={[styles.input, { fontFamily: ff(lang, 'regular') }, textDir]}
           onSubmitEditing={submit}
         />
-        {error ? <Text style={[styles.error, { fontFamily: ff('fa', 'bold') }]}>{error}</Text> : null}
+        {error ? <Text style={[styles.error, { fontFamily: ff(lang, 'bold') }, textDir]}>{error}</Text> : null}
         <TouchableOpacity style={styles.button} onPress={submit} activeOpacity={0.86}>
-          <Text style={[styles.buttonText, { fontFamily: ff('fa', 'black') }]}>{buttonLabel}</Text>
+          <Text style={[styles.buttonText, { fontFamily: ff(lang, 'black') }]}>{buttonLabel}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -82,12 +95,14 @@ const styles = StyleSheet.create({
   closeIcon: { width: 58, height: 58 },
   card: { width: '48%', minWidth: 410, maxWidth: 570, backgroundColor: '#FFFFFF', borderRadius: 32, paddingHorizontal: 40, paddingVertical: 28, alignItems: 'center', borderWidth: 6, borderColor: 'rgba(255,255,255,0.68)', elevation: 12, shadowColor: '#0C0623', shadowOpacity: 0.3, shadowRadius: 24, shadowOffset: { width: 0, height: 12 } },
   iconCircle: { width: 88, height: 88, borderRadius: 30, backgroundColor: '#FFF0C8', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  iconCircleRound: { borderRadius: 44 },
   settingsIcon: { width: 68, height: 68 },
   emojiIcon: { fontSize: 44 },
-  title: { color: '#2D1B69', fontSize: 28, textAlign: 'center' },
-  subtitle: { color: '#74668F', fontSize: 14, lineHeight: 23, textAlign: 'center', marginTop: 5 },
-  input: { width: '100%', height: 58, borderRadius: 18, backgroundColor: '#F3F0F8', borderWidth: 2, borderColor: '#DDD5E9', color: '#2D1B69', textAlign: 'right', paddingHorizontal: 17, marginTop: 18, fontSize: 16 },
-  error: { color: '#D73737', alignSelf: 'stretch', textAlign: 'right', marginTop: 7, fontSize: 12 },
+  title: { color: '#2D1B69', fontSize: 28 },
+  subtitle: { color: '#74668F', fontSize: 14, lineHeight: 23, marginTop: 5 },
+  centerText: { textAlign: 'center' },
+  input: { width: '100%', height: 58, borderRadius: 18, backgroundColor: '#F3F0F8', borderWidth: 2, borderColor: '#DDD5E9', color: '#2D1B69', paddingHorizontal: 17, marginTop: 18, fontSize: 16 },
+  error: { color: '#D73737', alignSelf: 'stretch', marginTop: 7, fontSize: 12 },
   button: { width: '100%', height: 58, borderRadius: 19, backgroundColor: '#FF7A1A', alignItems: 'center', justifyContent: 'center', marginTop: 14 },
   buttonText: { color: '#FFFFFF', fontSize: 16 },
 });

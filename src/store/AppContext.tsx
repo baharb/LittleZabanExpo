@@ -13,9 +13,6 @@ export const LANGUAGES: {
   { code: 'fa', flag: '🇮🇷', label: 'Farsi',    nativeLabel: 'فارسی',    rtl: true,  speechCode: 'fa-IR' },
   { code: 'fr', flag: '🇫🇷', label: 'French',   nativeLabel: 'Français', rtl: false, speechCode: 'fr-FR' },
   { code: 'es', flag: '🇪🇸', label: 'Spanish',  nativeLabel: 'Español',  rtl: false, speechCode: 'es-ES' },
-  { code: 'zh', flag: '🇨🇳', label: 'Chinese',  nativeLabel: '中文',     rtl: false, speechCode: 'zh-CN' },
-  { code: 'ko', flag: '🇰🇷', label: 'Korean',   nativeLabel: '한국어',   rtl: false, speechCode: 'ko-KR' },
-  { code: 'ar', flag: '🇸🇦', label: 'Arabic',   nativeLabel: 'العربية',  rtl: true,  speechCode: 'ar-SA' },
 ];
 
 export function isRTL(lang: Lang) { return lang === 'fa' || lang === 'ar'; }
@@ -40,7 +37,8 @@ interface AppContextType {
   pathProgress: number; setPathProgress: (n: number) => void;
   selectedCharacterId: string; setSelectedCharacter: (id: string) => void;
   authReady: boolean; hasAccount: boolean; accountContact: string | null;
-  activateAccount: (contact: string, password: string) => Promise<void>;
+  parentBirthYear: number | null;
+  activateAccount: (contact: string, password: string, parentBirthYear?: number) => Promise<void>;
   verifySettingsPassword: (password: string) => boolean;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
   // Premium/subscription status. Not wired to a real payment provider yet —
@@ -69,6 +67,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [selectedCharacterId, setSelectedCharacterState] = useState('neli');
   const [authReady, setAuthReady] = useState(false);
   const [accountContact, setAccountContact] = useState<string | null>(null);
+  const [parentBirthYear, setParentBirthYearState] = useState<number | null>(null);
   const [passwordSalt, setPasswordSalt] = useState('');
   const [passwordVerifier, setPasswordVerifier] = useState('');
   const [isPremium, setIsPremiumState] = useState(false);
@@ -103,23 +102,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (s.pathProgress) setPathProgressState(s.pathProgress);
           if (s.selectedCharacterId) setSelectedCharacterState(s.selectedCharacterId);
           if (s.accountContact) setAccountContact(s.accountContact);
+          if (s.parentBirthYear) setParentBirthYearState(s.parentBirthYear);
           if (s.passwordSalt) setPasswordSalt(s.passwordSalt);
           if (s.passwordVerifier) setPasswordVerifier(s.passwordVerifier);
           if (s.isPremium) setIsPremiumState(true);
-
-          // One-time recovery: the parent settings password was forgotten,
-          // so force it to "1985" the first time the app loads after this
-          // change. The password is stored as a salted hash (not plaintext),
-          // so this is the only way to reset it without knowing the old one.
-          // Safe to delete this block (and the pwResetTo1985 flag) once the
-          // new password has been confirmed to work.
-          if (s.passwordVerifier && !s.pwResetTo1985) {
-            const recoverySalt = createPasswordSalt();
-            const recoveryVerifier = derivePasswordVerifier('1985', recoverySalt);
-            setPasswordSalt(recoverySalt);
-            setPasswordVerifier(recoveryVerifier);
-            save({ passwordSalt: recoverySalt, passwordVerifier: recoveryVerifier, pwResetTo1985: true });
-          }
 
           if (s.dailyLimitEnabled) setDailyLimitEnabledState(true);
           if (s.dailyLimitMinutes) setDailyLimitMinutesState(s.dailyLimitMinutes);
@@ -221,13 +207,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const completeSection = (id: string) => setCompletedSections(p => { if (p.includes(id)) return p; const v = [...p, id]; save({ completedSections: v }); return v; });
   const setPathProgress = (n: number) => { setPathProgressState(n); save({ pathProgress: n }); };
   const setSelectedCharacter = (id: string) => { setSelectedCharacterState(id); save({ selectedCharacterId: id }); };
-  const activateAccount = async (contact: string, password: string) => {
+  const activateAccount = async (contact: string, password: string, parentBirthYear?: number) => {
     const salt = createPasswordSalt();
     const verifier = derivePasswordVerifier(password, salt);
     setAccountContact(contact);
     setPasswordSalt(salt);
     setPasswordVerifier(verifier);
-    await save({ accountContact: contact, passwordSalt: salt, passwordVerifier: verifier });
+    if (parentBirthYear) setParentBirthYearState(parentBirthYear);
+    await save({ accountContact: contact, passwordSalt: salt, passwordVerifier: verifier, ...(parentBirthYear ? { parentBirthYear } : {}) });
   };
   const verifySettingsPassword = (password: string) => Boolean(passwordSalt && passwordVerifier) && derivePasswordVerifier(password, passwordSalt) === passwordVerifier;
   const changePassword = async (currentPassword: string, newPassword: string) => {
@@ -260,6 +247,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       pathProgress, setPathProgress,
       selectedCharacterId, setSelectedCharacter,
       authReady, hasAccount: Boolean(accountContact && passwordVerifier), accountContact,
+      parentBirthYear,
       activateAccount, verifySettingsPassword, changePassword,
       isPremium, setIsPremium,
       dailyLimitEnabled, setDailyLimitEnabled,

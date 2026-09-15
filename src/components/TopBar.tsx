@@ -20,12 +20,14 @@ interface Props {
   onBack?: () => void;
   rightContent?: React.ReactNode;
   displayLang?: Lang;
+  showSettingsIcon?: boolean;
+  titleIcon?: boolean;
 }
 
 export default function TopBar({
   title = '', titleFa, titleFr, titleEs, titleZh, titleKo, titleAr,
   showBack = false, showClose = false, dark = true, compactTitle = false, large = false, topInset = 0, onBack, rightContent,
-  displayLang,
+  displayLang, showSettingsIcon = true, titleIcon = false,
 }: Props) {
   const { lang: appLang } = useContext(AppContext);
   const lang = displayLang ?? appLang;
@@ -89,9 +91,18 @@ export default function TopBar({
           </>
         ) : titleFa ? (
           <>
-            <Text style={[styles.titleFa, { color: txtColor, fontFamily: ff(lang, 'black'), fontSize: titleSize }]} numberOfLines={1}>
-              {localTitle}
-            </Text>
+            <View style={[styles.titleRow, (lang === 'fa' || lang === 'ar') && styles.titleRowRtl]}>
+              {titleIcon ? (
+                <Image
+                  source={neliWorldAssets.ui.settingsIcon}
+                  style={[styles.titleIconImg, { width: titleSize * 1.44, height: titleSize * 1.44, tintColor: txtColor }]}
+                  resizeMode="contain"
+                />
+              ) : null}
+              <Text style={[styles.titleFa, { color: txtColor, fontFamily: ff(lang, 'black'), fontSize: titleSize }]} numberOfLines={1}>
+                {localTitle}
+              </Text>
+            </View>
             {title && localTitle !== title ? (
               <Text style={[styles.titleEnSub, { color: txtColor, fontFamily: ff('en', 'regular'), fontSize: titleSubSize }]} numberOfLines={1}>
                 {title}
@@ -108,7 +119,7 @@ export default function TopBar({
       <View style={[styles.side, { alignItems: 'flex-end' }]}>
         <View style={styles.rightRow}>
           {rightContent}
-          <LangBar dark={dark} buttonSize={buttonSize} iconSize={iconSize} />
+          {showSettingsIcon ? <LangBar dark={dark} buttonSize={buttonSize} iconSize={iconSize} /> : null}
         </View>
       </View>
     </View>
@@ -123,6 +134,9 @@ const styles = StyleSheet.create({
   side:      { width: 84, justifyContent: 'center' },
   rightRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6 },
   titleWrap: { flex: 1, alignItems: 'center' },
+  titleRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  titleRowRtl: { flexDirection: 'row-reverse' },
+  titleIconImg: {},
   titleFa:   { fontSize: 18, textAlign: 'center' },
   titleEnSub:{ fontSize: 11, textAlign: 'center', opacity: 0.55 },
   titleOnly: { fontSize: 18, textAlign: 'center' },

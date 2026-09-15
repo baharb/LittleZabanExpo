@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { AppContext } from '../../store/AppContext';
+import { useNav } from '../../store/NavContext';
 import { useSpeech } from '../../hooks/useSpeech';
 import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
 import TopBar from '../../components/TopBar';
@@ -93,10 +94,6 @@ const RECIPES: Recipe[] = [
   { id: 'pizza', fa: 'پیتزا', en: 'Pizza', color: '#FB923C', vessel: 'plate', steps: [ALL.pizzaBread, ALL.tomato, ALL.pizzaCheese, ALL.mushroom, ALL.bellPepper, ALL.olive], menuSource: neliWorldAssets.persianFoods.pizza, resultSource: neliWorldAssets.persianFoods.pizza },
   { id: 'zereshk-polo', fa: 'زرشک پلو', en: 'Zereshk Polo', color: '#C026D3', vessel: 'pot', steps: [ALL.rice, ALL.zereshk, ALL.saffron, ALL.oil, ALL.salt], menuSource: neliWorldAssets.persianFoods.zereshkPolo, resultSource: neliWorldAssets.persianFoods.zereshkPolo },
 ];
-
-function hit(rect: Rect, x: number, y: number) {
-  return x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h;
-}
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -229,6 +226,15 @@ function FoodTile({
   const [pressed, setPressed] = useState(false);
   const touchWidth = Math.max(slot.w, size + 24);
   const touchHeight = Math.max(slot.h, size + 42);
+  // Stable ref so the PanResponder below isn't rebuilt (and an in-progress
+  // drag lost) whenever the parent re-renders and hands down a new onAttempt
+  // function identity.
+  const onAttemptRef = useRef(onAttempt);
+  onAttemptRef.current = onAttempt;
+  // Same idea as onAttemptRef: keep the latest slot without forcing the
+  // PanResponder (created once below via useMemo) to be rebuilt.
+  const slotRef = useRef(slot);
+  slotRef.current = slot;
 
   useEffect(() => {
     drag.setValue({ x: 0, y: 0 });
@@ -256,7 +262,12 @@ function FoodTile({
         }),
         onPanResponderRelease: (_evt, gestureState) => {
           setPressed(false);
-          onAttempt(ingredient, { x: gestureState.moveX, y: gestureState.moveY });
+          const s = slotRef.current;
+          const releasePoint = {
+            x: s.x + s.w / 2 + gestureState.dx,
+            y: s.y + s.h / 2 + gestureState.dy,
+          };
+          onAttemptRef.current(ingredient, releasePoint);
           Animated.parallel([
             Animated.spring(drag, { toValue: { x: 0, y: 0 }, useNativeDriver: true }),
             Animated.spring(scale, { toValue: 1, useNativeDriver: true }),
@@ -270,7 +281,7 @@ function FoodTile({
           ]).start();
         },
       }),
-    [disabled, drag, ingredient, onAttempt, scale],
+    [disabled, drag, ingredient, scale],
   );
 
   return (
@@ -450,6 +461,7 @@ function BowlAddEffect({
 
 export default function CookingGame() {
   const { lang, addStars } = useContext(AppContext);
+  const { reset: resetNav } = useNav();
   const { width, height } = useLandscapeDimensions();
   const { speakFarsiOnly, speakInLang, stop } = useSpeech();
   const stageRef = useRef<View>(null);
@@ -488,16 +500,40 @@ export default function CookingGame() {
     });
   };
 
+  // Kept current via a plain effect so the (non-reactive) idle-reminder timer
+  // below can check it without retriggering the audio effect when `done`
+  // flips true on the same step (the last ingredient of a recipe).
+  const doneRef = useRef(done);
   useEffect(() => {
-    setStep(0);
-    setUsedIds([]);
-    setDone(false);
-    setShowCelebration(false);
-    setWrong(false);
-    setFly(null);
-    setBowlAdd(null);
-    setResetToken(prev => prev + 1);
-  }, [recipeIdx]);
+    doneRef.current = done;
+  }, [done]);
+
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearIdleReminder = () => {
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+  };
+  const announceCurrentIngredient = () => {
+    const key = getIngredientAudioKey(current.id);
+    if (key) {
+      void playFaAudio(key);
+    } else {
+      say(`بعدی: ${current.fa}`, `Next: ${current.en}`);
+    }
+  };
+  // Repeats the current ingredient's name every 6s of inactivity so a child
+  // who wandered off or forgot what's next gets reminded, until they move on
+  // (step/resetToken change, handled by the effect below) or finish (done).
+  const scheduleIdleReminder = () => {
+    clearIdleReminder();
+    idleTimerRef.current = setTimeout(() => {
+      if (doneRef.current) return;
+      announceCurrentIngredient();
+      scheduleIdleReminder();
+    }, 6000);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -512,16 +548,14 @@ export default function CookingGame() {
           if (cancelled) return;
         }
       }
-      const key = getIngredientAudioKey(current.id);
-      if (key) {
-        void playFaAudio(key);
-      } else {
-        say(`بعدی: ${current.fa}`, `Next: ${current.en}`);
-      }
+      if (cancelled) return;
+      announceCurrentIngredient();
+      scheduleIdleReminder();
     };
     void run();
     return () => {
       cancelled = true;
+      clearIdleReminder();
     };
   }, [resetToken, step]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -533,15 +567,18 @@ export default function CookingGame() {
 
   const handleDrop = (ingredient: Ingredient, point: Point) => {
     if (done || usedIds.includes(ingredient.id)) return;
-    const localPoint = {
-      x: point.x - stageOrigin.x,
-      y: point.y - stageOrigin.y,
-    };
-    if (ingredient.id !== current.id || !hit(target, localPoint.x, localPoint.y)) {
+    // `point` is already stage-local (the tile's own slot position plus how far it was
+    // dragged), so no window-offset correction is needed here.
+    const localPoint = point;
+    // Position no longer matters once a drag starts: releasing the correct next
+    // ingredient anywhere sends it flying to the bowl. Only the wrong ingredient
+    // is rejected.
+    if (ingredient.id !== current.id) {
       setWrong(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setTimeout(() => setWrong(false), 500);
-      say('این یکی درست نیست.', 'That one is not correct.');
+      say(current.fa, current.en);
+      scheduleIdleReminder();
       return;
     }
 
@@ -594,7 +631,7 @@ export default function CookingGame() {
     <View style={styles.root}>
       <ImageBackground source={sceneSource} style={styles.scene} resizeMode="cover">
         <View style={[styles.sceneWash, done && styles.sceneWashDone]} />
-        <TopBar title="Cooking" titleFa="آشپزی" showClose dark topInset={10} />
+        <TopBar title="Cooking" titleFa="آشپزی" showClose dark topInset={10} onBack={() => resetNav({ name: 'Home' })} />
 
         <ScrollView
           horizontal
@@ -761,7 +798,7 @@ export default function CookingGame() {
 
         <View style={[styles.prompt, done && styles.promptDone]}>
           {done ? (
-            <Text style={[styles.subtitle, styles.donePromptText, { fontFamily: textFont('bold') }, dir(isFa ? 'fa' : lang)]}>
+            <Text style={[dir(isFa ? 'fa' : lang), styles.subtitle, styles.donePromptText, { fontFamily: textFont('bold') }]}>
               {isFa ? `${recipe.fa} آماده است!` : `${recipe.en} is ready!`}
             </Text>
           ) : (

@@ -223,6 +223,10 @@ export default function ConversationGame() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [showEndOverlay, setShowEndOverlay] = useState(false);
   const slide = useRef(new Animated.Value(18)).current;
+  const selectedRef = useRef<string | null>(null);
+  useEffect(() => {
+    selectedRef.current = selected;
+  }, [selected]);
 
   const scene = SCENES[idx];
   const isFa = lang === 'fa' || lang === 'ar';
@@ -237,28 +241,62 @@ export default function ConversationGame() {
     return Math.min(Math.max(estimatedTextWidth + 176, 320), 460);
   }, [choices, lang, isFa]);
 
-  const speakScene = () => {
+  // Resolves once the prompt (and, for non-Farsi UI languages, the translation
+  // that follows it) has fully finished playing - so callers can measure the
+  // 6-second "no answer yet" window from the end of the speech, not from when
+  // it started (otherwise the gap before a repeat shrinks by however long the
+  // audio itself takes to play).
+  const speakScene = (): Promise<void> => {
     stop();
     void stopFaAudio();
-    const promptKey = conversationAudioKey(scene.id, 'prompt');
-    if (promptKey) {
-      void playFaAudio(promptKey as any, { awaitFinish: true }).then(() => {
-        if (!isFa) setTimeout(() => speakInLang(promptFor(scene, lang), lang), 260);
-      });
-    } else {
-      speakFarsiOnly(scene.promptFa, () => {
-        if (!isFa) setTimeout(() => speakInLang(promptFor(scene, lang), lang), 260);
-      });
-    }
+    return new Promise<void>(resolve => {
+      const playTranslationThenResolve = () => {
+        if (!isFa) {
+          setTimeout(() => speakInLang(promptFor(scene, lang), lang, () => resolve()), 260);
+        } else {
+          resolve();
+        }
+      };
+      const promptKey = conversationAudioKey(scene.id, 'prompt');
+      if (promptKey) {
+        void playFaAudio(promptKey as any, { awaitFinish: true }).then(playTranslationThenResolve);
+      } else {
+        speakFarsiOnly(scene.promptFa, playTranslationThenResolve);
+      }
+    });
   };
 
   useEffect(() => {
     setSelected(null);
     slide.setValue(18);
     Animated.timing(slide, { toValue: 0, duration: 260, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
-    const t = setTimeout(speakScene, 320);
+    let cancelled = false;
+    let repeatTimer: ReturnType<typeof setTimeout> | null = null;
+
+    // Waits 6s of silence, then (if still unanswered) speaks the question again
+    // and re-arms itself once that repeat finishes - so consecutive repeats are
+    // always 6s of *silence* apart, never 6s including however long the speech runs.
+    const scheduleRepeat = () => {
+      repeatTimer = setTimeout(async () => {
+        if (cancelled) return;
+        if (!selectedRef.current) {
+          await speakScene();
+          if (cancelled) return;
+        }
+        scheduleRepeat();
+      }, 6000);
+    };
+
+    const t = setTimeout(() => {
+      void speakScene().then(() => {
+        if (!cancelled) scheduleRepeat();
+      });
+    }, 320);
+
     return () => {
+      cancelled = true;
       clearTimeout(t);
+      if (repeatTimer) clearTimeout(repeatTimer);
       stop();
       void stopFaAudio();
     };
@@ -300,7 +338,7 @@ export default function ConversationGame() {
 
   return (
     <View style={styles.root}>
-      <TopBar title="Talk & Play" titleFa="گفت‌وگو و بازی" showClose dark topInset={10} />
+      <TopBar title="Talk & Play" titleFa="گفت و گو" showClose dark topInset={10} onBack={() => reset({ name: 'Main', tab: 'Games' })} />
       <View style={styles.sceneBackground}>
         <ImageBackground source={backgroundSource} style={styles.sceneBackdrop} resizeMode="cover">
           <View style={styles.sceneWash} />

@@ -3,7 +3,6 @@ import { Image, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity,
 import TopBar from '../components/TopBar';
 import CharacterAvatar from '../components/CharacterAvatar';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
-import { IRAN_PUZZLE_OUTLINE } from '../assets/iranPuzzlePieces';
 import { SOLAR_SYSTEM_BACKGROUND, SOLAR_SYSTEM_PLANETS } from '../assets/solarSystemPuzzle';
 import { AppContext } from '../store/AppContext';
 import { useNav } from '../store/NavContext';
@@ -31,7 +30,6 @@ const PATH: PathStep[] = [
   { id: 'colors', label: 'Color Play', labelFa: 'بازی رنگ', type: 'game', stars: 15, color: '#EC4899', soft: '#FCE7F3', art: 'colors' },
   { id: 'animals', label: 'Animals', labelFa: 'حیوانات', type: 'section', stars: 10, color: '#22C55E', soft: '#DCFCE7', art: 'animal' },
   { id: 'food', label: 'Food', labelFa: 'غذا', type: 'section', stars: 10, color: '#F97316', soft: '#FFEDD5', art: 'food' },
-  { id: 'iran-puzzle', label: 'Iran Puzzle', labelFa: 'پازل ایران', type: 'game', stars: 20, color: '#EA580C', soft: '#FFF0E2', art: 'iranPuzzle' },
   { id: 'solarPuzzle', label: 'Solar System', labelFa: 'منظومه خورشیدی', type: 'game', stars: 20, color: '#2563EB', soft: '#EAF2FF', art: 'solarPuzzle' },
   { id: 'coloring', label: 'Painting', labelFa: 'نقاشی', type: 'coloring', stars: 15, color: '#A855F7', soft: '#F3E8FF', art: 'paint' },
   { id: 'sel', label: 'Feelings', labelFa: 'احساسات', type: 'sel', stars: 15, color: '#FF5FA2', soft: '#FFE4EF', art: 'heart' },
@@ -58,7 +56,6 @@ function StepArt({ type, color, lang, onSpeakSolarPlanet }: { type: string; colo
     memory: neliWorldAssets.foods.strawberry,
     culture: neliWorldAssets.persianFoods.sabziPolo,
     heart: neliWorldAssets.ui.heart,
-    iranPuzzle: IRAN_PUZZLE_OUTLINE,
     locked: neliWorldAssets.ui.lock,
   };
 
@@ -76,17 +73,6 @@ function StepArt({ type, color, lang, onSpeakSolarPlanet }: { type: string; colo
       <ImageBackground source={neliWorldAssets.rooms.kitchen} style={styles.artStage} imageStyle={styles.artBg}>
         <View style={styles.imageWash} />
         <Image source={map[type]} style={styles.stepImageLarge} resizeMode="contain" />
-      </ImageBackground>
-    );
-  }
-
-  if (type === 'iranPuzzle') {
-    return (
-      <ImageBackground source={IRAN_PUZZLE_OUTLINE} style={styles.artStage} imageStyle={styles.iranArtBg}>
-        <View style={styles.iranPuzzleWash} />
-        <View style={styles.iranPuzzleFrame}>
-          <Text style={[styles.iranPuzzleLabel, { fontFamily: ff('en', 'black') }]}>IRAN</Text>
-        </View>
       </ImageBackground>
     );
   }
@@ -402,7 +388,6 @@ const styles = StyleSheet.create({
   rewardText: { fontSize: 11 },
   artStage: { flex: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   artBg: { width: '100%', height: '100%' },
-  iranArtBg: { width: '100%', height: '100%', transform: [{ scale: 1.08 }] },
   imageWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.28)' },
   paintingCardScene: { flex: 1, width: '100%', height: '100%', backgroundColor: '#18C977', alignItems: 'center', justifyContent: 'center' },
   paintingCardImage: { width: '100%', height: '100%' },
@@ -410,21 +395,6 @@ const styles = StyleSheet.create({
   stepImage: { width: 70, height: 70 },
   stepImageLarge: { width: 90, height: 90 },
   countFruit: { position: 'absolute', width: 54, height: 54 },
-  iranPuzzleWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.72)' },
-  iranPuzzleFrame: {
-    position: 'absolute',
-    left: 10,
-    right: 10,
-    top: 10,
-    bottom: 10,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.82)',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: 8,
-  },
-  iranPuzzleLabel: { color: '#F97316', fontSize: 12, letterSpacing: 0.8 },
   solarWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(2, 8, 32, 0.08)' },
   solarPlanetTap: { position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   solarPlanetFill: { width: '100%', height: '100%' },

@@ -19,6 +19,8 @@ import PremiumUnlockScreen  from './src/screens/PremiumUnlockScreen';
 import PremiumScreen        from './src/screens/PremiumScreen';
 import AgeScreen           from './src/screens/AgeScreen';
 import MainTabs            from './src/screens/MainTabs';
+import HomeScreen           from './src/screens/HomeScreen';
+import AlphabetHubScreen   from './src/screens/AlphabetHubScreen';
 import SectionScreen       from './src/screens/SectionScreen';
 import GameScreen          from './src/screens/GameScreen';
 import CharactersScreen    from './src/screens/CharactersScreen';
@@ -42,12 +44,12 @@ import DressUpGame         from './src/screens/interactive/DressUpGame';
 import CookingGame         from './src/screens/interactive/CookingGame';
 import ToothBrushGame      from './src/screens/interactive/ToothBrushGame';
 import ConversationGame    from './src/screens/interactive/ConversationGame';
-import IranPuzzleGame      from './src/screens/interactive/IranPuzzleGame';
 import SolarSystemPuzzleGame from './src/screens/interactive/SolarSystemPuzzleGame';
 import GameLandscapeFrame  from './src/components/GameLandscapeFrame';
 import TimeUpScreen        from './src/screens/TimeUpScreen';
 import { AppContext } from './src/store/AppContext';
 import { getCurrentCustomerInfo, hasPremiumEntitlement, initPurchases, subscribeToCustomerInfo } from './src/services/purchases';
+import { PREMIUM_ENABLED } from './src/config/features';
 
 // Force LTR at the OS level so Persian text is controlled by per-element styles
 I18nManager.forceRTL(false);
@@ -62,6 +64,8 @@ function Router() {
     case 'Premium':          return <PremiumScreen />;
     case 'Age':              return <AgeScreen />;
     case 'Main':             return <MainTabs initialTab={screen.tab} />;
+    case 'Home':              return <HomeScreen />;
+    case 'AlphabetHub':      return <AlphabetHubScreen />;
     case 'BabyWorld':        return <BabyWorldScreen />;
     case 'Section':          return <SectionScreen id={screen.id} />;
     case 'Game':             return <GameLandscapeFrame><GameScreen gameId={screen.gameId} /></GameLandscapeFrame>;
@@ -85,7 +89,6 @@ function Router() {
     case 'Cooking':          return <GameLandscapeFrame><CookingGame /></GameLandscapeFrame>;
     case 'ToothBrush':       return <GameLandscapeFrame><ToothBrushGame /></GameLandscapeFrame>;
     case 'ConversationGame':  return <GameLandscapeFrame><ConversationGame /></GameLandscapeFrame>;
-    case 'IranPuzzle':       return <GameLandscapeFrame><IranPuzzleGame /></GameLandscapeFrame>;
     case 'SolarPuzzle':      return <GameLandscapeFrame><SolarSystemPuzzleGame /></GameLandscapeFrame>;
     case 'TimeUp':           return <TimeUpScreen />;
     default:                 return <SplashScreen />;
@@ -108,7 +111,7 @@ const TIME_GATE_EXEMPT = new Set(['TimeUp', 'SettingsUnlock', 'AccountSetup', 'S
 function PurchasesBridge() {
   const { authReady, setIsPremium } = useContext(AppContext);
   React.useEffect(() => {
-    if (!authReady) return;
+    if (!authReady || !PREMIUM_ENABLED) return;
     let unsubscribe = () => {};
     let cancelled = false;
     (async () => {

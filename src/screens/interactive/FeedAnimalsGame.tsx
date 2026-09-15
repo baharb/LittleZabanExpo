@@ -346,6 +346,13 @@ function FoodTile({
   const drag = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const pressScale = useRef(new Animated.Value(1)).current;
   const [pressed, setPressed] = useState(false);
+  // Stable refs so the PanResponder below isn't rebuilt (and an in-progress
+  // drag lost) whenever the parent re-renders and hands down new callback
+  // function identities.
+  const onAttemptRef = useRef(onAttempt);
+  onAttemptRef.current = onAttempt;
+  const onSpeakRef = useRef(onSpeak);
+  onSpeakRef.current = onSpeak;
 
   useEffect(() => {
     drag.setValue({ x: 0, y: 0 });
@@ -360,7 +367,7 @@ function FoodTile({
         onMoveShouldSetPanResponder: () => !disabled,
         onPanResponderGrant: () => {
           setPressed(true);
-          onSpeak(food);
+          onSpeakRef.current(food);
           Animated.spring(pressScale, { toValue: 1.2, useNativeDriver: true, speed: 40, bounciness: 4 }).start();
         },
         onPanResponderMove: (_evt: any, gestureState: PanResponderGestureState) => {
@@ -369,7 +376,7 @@ function FoodTile({
         onPanResponderRelease: (_evt: any, gestureState: PanResponderGestureState) => {
           setPressed(false);
           Animated.spring(pressScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 2 }).start();
-          onAttempt(
+          onAttemptRef.current(
             food,
             { x: gestureState.moveX, y: gestureState.moveY },
             {
@@ -385,7 +392,7 @@ function FoodTile({
           Animated.spring(drag, { toValue: { x: 0, y: 0 }, useNativeDriver: true }).start();
         },
       }),
-    [disabled, drag, food, onAttempt, onSpeak, size, slot.h, slot.w, slot.x, slot.y],
+    [disabled, drag, food, size, slot.h, slot.w, slot.x, slot.y],
   );
 
   return (
@@ -674,7 +681,7 @@ export default function FeedAnimalsGame() {
     <View style={styles.root}>
       <ImageBackground source={sceneSource} style={styles.scene} resizeMode="cover">
         <View style={styles.sceneWash} />
-        <TopBar title="Feed Animals" titleFa="غذا دادن به حیوانات" showClose dark topInset={10} />
+        <TopBar title="Feed Animals" titleFa="غذا بده" showClose dark topInset={10} onBack={() => reset({ name: 'Main', tab: 'Games' })} />
         {/* Invisible header spacer — preserves stage origin so animal/food positions stay correct */}
         <View pointerEvents="none" style={{ opacity: 0 }}>
           <View style={styles.header}>

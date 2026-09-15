@@ -16,6 +16,7 @@ import CharacterAvatar from '../../components/CharacterAvatar';
 import BlinkingNeliImage from '../../components/BlinkingNeliImage';
 import TopBar from '../../components/TopBar';
 import { AppContext } from '../../store/AppContext';
+import { useNav } from '../../store/NavContext';
 import { getClothesAudioKey, playFaAudio, speakWithGeneratedVoice } from '../../utils/faAudio';
 import { useLandscapeDimensions } from '../../hooks/useLandscapeDimensions';
 import { dir, ff } from '../../theme/fonts';
@@ -710,6 +711,7 @@ function renderFlyingCopy(item: OutfitItem, size: number) {
 
 export default function DressUpGame() {
   const { lang, addStars } = useContext(AppContext);
+  const { reset: resetNav } = useNav();
   const { width, height } = useLandscapeDimensions();
   const isFa = lang === 'fa' || lang === 'ar';
   const isLandscape = width > height;
@@ -910,7 +912,7 @@ export default function DressUpGame() {
 
   return (
     <View style={styles.root}>
-      <TopBar title="Dress Up" titleFa="لباس پوشیدن" showClose dark topInset={10} />
+      <TopBar title="Dress Up" titleFa="لباس بپوشون" showClose dark topInset={10} onBack={() => resetNav({ name: 'Main', tab: 'Games' })} />
 
       <ImageBackground source={roomBackgroundPickers.bedroom(width, height)} style={styles.main} imageStyle={styles.roomImage} resizeMode="cover">
           <View style={styles.tabShell}>

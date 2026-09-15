@@ -1,5 +1,5 @@
 /**
- * Lingokids-inspired flat color palette.
+ * Flat color palette for a bold, kid-friendly UI.
  * Rule: NO gradients. Solid fills only. Purple = primary brand.
  */
 export const C = {
@@ -19,7 +19,7 @@ export const C = {
   textMid:    '#555577',
   textLight:  '#9999BB',
 
-  // Activity card colors — flat, bold, Lingokids palette
+  // Activity card colors — flat, bold, high-contrast
   blue:   '#4DBFFF',
   yellow: '#FFD93D',
   orange: '#FF8C42',

@@ -4,6 +4,7 @@ import TopBar from '../components/TopBar';
 import CharacterAvatar from '../components/CharacterAvatar';
 import DailyLimitCard from '../components/DailyLimitCard';
 import PremiumCard from '../components/PremiumCard';
+import { PREMIUM_ENABLED } from '../config/features';
 import { usePremiumGate } from '../hooks/usePremiumGate';
 import { neliWorldAssets } from '../assets/neliWorldAssets';
 import { AppContext, Lang, LANGUAGES } from '../store/AppContext';
@@ -89,11 +90,13 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.root}>
-      <TopBar title="Settings" titleFa="تنظیمات" displayLang={lang} showClose onBack={() => navigate({ name: 'Main', tab: 'Games' })} dark />
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingHorizontal: Math.max(12, Math.round(14 * ui)), paddingBottom: Math.max(28, Math.round(34 * ui)), gap: Math.max(12, Math.round(14 * ui)) }]} showsVerticalScrollIndicator={false}>
+      <TopBar title="Settings" titleFa="تنظیمات" displayLang={lang} showClose onBack={() => navigate({ name: 'Main', tab: 'Games' })} dark showSettingsIcon={false} titleIcon />
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingHorizontal: Math.max(12, Math.round(14 * ui)), paddingTop: Math.max(12, Math.round(14 * ui)), paddingBottom: Math.max(28, Math.round(34 * ui)), gap: Math.max(12, Math.round(14 * ui)) }]} showsVerticalScrollIndicator={false}>
 
-        {/* Box 0 — Premium (always first, so it reads like the app's main upsell) */}
-        <PremiumCard lang={lang} isPremium={isPremium} onPress={openPremium} />
+        {/* Box 0 — Premium (hidden while PREMIUM_ENABLED is false; see src/config/features.ts) */}
+        {PREMIUM_ENABLED && (
+          <PremiumCard lang={lang} isPremium={isPremium} onPress={openPremium} />
+        )}
 
         {/* Box 1 — Language picker */}
         <View style={[styles.panel, { borderRadius: Math.max(22, Math.round(26 * ui)), padding: Math.max(14, Math.round(16 * ui)) }]}>
@@ -103,7 +106,7 @@ export default function ProfileScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.languageRow}
+            contentContainerStyle={[styles.languageRow, isFa && styles.languageRowRtl]}
           >
             {LANGUAGES.map(language => (
               <TouchableOpacity
@@ -112,13 +115,6 @@ export default function ProfileScreen() {
                 onPress={() => setSettingsLang(language.code)}
                 activeOpacity={0.82}
               >
-                <View style={styles.languageFlagBox}>
-                  {language.code === 'fa' ? (
-                    <Image source={neliWorldAssets.ui.flagIran} style={styles.languageFlagImg} resizeMode="cover" />
-                  ) : (
-                    <Text style={styles.languageFlag}>{language.flag}</Text>
-                  )}
-                </View>
                 <Text
                   numberOfLines={1}
                   style={[
@@ -127,7 +123,7 @@ export default function ProfileScreen() {
                     { fontFamily: ff(language.code, 'bold') },
                   ]}
                 >
-                  {language.shortLabel}
+                  {language.nativeLabel}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -139,10 +135,17 @@ export default function ProfileScreen() {
 
         {/* Box 2 — Parent account */}
         <View style={[styles.panel, { borderRadius: Math.max(22, Math.round(26 * ui)), padding: Math.max(14, Math.round(16 * ui)) }]}>
-          <Text style={[styles.sectionTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(16, Math.round(18 * ui)) }, dir(lang)]}>
-            {t(lang, 'parentAccount')}
-          </Text>
-          <Text style={[styles.accountContact, { fontFamily: ff(lang, 'bold') }]}>{accountContact}</Text>
+          <View style={[styles.accountHeaderRow, isFa && styles.accountHeaderRowRtl]}>
+            <Text style={[styles.sectionTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(16, Math.round(18 * ui)), marginBottom: 0 }, dir(lang)]} numberOfLines={1}>
+              {t(lang, 'parentAccount')}
+            </Text>
+            <Text
+              style={[styles.accountContact, { fontFamily: ff(lang, 'bold'), marginBottom: 0 }]}
+              numberOfLines={1}
+            >
+              {accountContact}
+            </Text>
+          </View>
           <View style={styles.passwordForm}>
             <TextInput
               value={currentPassword}
@@ -296,26 +299,26 @@ const styles = StyleSheet.create({
   scroll: { gap: 14 },
   hero: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   heroText: { flex: 1 },
-  kicker: { color: '#4A2D8A', fontWeight: '900', marginBottom: 3 },
-  title: { color: '#221044', fontWeight: '900' },
+  kicker: { color: '#4A2D8A', marginBottom: 3 },
+  title: { color: '#221044' },
   sub: { color: '#5C4B78', marginTop: 3 },
   statsRow: { flexDirection: 'row' },
   statCard: { flex: 1, borderRadius: 24, padding: 12, alignItems: 'center', borderWidth: 4.5, borderColor: '#FFFFFF' },
   statIcon: { width: 48, height: 48 },
-  statNum: { color: '#25105C', fontSize: 24, fontWeight: '900', marginTop: 2 },
-  statLbl: { color: '#493C63', fontSize: 11, fontWeight: '900' },
+  statNum: { color: '#25105C', fontSize: 24, marginTop: 2 },
+  statLbl: { color: '#493C63', fontSize: 11 },
   panel: { backgroundColor: 'rgba(255,255,255,0.95)' },
-  sectionTitle: { color: '#221044', fontWeight: '900', marginBottom: 12 },
+  sectionTitle: { color: '#221044', marginBottom: 12 },
   languageRow: { flexDirection: 'row', gap: 8, paddingVertical: 2, paddingHorizontal: 1 },
-  languageButton: { width: 66, minHeight: 62, borderRadius: 16, paddingHorizontal: 6, paddingVertical: 8, backgroundColor: '#F0EBFF', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: 'transparent' },
+  languageRowRtl: { flexDirection: 'row-reverse' },
+  languageButton: { height: 42, borderRadius: 21, paddingHorizontal: 16, backgroundColor: '#F0EBFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: 'transparent' },
   languageButtonActive: { backgroundColor: '#FFF2C7', borderColor: '#F5B800' },
-  languageFlagBox: { width: 30, height: 20, borderRadius: 5, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  languageFlagImg: { width: 30, height: 20 },
-  languageFlag: { fontSize: 18, lineHeight: 20, textAlign: 'center' },
-  languageText: { color: '#5C4B78', fontSize: 10.5, marginTop: 3, textAlign: 'center' },
+  languageText: { color: '#5C4B78', fontSize: 13.5, textAlign: 'center' },
   languageTextActive: { color: '#221044' },
   languageNote: { color: '#6B5A89', fontSize: 11.5, lineHeight: 18, marginTop: 10 },
-  accountContact: { color: '#7C3AED', fontSize: 13, textAlign: 'right', marginBottom: 11 },
+  accountHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  accountHeaderRowRtl: { flexDirection: 'row-reverse' },
+  accountContact: { color: '#7C3AED', fontSize: 13, textAlign: 'right', marginBottom: 11, flexShrink: 1 },
   passwordForm: { gap: 9 },
   passwordRow: { flexDirection: 'row-reverse', gap: 9 },
   passwordInput: { height: 52, borderRadius: 16, backgroundColor: '#F3F0F8', borderWidth: 2, borderColor: '#DED7EA', paddingHorizontal: 14, color: '#2D1B69', textAlign: 'right', fontSize: 13 },

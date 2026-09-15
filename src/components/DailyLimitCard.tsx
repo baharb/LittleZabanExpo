@@ -70,7 +70,7 @@ export default function DailyLimitCard({
 
   return (
     <View style={styles.card}>
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, isFa && styles.rtlRow]}>
         <View style={styles.headerText}>
           <Text style={[styles.title, { fontFamily: ff(lang, 'black') }, dirStyle(isFa)]}>
             {isFa ? 'محدودیت زمان روزانه' : 'Daily time limit'}
@@ -91,7 +91,7 @@ export default function DailyLimitCard({
 
       {enabled ? (
         <View style={styles.body}>
-          <View style={styles.chipRow}>
+          <View style={[styles.chipRow, isFa && styles.rtlRow]}>
             {PRESETS.map(p => {
               const active = !customOpen && minutes === p;
               return (
@@ -119,7 +119,7 @@ export default function DailyLimitCard({
           </View>
 
           {customOpen ? (
-            <View style={styles.customRow}>
+            <View style={[styles.customRow, isFa && styles.rtlRow]}>
               <TouchableOpacity
                 style={styles.stepBtn}
                 onPress={() => stepCustom(-CUSTOM_STEP)}
@@ -143,7 +143,7 @@ export default function DailyLimitCard({
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${usedPct}%` }]} />
           </View>
-          <View style={styles.usageRow}>
+          <View style={[styles.usageRow, isFa && styles.rtlRow]}>
             <Text style={[styles.usageLabel, { fontFamily: ff(lang, 'bold') }]}>
               {isFa ? `استفاده شده: ${fmtClock(usedTodayMs)}` : `Used: ${fmtClock(usedTodayMs)}`}
             </Text>
@@ -155,7 +155,7 @@ export default function DailyLimitCard({
           <Text style={[styles.bonusTitle, { fontFamily: ff(lang, 'bold') }, dirStyle(isFa)]}>
             {isFa ? 'زمان اضافه برای امروز' : 'Add time for today'}
           </Text>
-          <View style={styles.bonusRow}>
+          <View style={[styles.bonusRow, isFa && styles.rtlRow]}>
             {[15, 30, 60].map(n => (
               <TouchableOpacity key={n} style={styles.bonusChip} onPress={() => onAddBonus(n)} activeOpacity={0.82}>
                 <Text style={[styles.bonusChipText, { fontFamily: ff(lang, 'bold') }]}>+{n}{isFa ? ' دقیقه' : 'm'}</Text>
@@ -179,6 +179,7 @@ function dirStyle(isFa: boolean) {
 
 const styles = StyleSheet.create({
   card: { backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 24, padding: 16 },
+  rtlRow: { flexDirection: 'row-reverse' },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerText: { flex: 1 },
   title: { color: '#1A0050', fontSize: 16 },
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
   chipTextActive: { color: '#FFFFFF' },
   customRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, backgroundColor: '#F8F7FD', borderRadius: 14, paddingVertical: 10 },
   stepBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#6C4EFF', alignItems: 'center', justifyContent: 'center' },
-  stepBtnTxt: { color: '#FFFFFF', fontSize: 18, fontWeight: '900', lineHeight: 20 },
+  stepBtnTxt: { color: '#FFFFFF', fontSize: 18, lineHeight: 20 },
   customValue: { color: '#1A0050', fontSize: 16, minWidth: 90, textAlign: 'center' },
   progressTrack: { height: 7, borderRadius: 4, backgroundColor: '#EDEAFB', overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 4, backgroundColor: '#6C4EFF' },

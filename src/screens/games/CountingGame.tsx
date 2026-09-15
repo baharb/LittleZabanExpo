@@ -5,6 +5,7 @@ import TopBar from '../../components/TopBar';
 import { neliWorldAssets } from '../../assets/neliWorldAssets';
 import { characterAssets } from '../../assets/characterAssets';
 import { AppContext } from '../../store/AppContext';
+import { useNav } from '../../store/NavContext';
 import { getCountingNumberAudioKey, playFaAudio, speakWithGeneratedVoice } from '../../utils/faAudio';
 import { C } from '../../theme/colors';
 import { dir, ff } from '../../theme/fonts';
@@ -49,6 +50,7 @@ function makeRound() {
 
 export default function CountingGame() {
   const { lang, addStars } = useContext(AppContext);
+  const { reset: resetNav } = useNav();
   const [round, setRound] = useState(makeRound);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState<boolean | null>(null);
@@ -91,7 +93,7 @@ export default function CountingGame() {
       <ImageBackground source={neliWorldAssets.rooms.garden} style={styles.scene} imageStyle={styles.sceneImage}>
         <View style={styles.sceneWash} />
         <View style={styles.skyGlow} />
-        <TopBar title="Counting" titleFa="شمارش" showClose dark />
+        <TopBar title="Counting" titleFa="بشمار" showClose dark onBack={() => resetNav({ name: 'Main', tab: 'Games' })} />
 
         <View style={styles.content}>
           <View style={styles.questionPill}>

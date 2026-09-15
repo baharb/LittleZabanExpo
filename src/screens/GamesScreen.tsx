@@ -9,10 +9,9 @@ import CharacterAvatar from '../components/CharacterAvatar';
 import { characterAssets } from '../assets/characterAssets';
 import { neliWorldAssets, roomBackgroundPickers, roomBackgroundVariants } from '../assets/neliWorldAssets';
 import { SOLAR_SYSTEM_BACKGROUND, SOLAR_SYSTEM_PLANETS } from '../assets/solarSystemPuzzle';
-import { FARSI_LETTERS } from '../data/farsiLetters';
 import { BOX_CHARACTER_WIDTH } from '../theme/characterSizes';
 
-type Kind = 'talk' | 'dress' | 'tooth' | 'animal' | 'cook' | 'paint' | 'routine' | 'room' | 'memory' | 'quiz' | 'color' | 'count' | 'culture' | 'tracing' | 'firstTracing' | 'alphabet' | 'alphabetTrain' | 'video' | 'iranPuzzle' | 'solarPuzzle';
+type Kind = 'talk' | 'dress' | 'tooth' | 'animal' | 'cook' | 'paint' | 'routine' | 'room' | 'memory' | 'quiz' | 'color' | 'count' | 'culture' | 'tracing' | 'firstTracing' | 'alphabet' | 'alphabetTrain' | 'video' | 'solarPuzzle';
 type Tile = {
   id: string;
   route: any;
@@ -28,27 +27,17 @@ type Tile = {
 };
 
 const GAMES: Tile[] = [
-  { id: 'talk', route: { name: 'ConversationGame' }, en: 'Talk with Neli', fa: 'گفت‌وگو با نلی', descEn: 'Listen and answer', descFa: 'بشنو و جواب بده', kind: 'talk', color: '#6C4EFF', accent: '#FACC15', group: 'play' },
-  { id: 'dress', route: { name: 'DressUp' }, en: 'Dress Up', fa: 'لباس بپوش', descEn: 'Drag clothes onto Neli', descFa: 'لباس را روی نلی بکش', kind: 'dress', color: '#EC4899', accent: '#FDE68A', group: 'play' },
-  { id: 'teeth', route: { name: 'ToothBrush' }, en: 'Brush Teeth', fa: 'مسواک زدن', descEn: 'Move the brush', descFa: 'مسواک را حرکت بده', kind: 'tooth', color: '#38BDF8', accent: '#6C4EFF', group: 'play' },
+  { id: 'talk', route: { name: 'ConversationGame' }, en: 'Talk with Neli', fa: 'گفت و گو', descEn: 'Listen and answer', descFa: 'بشنو و جواب بده', kind: 'talk', color: '#6C4EFF', accent: '#FACC15', group: 'play' },
   { id: 'animals', route: { name: 'FeedAnimals' }, en: 'Feed Animals', fa: 'غذا بده', descEn: 'Drag food to animals', descFa: 'غذا را به حیوان بده', kind: 'animal', color: '#22C55E', accent: '#FACC15', group: 'play' },
-  { id: 'cook', route: { name: 'Cooking' }, en: 'Cooking', fa: 'آشپزی', descEn: 'Make fun recipes', descFa: 'غذا درست کن', kind: 'cook', color: '#FB923C', accent: '#FACC15', group: 'play' },
-  { id: 'coloring', route: { name: 'Coloring' }, en: 'Painting', fa: 'نقاشی', descEn: 'Paint picture pages', descFa: 'صفحه‌ها را رنگ کن', kind: 'paint', color: '#A855F7', accent: '#FF80C0', group: 'play' },
-  { id: 'solarPuzzle', route: { name: 'SolarPuzzle' }, en: 'Solar System', fa: 'منظومه خورشیدی', descEn: 'Place each planet', descFa: 'هر سیاره را بگذار', kind: 'solarPuzzle', color: '#38BDF8', accent: '#EAF7FF', group: 'learn' },
-  // individual letter tracing tiles are rendered dynamically from FARSI_LETTERS below
-  { id: 'alphabet', route: { name: 'AlphabetShow' }, en: 'Alphabet Show', fa: 'نمایش الفبا', descEn: 'Letters, words, and motion', descFa: 'حرف، واژه و حرکت', kind: 'alphabet', color: '#8B5CF6', accent: '#38BDF8', group: 'alphabet', hidden: true },
-  { id: 'alphabetTrain', route: { name: 'AlphabetTrain' }, en: 'Alphabet Train', fa: 'قطار الفبا', descEn: 'Ride the letters and words', descFa: 'سوار قطار حرف‌ها شو', kind: 'alphabetTrain', color: '#06B6D4', accent: '#FACC15', group: 'alphabet' },
-  { id: 'memory', route: { name: 'Game', gameId: 'memory' }, en: 'Memory Match', fa: 'بازی حافظه', descEn: 'Find pairs', descFa: 'جفت‌ها را پیدا کن', kind: 'memory', color: '#6C4EFF', accent: '#FACC15', group: 'learn' },
+  { id: 'teeth', route: { name: 'ToothBrush' }, en: 'Brush Teeth', fa: 'مسواک بزن', descEn: 'Move the brush', descFa: 'مسواک را حرکت بده', kind: 'tooth', color: '#38BDF8', accent: '#6C4EFF', group: 'play' },
+  { id: 'counting', route: { name: 'Game', gameId: 'counting' }, en: 'Counting', fa: 'بشمار', descEn: 'Count with pictures', descFa: 'با تصویر بشمار', kind: 'count', color: '#F72585', accent: '#FFE45E', group: 'learn' },
+  { id: 'alphabetTrain', route: { name: 'AlphabetTrain' }, en: 'Alphabet Train', fa: 'قطار الفبا', descEn: 'Ride the letters and words', descFa: 'سوار قطار حرف‌ها شو', kind: 'alphabetTrain', color: '#06B6D4', accent: '#F97316', group: 'learn' },
+  { id: 'dress', route: { name: 'DressUp' }, en: 'Dress Up', fa: 'لباس بپوشون', descEn: 'Drag clothes onto Neli', descFa: 'لباس را روی نلی بکش', kind: 'dress', color: '#EC4899', accent: '#FDE68A', group: 'play' },
   { id: 'quiz', route: { name: 'Game', gameId: 'quiz' }, en: 'Word Quiz', fa: 'مسابقه کلمه', descEn: 'See and choose', descFa: 'ببین و انتخاب کن', kind: 'quiz', color: '#38BDF8', accent: '#A855F7', group: 'learn', hidden: true },
   { id: 'colors', route: { name: 'Game', gameId: 'colormatch' }, en: 'Color Play', fa: 'بازی رنگ', descEn: 'Match playful colors', descFa: 'رنگ درست را پیدا کن', kind: 'color', color: '#EC4899', accent: '#FACC15', group: 'learn', hidden: true },
-  { id: 'counting', route: { name: 'Game', gameId: 'counting' }, en: 'Counting', fa: 'شمارش', descEn: 'Count with pictures', descFa: 'با تصویر بشمار', kind: 'count', color: '#F72585', accent: '#FFE45E', group: 'learn' },
+  { id: 'memory', route: { name: 'Game', gameId: 'memory' }, en: 'Memory Match', fa: 'بازی فکر', descEn: 'Find pairs', descFa: 'جفت‌ها را پیدا کن', kind: 'memory', color: '#6C4EFF', accent: '#FACC15', group: 'learn' },
+  { id: 'solarPuzzle', route: { name: 'SolarPuzzle' }, en: 'Solar System', fa: 'منظومه خورشیدی', descEn: 'Place each planet', descFa: 'هر سیاره را بگذار', kind: 'solarPuzzle', color: '#38BDF8', accent: '#EAF7FF', group: 'learn' },
 ];
-
-const GROUPS = [
-  { id: 'play', en: 'Touch Games', fa: 'بازی‌های لمسی' },
-  { id: 'learn', en: 'Learning Games', fa: 'بازی‌های یادگیری' },
-  { id: 'alphabet', en: 'Alphabet', fa: 'الفبا' },
-] as const;
 
 const solarPlanetSource = (id: string) => SOLAR_SYSTEM_PLANETS.find(planet => planet.id === id)?.source ?? SOLAR_SYSTEM_PLANETS[0].source;
 
@@ -59,13 +48,15 @@ function TileArt({ kind, color, accent, characterId, width, height }: { kind: Ki
         <View style={styles.sceneWash} />
         <CharacterAvatar
           characterId="neli"
-          size={106}
+          size={265}
           talking
           talkPattern="home"
-          talkMouthScale={0.86}
-          talkMouthOffsetXPercent={0.46}
-          talkMouthOffsetY={2}
+          talkMouthScale={0.6488}
+          talkMouthOffsetXPercent={0.465}
+          talkMouthOffsetY={8.625}
           floating={false}
+          blinkOffsetX={2.35}
+          blinkOffsetY={7.7}
           style={styles.sceneNeliLarge}
         />
       </ImageBackground>
@@ -74,7 +65,7 @@ function TileArt({ kind, color, accent, characterId, width, height }: { kind: Ki
   if (kind === 'dress') {
     return (
       <ImageBackground source={roomBackgroundPickers.bedroom(width, height)} style={styles.sceneArt} imageStyle={styles.sceneArtImage}>
-        <CharacterAvatar characterId={characterId} size={BOX_CHARACTER_WIDTH} floating={false} style={styles.tileDressCharacter} />
+        <CharacterAvatar characterId={characterId} size={BOX_CHARACTER_WIDTH * 2.75} floating={false} blinkOffsetX={3.432} blinkOffsetY={8.42} style={styles.tileDressCharacter} />
       </ImageBackground>
     );
   }
@@ -115,10 +106,16 @@ function TileArt({ kind, color, accent, characterId, width, height }: { kind: Ki
   if (kind === 'memory') {
     return (
       <View style={styles.memoryScene}>
-        <View style={[styles.memoryCardBack, styles.memoryCardBackOne]} />
-        <View style={[styles.memoryCardBack, styles.memoryCardBackTwo]} />
-        <View style={[styles.memoryCardBack, styles.memoryCardBackThree]} />
-        <Image source={characterAssets.lila.poses.thinkingAlt} style={styles.memoryLila} resizeMode="contain" />
+        <View style={[styles.memoryCardBack, styles.memoryCardBackOne]}>
+          <Text style={styles.memoryCardMark}>?</Text>
+        </View>
+        <View style={[styles.memoryCardBack, styles.memoryCardBackTwo]}>
+          <Text style={styles.memoryCardMark}>?</Text>
+        </View>
+        <View style={[styles.memoryCardBack, styles.memoryCardBackThree]}>
+          <Text style={styles.memoryCardMark}>?</Text>
+        </View>
+        <Image source={characterAssets.lila.poses.thinkingAlt} style={styles.memoryMascot} resizeMode="contain" />
       </View>
     );
   }
@@ -151,15 +148,28 @@ function TileArt({ kind, color, accent, characterId, width, height }: { kind: Ki
   );
   if (kind === 'alphabetTrain') return (
     <View style={styles.alphabetTrainScene}>
-      <View style={styles.alphabetTrainSmoke} />
-      <View style={styles.alphabetTrainEngine}>
-        <CharacterAvatar characterId={characterId} size={72} floating={false} />
-      </View>
-      <View style={styles.alphabetTrainCar}>
-        <Text style={styles.alphabetTrainLetter}>ا</Text>
-      </View>
-      <View style={[styles.alphabetTrainCar, styles.alphabetTrainCarAlt]}>
-        <Text style={styles.alphabetTrainLetter}>ب</Text>
+      <View style={styles.alphabetTrainRow}>
+        <View style={styles.alphabetTrainCarSlot}>
+          <Image source={neliWorldAssets.ui.toyWagon} style={styles.alphabetTrainWagonImg} resizeMode="contain" />
+          <View style={styles.alphabetTrainLetterBadge}>
+            <Text style={styles.alphabetTrainLetter}>ا</Text>
+          </View>
+        </View>
+        <View style={styles.alphabetTrainCarSlot}>
+          <Image source={neliWorldAssets.ui.toyWagon} style={styles.alphabetTrainWagonImg} resizeMode="contain" />
+          <Image source={characterAssets.dara.poses.reading} style={styles.alphabetTrainRiderImg} resizeMode="contain" />
+        </View>
+        <View style={styles.alphabetTrainCarSlot}>
+          <Image source={neliWorldAssets.ui.toyWagon} style={styles.alphabetTrainWagonImg} resizeMode="contain" />
+          <View style={[styles.alphabetTrainLetterBadge, styles.alphabetTrainLetterBadgeAlt]}>
+            <Text style={styles.alphabetTrainLetter}>ب</Text>
+          </View>
+        </View>
+        <View style={styles.alphabetTrainEngineWrap}>
+          <Image source={neliWorldAssets.ui.trainHead} style={styles.alphabetTrainEngineImg} resizeMode="contain" />
+          <View style={styles.alphabetTrainSmokeCloud} />
+          <View style={[styles.alphabetTrainSmokeCloud, styles.alphabetTrainSmokeCloudTwo]} />
+        </View>
       </View>
     </View>
   );
@@ -175,32 +185,36 @@ function TileArt({ kind, color, accent, characterId, width, height }: { kind: Ki
       <View style={[styles.videoSpark, styles.videoSparkTwo]} />
     </View>
   );
-  if (kind === 'iranPuzzle') return (
-    <ImageBackground source={neliWorldAssets.puzzle.iranMaster} style={styles.sceneArt} imageStyle={styles.sceneArtImage}>
-      <View style={styles.sceneWashSoft} />
-      <View style={styles.iranPuzzleFrame}>
-        <Text style={[styles.iranPuzzleLabel, { fontFamily: ff('en', 'black') }]}>IRAN</Text>
-      </View>
-    </ImageBackground>
-  );
   if (kind === 'solarPuzzle') return (
     <ImageBackground source={SOLAR_SYSTEM_BACKGROUND} style={styles.sceneArt} imageStyle={[styles.sceneArtImage, styles.solarPreviewBg]}>
       <View style={styles.solarPreviewWash} />
-      <Image source={solarPlanetSource('jupiter')} style={[styles.solarPreviewPlanet, styles.solarPreviewJupiter]} resizeMode="contain" />
-      <Image source={solarPlanetSource('earth')} style={[styles.solarPreviewPlanet, styles.solarPreviewEarth]} resizeMode="contain" />
-      <Image source={solarPlanetSource('saturn')} style={[styles.solarPreviewPlanet, styles.solarPreviewSaturn]} resizeMode="contain" />
-      <Image source={solarPlanetSource('mars')} style={[styles.solarPreviewPlanet, styles.solarPreviewMars]} resizeMode="contain" />
+      <View style={styles.solarPreviewRow}>
+        <Image source={solarPlanetSource('mercury')} style={[styles.solarPreviewPlanetFlex, styles.solarPreviewMercury]} resizeMode="contain" />
+        <Image source={solarPlanetSource('venus')} style={[styles.solarPreviewPlanetFlex, styles.solarPreviewVenus]} resizeMode="contain" />
+        <Image source={solarPlanetSource('earth')} style={[styles.solarPreviewPlanetFlex, styles.solarPreviewEarthRow]} resizeMode="contain" />
+        <Image source={solarPlanetSource('mars')} style={[styles.solarPreviewPlanetFlex, styles.solarPreviewMarsRow]} resizeMode="contain" />
+      </View>
     </ImageBackground>
   );
   if (kind === 'count') {
     return (
       <View style={styles.countingScene}>
         <View style={styles.countingGlow} />
-        <Text style={[styles.countingNumber, styles.countingNumberOne]}>۱</Text>
-        <Text style={[styles.countingNumber, styles.countingNumberTwo]}>۲</Text>
-        <Text style={[styles.countingNumber, styles.countingNumberThree]}>۳</Text>
-        <Text style={[styles.countingNumber, styles.countingNumberFive]}>۵</Text>
-        <Text style={[styles.countingNumber, styles.countingNumberSeven]}>۷</Text>
+        <View style={[styles.countingBadge, styles.countingBadgeOne]}>
+          <Text style={[styles.countingNumber, styles.countingNumberOne]}>۱</Text>
+        </View>
+        <View style={[styles.countingBadge, styles.countingBadgeTwo]}>
+          <Text style={[styles.countingNumber, styles.countingNumberTwo]}>۲</Text>
+        </View>
+        <View style={[styles.countingBadge, styles.countingBadgeThree]}>
+          <Text style={[styles.countingNumber, styles.countingNumberThree]}>۳</Text>
+        </View>
+        <View style={[styles.countingBadge, styles.countingBadgeFive]}>
+          <Text style={[styles.countingNumber, styles.countingNumberFive]}>۵</Text>
+        </View>
+        <View style={[styles.countingBadge, styles.countingBadgeSeven]}>
+          <Text style={[styles.countingNumber, styles.countingNumberSeven]}>۷</Text>
+        </View>
         <Image source={characterAssets.aidin.poses.waving} style={styles.countingOwl} resizeMode="contain" />
       </View>
     );
@@ -216,50 +230,40 @@ export default function GamesScreen() {
   const responsive = useResponsive();
   const ui = Math.min(width / 390, height / 844);
   const isFa = lang === 'fa' || lang === 'ar';
-  const gap = Math.max(10, Math.round(12 * ui));
-  const columns = 4;
-  const usableWidth = responsive.contentWidth - responsive.horizontalPadding * 2 - gap * (columns - 1);
-  const cardW = usableWidth / columns - Math.max(2, Math.round(4 * ui));
+  const gap = Math.round(Math.max(20, Math.round(24 * ui)) * 1.5);
+  const edgePad = Math.round(responsive.horizontalPadding * 1.2 * 1.2);
+  const columns = 3;
+  const usableWidth = responsive.contentWidth - edgePad * 2 - gap * (columns - 1);
+  const cardWRaw = usableWidth / columns - Math.max(2, Math.round(4 * ui));
+  const cardSize = cardWRaw;
+  const visibleGames = GAMES.filter(game => !game.hidden);
+  const rows: (typeof GAMES)[] = [];
+  for (let i = 0; i < visibleGames.length; i += columns) {
+    rows.push(visibleGames.slice(i, i + columns));
+  }
 
   return (
     <View style={styles.root}>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: '#35217E' }]} />
-      <TopBar title="Games" titleFa="بازی‌ها" dark />
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingHorizontal: responsive.horizontalPadding }]} showsVerticalScrollIndicator={false}>
-        {GROUPS.map(group => (
-          <View key={group.id} style={styles.group}>
-            <Text style={[styles.groupTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(17, Math.round(19 * ui)), marginBottom: Math.max(8, Math.round(10 * ui)) }, dir(lang)]}>{isFa ? group.fa : group.en}</Text>
-            <View style={[styles.grid, { columnGap: gap, rowGap: gap }]}>
-              {GAMES.filter(game => game.group === group.id && !game.hidden).map(game => (
-                <TouchableOpacity key={game.id} style={[styles.card, { width: cardW, height: Math.max(196, Math.round(207 * ui)), borderRadius: Math.max(20, Math.round(22 * ui)) }]} onPress={() => navigate(game.route)} activeOpacity={0.88}>
-                  <View style={[styles.thumb, { backgroundColor: '#AEEBFF', borderRadius: Math.max(20, Math.round(22 * ui)) }]}>
+      <TopBar title="Games" titleFa="بازی‌ها" dark showClose onBack={() => navigate({ name: 'Home' })} />
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingHorizontal: edgePad }]} showsVerticalScrollIndicator={false}>
+        <View style={{ gap }}>
+          {rows.map((row, rowIdx) => (
+            <View key={rowIdx} style={[styles.grid, { columnGap: gap, justifyContent: 'center' }]}>
+              {row.map(game => (
+                <TouchableOpacity key={game.id} style={[styles.card, { width: cardSize, height: cardSize, borderRadius: Math.max(44, Math.round(48 * ui)) }]} onPress={() => navigate(game.route)} activeOpacity={0.88}>
+                  <View style={[styles.thumb, { backgroundColor: '#AEEBFF', borderRadius: Math.max(44, Math.round(48 * ui)) }]}>
                     <TileArt kind={game.kind} color={game.color} accent={game.accent} characterId={selectedCharacterId} width={width} height={height} />
                     <View style={styles.cardShade} />
                     <View style={styles.cardTextBand}>
-                      <Text style={[styles.cardTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(12, Math.round(13 * ui)) }, dir(lang)]} numberOfLines={2}>{isFa ? game.fa : game.en}</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
-              {group.id === 'alphabet' && FARSI_LETTERS.map(letter => (
-                <TouchableOpacity
-                  key={`trace-${letter.id}`}
-                  style={[styles.card, { width: cardW, height: Math.max(196, Math.round(207 * ui)), borderRadius: Math.max(20, Math.round(22 * ui)) }]}
-                  onPress={() => navigate({ name: 'InteractiveFarsiTrace', letterId: letter.id })}
-                  activeOpacity={0.88}
-                >
-                  <View style={[styles.thumb, { borderRadius: Math.max(20, Math.round(22 * ui)), backgroundColor: letter.color ?? '#6C4EFF', alignItems: 'center', justifyContent: 'center' }]}>
-                    <Text style={{ fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: Math.max(52, Math.round(62 * ui)), lineHeight: Math.max(70, Math.round(80 * ui)) }}>{letter.letter}</Text>
-                    <View style={styles.cardShade} />
-                    <View style={styles.cardTextBand}>
-                      <Text style={[styles.cardTitle, { fontFamily: ff('fa', 'black'), fontSize: Math.max(12, Math.round(13 * ui)) }]} numberOfLines={1}>{letter.nameFa}</Text>
+                      <Text style={[styles.cardTitle, { fontFamily: ff(lang, 'black'), fontSize: Math.max(17.42, Math.round(18.88 * ui)) }, dir(lang), { textAlign: 'center' }]} numberOfLines={2}>{isFa ? game.fa : game.en}</Text>
                     </View>
                   </View>
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
-        ))}
+          ))}
+        </View>
       </ScrollView>
     </View>
   );
@@ -270,31 +274,31 @@ const styles = StyleSheet.create({
   group: { marginBottom: 18 },
   groupTitle: { color: '#FFFFFF', fontSize: 19, marginBottom: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  card: { backgroundColor: '#AEEBFF', borderRadius: 26, overflow: 'hidden', borderWidth: 6, borderColor: '#FFFFFF', shadowColor: '#170736', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 14, elevation: 8 },
+  card: { backgroundColor: '#AEEBFF', borderRadius: 34, overflow: 'hidden', borderWidth: 0, shadowColor: '#170736', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 14, elevation: 8 },
   thumb: { flex: 1, overflow: 'hidden' },
-  cardShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 48, backgroundColor: 'rgba(37,16,92,0.62)' },
-  cardTextBand: { position: 'absolute', left: 10, right: 10, bottom: 9, minHeight: 28, justifyContent: 'center' },
-  cardTitle: { color: '#FFFFFF', fontSize: 16, textAlign: 'left' },
+  cardShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 57.6, backgroundColor: 'rgba(37,16,92,0.62)' },
+  cardTextBand: { position: 'absolute', left: 10, right: 10, bottom: 9, minHeight: 33.88, justifyContent: 'center', alignItems: 'center' },
+  cardTitle: { color: '#FFFFFF', fontSize: 23.23, textAlign: 'center' },
   art: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  memoryScene: { flex: 1, width: '100%', height: '100%', backgroundColor: '#5E46D4', alignItems: 'center', justifyContent: 'center' },
+  memoryScene: { flex: 1, width: '100%', height: '100%', backgroundColor: '#6C4EFF', alignItems: 'center', justifyContent: 'center' },
   memoryCardBack: {
     position: 'absolute',
     width: 76,
     height: 76,
     borderRadius: 18,
-    backgroundColor: '#FFF6B8',
-    borderWidth: 5,
-    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#140A36',
     shadowOpacity: 0.18,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },
     elevation: 4,
   },
-  memoryCardBackOne: { left: 14, top: 24, transform: [{ rotate: '-10deg' }] },
-  memoryCardBackTwo: { right: 14, top: 34, transform: [{ rotate: '10deg' }] },
-  memoryCardBackThree: { left: '50%', marginLeft: -38, bottom: 22, transform: [{ rotate: '-2deg' }] },
-  memoryLila: { width: 156, height: 204, position: 'absolute', bottom: -10, alignSelf: 'center' },
+  memoryCardMark: { color: '#FFFFFF', fontSize: 34, fontFamily: 'Vazirmatn_800ExtraBold' },
+  memoryCardBackOne: { left: 14, top: 24, backgroundColor: '#38BDF8', transform: [{ rotate: '-10deg' }] },
+  memoryCardBackTwo: { right: 14, top: 34, backgroundColor: '#FACC15', transform: [{ rotate: '10deg' }] },
+  memoryCardBackThree: { left: 4, top: '42%', marginTop: -38, backgroundColor: '#F472B6', transform: [{ rotate: '-6deg' }] },
+  memoryMascot: { width: 336.6, height: 441, position: 'absolute', bottom: -32.85, alignSelf: 'center' },
   sceneArt: { flex: 1, width: '100%', height: '100%', overflow: 'hidden' },
   sceneArtImage: { width: '100%', height: '100%' },
   sceneArtImageCover: { width: '100%', height: '100%' },
@@ -304,23 +308,29 @@ const styles = StyleSheet.create({
   paintingCardImage: { width: '100%', height: '100%' },
   solarPreviewBg: { width: '100%', height: '100%', transform: [{ scale: 1.1 }] },
   solarPreviewWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(2, 8, 32, 0.08)' },
-  solarPreviewPlanet: {
-    position: 'absolute',
+  solarPreviewRow: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
+    paddingHorizontal: '4%',
+  },
+  solarPreviewPlanetFlex: {
     shadowColor: '#FFFFFF',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.35,
     shadowRadius: 10,
   },
-  solarPreviewJupiter: { width: 58, height: 58, right: 16, top: 18 },
-  solarPreviewEarth: { width: 38, height: 38, left: 30, top: 58 },
-  solarPreviewSaturn: { width: 68, height: 48, right: 74, bottom: 42 },
-  solarPreviewMars: { width: 30, height: 30, left: 102, top: 30 },
+  solarPreviewMercury: { width: '15.015%', aspectRatio: 1 },
+  solarPreviewVenus: { width: '21.945%', aspectRatio: 1 },
+  solarPreviewEarthRow: { width: '24.255%', aspectRatio: 1 },
+  solarPreviewMarsRow: { width: '18.48%', aspectRatio: 1 },
   solarCardArt: { backgroundColor: '#07112D' },
   solarCardStarOne: { position: 'absolute', left: 28, top: 34, width: 4, height: 4, borderRadius: 2, backgroundColor: '#FFF7C2' },
   solarCardStarTwo: { position: 'absolute', right: 42, top: 26, width: 5, height: 5, borderRadius: 3, backgroundColor: '#BFEAFF' },
   solarCardStarThree: { position: 'absolute', right: 72, bottom: 58, width: 3, height: 3, borderRadius: 2, backgroundColor: '#FFEFB0' },
-  sceneNeliLarge: { position: 'absolute', width: 159, height: 208, alignSelf: 'center', bottom: -42 },
-  sceneGiraffe: { position: 'absolute', width: 172.2, height: 218.4, alignSelf: 'center', bottom: -14 },
+  sceneNeliLarge: { position: 'absolute', width: 398, height: 520, alignSelf: 'center', bottom: -42, transform: [{ translateX: 66 }, { translateY: 52 }] },
+  sceneGiraffe: { position: 'absolute', width: 322.9, height: 409.5, alignSelf: 'center', bottom: -55 },
   tileGiraffe: { position: 'absolute', width: 172.2, height: 218.4, alignSelf: 'center', bottom: -14 },
   tileBrush: { position: 'absolute', width: 54, height: 54, left: 12, bottom: 14, transform: [{ rotate: '-18deg' }] },
   tileWater: { position: 'absolute', width: 58, height: 58, left: 50, bottom: 0 },
@@ -447,12 +457,77 @@ const styles = StyleSheet.create({
   alphabetBubbleBe: { right: 18, top: 34, backgroundColor: '#38BDF8', transform: [{ rotate: '8deg' }] },
   alphabetBubblePe: { bottom: 24, backgroundColor: '#F97316', transform: [{ rotate: '-2deg' }] },
   alphabetLetter: { fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: 34 },
-  alphabetTrainScene: { flex: 1, width: '100%', height: '100%', backgroundColor: '#DFF7FF', alignItems: 'center', justifyContent: 'center' },
-  alphabetTrainSmoke: { position: 'absolute', left: 18, top: 18, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.8)' },
-  alphabetTrainEngine: { position: 'absolute', left: 14, bottom: 14, width: 82, height: 108, borderRadius: 28, backgroundColor: '#06B6D4', alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#FFFFFF' },
-  alphabetTrainCar: { position: 'absolute', right: 18, top: 24, width: 84, height: 104, borderRadius: 26, backgroundColor: '#8B5CF6', borderWidth: 4, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-  alphabetTrainCarAlt: { right: 112, top: 54, backgroundColor: '#F97316' },
-  alphabetTrainLetter: { fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: 30 },
+  alphabetTrainScene: { flex: 1, width: '100%', height: '100%', backgroundColor: '#71D571', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  alphabetTrainRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    width: '100%',
+    paddingHorizontal: 3,
+  },
+  alphabetTrainEngineWrap: {
+    width: '41%',
+    // Overlaps back onto the last wagon by the amount the engine grew, so
+    // the row still totals 100% width instead of overflowing the box —
+    // same coupling-overlap idea as the `marginRight: -overlap` pattern
+    // used for real wagons in TrainCar/IntroTrainStrip elsewhere.
+    marginLeft: '-7%',
+    aspectRatio: 1535 / 1024,
+    position: 'relative',
+    // The trainHead artwork has extra empty space baked in above its wheels
+    // compared to the wagon artwork, so it sits a bit high without this —
+    // same fix used for this same engine/wagon pairing in IntroTrainStrip.
+    transform: [{ translateY: 3 }],
+    // Extra requested downward nudge. Uses `top` (a normal relative-position
+    // offset, resolved against the row's height) rather than a percentage
+    // inside `transform` — percentage translateY crashes at runtime on this
+    // RN version (see the note further down by alphabetTrainLetter).
+    top: '3%',
+  },
+  alphabetTrainEngineImg: { width: '100%', height: '100%' },
+  alphabetTrainSmokeCloud: {
+    position: 'absolute',
+    // ~61% along the engine is roughly where the smokestack sits on this
+    // artwork — same horizontal anchor IntroTrainStrip/TrainCar use for
+    // their smoke puffs on this same trainHead asset.
+    left: '64%',
+    top: '-25%',
+    width: '20%',
+    aspectRatio: 1,
+    borderRadius: 9999,
+    backgroundColor: 'rgba(255,255,255,0.85)',
+  },
+  alphabetTrainSmokeCloudTwo: {
+    left: '76%',
+    top: '-50%',
+    width: '14%',
+  },
+  alphabetTrainCarSlot: {
+    width: '22%',
+    aspectRatio: 16 / 9,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  alphabetTrainWagonImg: { width: '100%', height: '100%' },
+  alphabetTrainLetterBadge: {
+    position: 'absolute',
+    top: '-118%',
+    width: '70%',
+    aspectRatio: 1,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EC4899',
+  },
+  alphabetTrainLetterBadgeAlt: { backgroundColor: '#0EA5E9' },
+  alphabetTrainRiderImg: {
+    position: 'absolute',
+    top: '-211%',
+    width: '250%',
+    height: '227%',
+  },
+  alphabetTrainLetter: { fontFamily: ff('fa', 'black'), color: '#FFFFFF', fontSize: 16 },
   videoScene: { flex: 1, width: '100%', height: '100%', backgroundColor: '#FCE7F3', alignItems: 'center', justifyContent: 'center' },
   videoFrame: { position: 'absolute', width: 138, height: 96, borderRadius: 24, backgroundColor: '#EC4899', borderWidth: 6, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#170736', shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 6 },
   videoFrameBack: { backgroundColor: '#38BDF8', transform: [{ rotate: '-9deg' }, { translateX: -18 }, { translateY: -10 }] },
@@ -462,23 +537,9 @@ const styles = StyleSheet.create({
   videoSparkOne: { left: 22, top: 22 },
   videoSparkTwo: { right: 24, bottom: 36, backgroundColor: '#38BDF8' },
   tileCookNeli: { position: 'absolute', width: 158.4, height: 208.8, alignSelf: 'center', bottom: -4 },
-  tileMonkey: { position: 'absolute', left: 0, top: -10, width: 112, height: 112, transform: [{ rotate: '-8deg' }] },
+  tileMonkey: { position: 'absolute', left: 0, top: -10, width: 280, height: 280, transform: [{ rotate: '-8deg' }] },
   tileAnimal: { position: 'absolute', width: 94, height: 94, right: 16, bottom: 6 },
   tileCarrot: { position: 'absolute', width: 60, height: 60, left: 18, bottom: 12, transform: [{ rotate: '-10deg' }] },
-  iranPuzzleFrame: {
-    position: 'absolute',
-    left: 10,
-    right: 10,
-    top: 10,
-    bottom: 10,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.72)',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: 8,
-  },
-  iranPuzzleLabel: { color: '#F97316', fontSize: 12, letterSpacing: 0.8 },
   solarSun: {
     position: 'absolute',
     left: 16,
@@ -547,19 +608,25 @@ const styles = StyleSheet.create({
   roof: { width: 0, height: 0, borderLeftWidth: 42, borderRightWidth: 42, borderBottomWidth: 38, borderLeftColor: 'transparent', borderRightColor: 'transparent' },
   house: { width: 70, height: 48, borderRadius: 12, backgroundColor: '#FFFFFF' },
   door: { position: 'absolute', bottom: 23, width: 18, height: 28, borderRadius: 7 },
-  countingScene: { flex: 1, width: '100%', height: '100%', backgroundColor: '#F72585', overflow: 'hidden' },
-  countingGlow: { position: 'absolute', width: 190, height: 190, borderRadius: 95, right: -42, top: -72, backgroundColor: 'rgba(255,228,94,0.28)' },
-  countingOwl: { position: 'absolute', width: 154, height: 190, right: 18, bottom: -8 },
-  countingNumber: { position: 'absolute', fontFamily: 'Vazirmatn_800ExtraBold', color: '#FFFFFF', textShadowColor: 'rgba(83,13,62,0.22)', textShadowOffset: { width: 0, height: 3 }, textShadowRadius: 2 },
-  countingNumberOne: { left: 23, top: 18, fontSize: 38, transform: [{ rotate: '-10deg' }] },
-  countingNumberTwo: { left: 83, top: 48, fontSize: 28, color: '#FFE45E', transform: [{ rotate: '8deg' }] },
-  countingNumberThree: { left: 27, top: 96, fontSize: 31, color: '#75F2E0', transform: [{ rotate: '7deg' }] },
-  countingNumberFive: { right: 20, top: 14, fontSize: 26, color: '#FFE45E', transform: [{ rotate: '12deg' }] },
-  countingNumberSeven: { left: 100, bottom: 42, fontSize: 24, color: '#FFFFFF', transform: [{ rotate: '-8deg' }] },
+  countingScene: { flex: 1, width: '100%', height: '100%', backgroundColor: '#FD52D4', overflow: 'hidden' },
+  countingGlow: { position: 'absolute', width: 190, height: 190, borderRadius: 95, right: -42, top: -72, backgroundColor: '#FFE45E' },
+  countingBadge: { position: 'absolute', borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
+  countingBadgeOne: { left: 11.5, top: 6.5, width: 61, height: 61, backgroundColor: '#38BDF8' },
+  countingBadgeTwo: { left: 74.5, top: 39.5, width: 45, height: 45, backgroundColor: '#A855F7' },
+  countingBadgeThree: { left: 17.5, top: 86.5, width: 50, height: 50, backgroundColor: '#FFE45E' },
+  countingBadgeFive: { right: 12, top: 6, width: 42, height: 42, backgroundColor: '#22C55E' },
+  countingBadgeSeven: { left: 93, bottom: 35, width: 38, height: 38, backgroundColor: '#EC4899' },
+  countingOwl: { position: 'absolute', width: 242.55, height: 299.25, top: '50%', left: '50%', marginLeft: -121.275, marginTop: -149.625 },
+  countingNumber: { fontFamily: 'Vazirmatn_800ExtraBold', color: '#FFFFFF' },
+  countingNumberOne: { fontSize: 38, transform: [{ rotate: '-10deg' }] },
+  countingNumberTwo: { fontSize: 28, color: '#FFE45E', transform: [{ rotate: '8deg' }] },
+  countingNumberThree: { fontSize: 31, color: '#1E3A8A', transform: [{ rotate: '7deg' }] },
+  countingNumberFive: { fontSize: 26, color: '#FFE45E', transform: [{ rotate: '12deg' }] },
+  countingNumberSeven: { fontSize: 24, color: '#FFFFFF', transform: [{ rotate: '-8deg' }] },
   book: { width: 68, height: 74, borderRadius: 14 },
   sun: { position: 'absolute', right: 41, top: 25, width: 32, height: 32, borderRadius: 16 },
   tileTalkCharacter: { position: 'absolute', right: 10, bottom: -10, width: 92, height: 120 },
-  tileDressCharacter: { position: 'absolute', right: 10, bottom: 2, width: 92, height: 120 },
+  tileDressCharacter: { position: 'absolute', right: 10, bottom: 2, width: 230, height: 300 },
 });
 
 

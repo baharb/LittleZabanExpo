@@ -29,7 +29,7 @@ export default function LangBar({ dark = true, buttonSize = 56, iconSize = 44 }:
     >
       <Image
         source={neliWorldAssets.ui.settingsIcon}
-        style={[styles.icon, { width: iconSize, height: iconSize, tintColor: dark ? '#FFFFFF' : '#2D1B69' }]}
+        style={[styles.icon, { width: iconSize * 0.9, height: iconSize * 0.9, tintColor: dark ? '#FFFFFF' : '#2D1B69' }]}
         resizeMode="contain"
       />
     </TouchableOpacity>

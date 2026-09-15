@@ -616,7 +616,7 @@ function TrainCar({
 }
 
 export default function AlphabetTrainScreen() {
-  const { goBack } = useNav();
+  const { reset } = useNav();
   const { speakFarsiOnly, stop } = useSpeech();
   const { width, height } = useWindowDimensions();
   const [index, setIndex] = useState(0);
@@ -859,7 +859,7 @@ export default function AlphabetTrainScreen() {
   const close = () => {
     void stopFaAudio();
     stop();
-    goBack();
+    reset({ name: 'Main', tab: 'Games' });
   };
 
   const smoke1 = scenicPulse.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1.2] });
